@@ -210,12 +210,11 @@ export function TicketForm({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <div className="relative">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto" />
-            <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+            <Loader2 className="h-12 w-12 text-foreground mx-auto" />
           </div>
           <div className="space-y-2">
-            <p className="text-lg font-medium text-white">Loading ticket data...</p>
-            <p className="text-sm text-white/50">Please wait while we prepare your form</p>
+            <p className="text-lg font-medium text-foreground">Loading ticket data...</p>
+            <p className="text-sm text-muted-foreground">Please wait while we prepare your form</p>
           </div>
         </div>
       </div>
@@ -296,7 +295,7 @@ export function TicketForm({
   return (
     <div className="space-y-8">
       {/* Step Navigation */}
-      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+      <div className="bg-secondary rounded-xl p-4 border border-border">
         <div className="flex items-center justify-center gap-2 overflow-x-auto">
           {FORM_STEPS.map((step, index) => {
             const isVisited = visitedSteps.has(step.key);
@@ -308,14 +307,14 @@ export function TicketForm({
                 key={step.key}
                 type="button"
                 onClick={() => handleStepNavigation(step.key)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 min-w-max ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium min-w-max ${
                   isCurrent
-                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
+                    ? "bg-foreground text-background"
                     : isValid
-                    ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                    ? "bg-foreground/20 text-foreground hover:bg-foreground/30"
                     : isVisited
-                    ? "bg-white/10 text-white/70 hover:bg-white/15"
-                    : "bg-white/5 text-white/50 hover:bg-white/10"
+                    ? "bg-muted text-foreground/70 hover:bg-muted/80"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 }`}
               >
                 {isValid ? (
@@ -329,26 +328,26 @@ export function TicketForm({
             );
           })}
         </div>
-        <p className="text-xs text-white/40 text-center mt-3">
+        <p className="text-xs text-muted-foreground text-center mt-3">
           {FORM_STEPS[currentStepIndex]?.description}
         </p>
       </div>
 
       {/* Form Content */}
-      <div className="bg-white/[0.02] rounded-2xl border border-white/10 p-6 md:p-8">
+      <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
         {renderStepContent()}
       </div>
 
       {/* Navigation Actions */}
       {!isReadOnly && (
-        <div className="flex items-center justify-between bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="flex items-center justify-between bg-secondary rounded-xl p-4 border border-border">
           <div className="flex items-center gap-3">
             {currentStepIndex > 0 && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={handlePreviousStep}
-                className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+                className="bg-background border-border text-foreground hover:bg-muted"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Previous
@@ -362,7 +361,7 @@ export function TicketForm({
               variant="ghost"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="text-white/70 hover:text-white hover:bg-white/5"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted"
             >
               Cancel
             </Button>
@@ -372,7 +371,7 @@ export function TicketForm({
                 type="button"
                 onClick={handleNextStep}
                 disabled={!ticketId && !isStepValid(currentStep)}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                className="bg-foreground hover:bg-foreground/90 text-background disabled:opacity-50"
               >
                 Next
                 <ArrowRight className="h-4 w-4 ml-2" />
@@ -382,11 +381,11 @@ export function TicketForm({
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting || (!ticketId && (!isStepValid("basic-details") || !isStepValid("settings")))}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                className="bg-foreground hover:bg-foreground/90 text-background disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2" />
                     Saving...
                   </>
                 ) : (

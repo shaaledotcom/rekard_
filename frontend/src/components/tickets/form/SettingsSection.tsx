@@ -96,26 +96,26 @@ export function SettingsSection({
     <div className="space-y-8">
       {/* Section Header */}
       <div className="text-center space-y-2">
-        <h3 className="text-xl font-semibold text-white flex items-center justify-center gap-2">
+        <h3 className="text-xl font-semibold text-foreground flex items-center justify-center gap-2">
           <Settings2 className="h-5 w-5" />
           Configuration
         </h3>
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-muted-foreground">
           Set status and availability options
         </p>
       </div>
 
       {/* Status Selection */}
-      <div className="space-y-3 p-4 rounded-xl bg-white/5 border border-white/10">
+      <div className="space-y-3 p-4 rounded-xl bg-secondary border border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${
-              formData.status === "published" ? "bg-emerald-500" :
-              formData.status === "draft" ? "bg-yellow-500" :
-              formData.status === "sold_out" ? "bg-orange-500" :
-              "bg-gray-500"
+              formData.status === "published" ? "bg-foreground" :
+              formData.status === "draft" ? "bg-muted-foreground" :
+              formData.status === "sold_out" ? "bg-foreground/50" :
+              "bg-muted-foreground"
             }`} />
-            <Label className="text-white/70 text-sm font-medium">Status</Label>
+            <Label className="text-foreground/70 text-sm font-medium">Status</Label>
           </div>
           <Badge variant={formData.status as any}>
             {STATUS_OPTIONS.find((s) => s.value === formData.status)?.label || "Draft"}
@@ -126,21 +126,21 @@ export function SettingsSection({
             value={formData.status}
             onChange={(e) => onChange({ status: e.target.value as any })}
             disabled={isReadOnly}
-            className="w-full h-12 px-4 pr-10 bg-white/5 border border-white/10 text-white rounded-xl appearance-none cursor-pointer focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/20"
+            className="w-full h-12 px-4 pr-10 bg-secondary border border-border text-foreground rounded-xl appearance-none cursor-pointer focus:border-foreground/50 focus:outline-none focus:ring-1 focus:ring-foreground/20"
           >
             {STATUS_OPTIONS.map((status) => (
               <option 
                 key={status.value} 
                 value={status.value}
-                className="bg-[#12121a] text-white"
+                className="bg-background text-foreground"
               >
                 {status.label}
               </option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         </div>
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           Only published tickets are visible and available for purchase
         </p>
       </div>
@@ -148,13 +148,13 @@ export function SettingsSection({
       {/* Geoblocking Section */}
       <div className="space-y-4">
         {/* Geoblocking Toggle */}
-        <label className={`flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 transition-colors ${
-          !isReadOnly ? "cursor-pointer hover:border-teal-500/30" : ""
+        <label className={`flex items-center gap-4 p-4 rounded-xl bg-secondary border border-border ${
+          !isReadOnly ? "cursor-pointer hover:border-foreground/30" : ""
         }`}>
-          <div className={`w-12 h-7 rounded-full p-1 transition-colors ${
-            formData.geoblocking_enabled ? "bg-teal-500" : "bg-white/10"
+          <div className={`w-12 h-7 rounded-full p-1 ${
+            formData.geoblocking_enabled ? "bg-foreground" : "bg-muted"
           }`}>
-            <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+            <div className={`w-5 h-5 rounded-full bg-background shadow ${
               formData.geoblocking_enabled ? "translate-x-5" : "translate-x-0"
             }`} />
           </div>
@@ -167,10 +167,10 @@ export function SettingsSection({
           />
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <Globe2 className="h-4 w-4 text-teal-400" />
-              <p className="text-white font-medium text-sm">Enable Geo-blocking</p>
+              <Globe2 className="h-4 w-4 text-foreground" />
+              <p className="text-foreground font-medium text-sm">Enable Geo-blocking</p>
             </div>
-            <p className="text-white/40 text-xs mt-1">
+            <p className="text-muted-foreground text-xs mt-1">
               Restrict ticket purchases to specific countries only
             </p>
           </div>
@@ -178,9 +178,9 @@ export function SettingsSection({
 
         {/* Country Selection (when enabled) */}
         {formData.geoblocking_enabled && (
-          <div className="space-y-4 p-4 rounded-xl bg-teal-500/10 border border-teal-500/20">
+          <div className="space-y-4 p-4 rounded-xl bg-secondary border border-border">
             <div className="flex items-center justify-between">
-              <Label className="text-teal-300 text-sm font-medium flex items-center gap-2">
+              <Label className="text-foreground text-sm font-medium flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 Allowed Countries
               </Label>
@@ -193,7 +193,7 @@ export function SettingsSection({
             {!isReadOnly && (
               <div className="relative">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     value={countrySearch}
                     onChange={(e) => {
@@ -202,28 +202,28 @@ export function SettingsSection({
                     }}
                     onFocus={() => setIsDropdownOpen(true)}
                     placeholder="Search countries to allow..."
-                    className="pl-10 h-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-lg"
+                    className="pl-10 h-10 bg-background border-border text-foreground placeholder:text-muted-foreground rounded-lg"
                   />
                 </div>
 
                 {/* Dropdown */}
                 {isDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
                     {filteredCountries.length > 0 ? (
                       filteredCountries.slice(0, 8).map((country) => (
                         <button
                           key={country.code}
                           type="button"
                           onClick={() => handleAddCountry(country)}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-secondary"
                         >
                           <span className="text-lg">{country.flag}</span>
-                          <span className="text-white text-sm">{country.name}</span>
-                          <span className="text-white/40 text-xs ml-auto">{country.code}</span>
+                          <span className="text-foreground text-sm">{country.name}</span>
+                          <span className="text-muted-foreground text-xs ml-auto">{country.code}</span>
                         </button>
                       ))
                     ) : (
-                      <div className="px-3 py-4 text-white/40 text-sm text-center">
+                      <div className="px-3 py-4 text-muted-foreground text-sm text-center">
                         {countrySearch ? "No countries found" : "Type to search"}
                       </div>
                     )}
@@ -236,9 +236,9 @@ export function SettingsSection({
             <div className="space-y-2">
               {geoblockingCountries.length === 0 ? (
                 <div className="text-center py-4">
-                  <Globe2 className="h-8 w-8 text-white/20 mx-auto mb-2" />
-                  <p className="text-white/40 text-sm">No countries selected</p>
-                  <p className="text-white/30 text-xs mt-1">
+                  <Globe2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground text-sm">No countries selected</p>
+                  <p className="text-muted-foreground text-xs mt-1">
                     Add countries where viewers can purchase this ticket
                   </p>
                 </div>
@@ -248,15 +248,15 @@ export function SettingsSection({
                   return (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-background rounded-lg"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-lg">{countryInfo?.flag || "🌍"}</span>
                         <div>
-                          <span className="text-white text-sm font-medium">
+                          <span className="text-foreground text-sm font-medium">
                             {location.name || countryInfo?.name || location.value}
                           </span>
-                          <span className="text-white/40 text-xs ml-2">
+                          <span className="text-muted-foreground text-xs ml-2">
                             {location.value}
                           </span>
                         </div>
@@ -267,7 +267,7 @@ export function SettingsSection({
                           variant="ghost"
                           size="icon"
                           onClick={() => handleRemoveCountry(index)}
-                          className="h-8 w-8 text-white/40 hover:text-red-400 hover:bg-red-500/10"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -280,8 +280,8 @@ export function SettingsSection({
 
             {/* Quick Add Popular Countries */}
             {!isReadOnly && geoblockingCountries.length < 5 && (
-              <div className="pt-2 border-t border-white/10">
-                <p className="text-white/40 text-xs mb-2">Quick add:</p>
+              <div className="pt-2 border-t border-border">
+                <p className="text-muted-foreground text-xs mb-2">Quick add:</p>
                 <div className="flex flex-wrap gap-2">
                   {COUNTRY_OPTIONS.slice(0, 5)
                     .filter((c) => !geoblockingCountries.some((loc) => loc.value === c.code))
@@ -290,7 +290,7 @@ export function SettingsSection({
                         key={country.code}
                         type="button"
                         onClick={() => handleAddCountry(country)}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs transition-colors"
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-background hover:bg-muted text-foreground/70 hover:text-foreground text-xs"
                       >
                         <Plus className="h-3 w-3" />
                         <span>{country.flag}</span>
@@ -301,7 +301,7 @@ export function SettingsSection({
               </div>
             )}
 
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-muted-foreground">
               Only viewers from selected countries will be able to purchase this ticket
             </p>
           </div>

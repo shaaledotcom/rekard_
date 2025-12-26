@@ -28,15 +28,15 @@ export const formatDateTimeLocal = (dateString: string): string => {
 export const getStatusBackgroundColor = (status: string): string => {
   switch (status) {
     case "live":
-      return "bg-red-500";
+      return "bg-foreground";
     case "published":
-      return "bg-blue-500";
+      return "bg-foreground/80";
     case "draft":
-      return "bg-yellow-500";
+      return "bg-muted";
     case "completed":
-      return "bg-green-500";
+      return "bg-muted";
     default:
-      return "bg-gray-500";
+      return "bg-muted";
   }
 };
 

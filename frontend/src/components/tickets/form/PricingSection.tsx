@@ -80,8 +80,8 @@ export function PricingSection({
     <div className="space-y-6">
       {/* Section Header */}
       <div>
-        <Label className="text-white/70 text-sm font-medium">Pricing *</Label>
-        <p className="text-xs text-white/40 mt-1">
+        <Label className="text-foreground/70 text-sm font-medium">Pricing *</Label>
+        <p className="text-xs text-muted-foreground mt-1">
           Set the price for your ticket in different currencies
         </p>
       </div>
@@ -96,22 +96,22 @@ export function PricingSection({
                 value={item.currency}
                 onChange={(e) => handleCurrencyChange(index, e.target.value)}
                 disabled={isReadOnly}
-                className="w-full h-12 pl-10 pr-10 bg-white/5 border border-white/10 text-white rounded-xl appearance-none cursor-pointer focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/20"
+                className="w-full h-12 pl-10 pr-10 bg-secondary border border-border text-foreground rounded-xl appearance-none cursor-pointer focus:border-foreground/50 focus:outline-none focus:ring-1 focus:ring-foreground/20"
               >
                 {CURRENCY_OPTIONS.map((currency) => (
                   <option 
                     key={currency.value} 
                     value={currency.value}
-                    className="bg-[#12121a] text-white"
+                    className="bg-background text-foreground"
                   >
                     {currency.label}
                   </option>
                 ))}
               </select>
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 {getCurrencyIcon(item.currency)}
               </div>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
 
             {/* Price Input */}
@@ -124,7 +124,7 @@ export function PricingSection({
                 onChange={(e) => handlePriceChange(index, parseFloat(e.target.value) || 0)}
                 placeholder="0.00"
                 disabled={isReadOnly}
-                className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-emerald-500/50"
+                className="h-12 bg-secondary border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:border-foreground/50"
               />
             </div>
 
@@ -136,7 +136,7 @@ export function PricingSection({
                 size="icon"
                 onClick={() => handleRemoveCurrency(index)}
                 disabled={pricing.length <= 1 && item.price === 0}
-                className="h-12 w-12 text-white/50 hover:text-red-400 hover:bg-red-500/10"
+                className="h-12 w-12 text-muted-foreground hover:text-foreground hover:bg-secondary"
               >
                 <Minus className="h-4 w-4" />
               </Button>
@@ -151,7 +151,7 @@ export function PricingSection({
           type="button"
           variant="outline"
           onClick={handleAddCurrency}
-          className="w-full bg-white/5 border-white/20 border-dashed text-white/70 hover:bg-white/10 hover:text-white"
+          className="w-full bg-secondary border-border border-dashed text-foreground/70 hover:bg-muted hover:text-foreground"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Another Currency
@@ -159,7 +159,7 @@ export function PricingSection({
       )}
 
       {/* Info */}
-      <p className="text-xs text-white/40">
+      <p className="text-xs text-muted-foreground">
         Tip: Adding multiple currencies helps international viewers purchase tickets in their preferred currency.
       </p>
     </div>

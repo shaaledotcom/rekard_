@@ -28,10 +28,10 @@ export function formatDate(dateString: string): string {
  */
 export function getTicketStatusBackgroundColor(status: TicketStatus): string {
   const colors: Record<TicketStatus, string> = {
-    draft: "bg-gradient-to-br from-yellow-600/80 to-amber-700/80",
-    published: "bg-gradient-to-br from-emerald-600/80 to-teal-700/80",
-    sold_out: "bg-gradient-to-br from-orange-600/80 to-red-700/80",
-    archived: "bg-gradient-to-br from-slate-600/80 to-gray-700/80",
+    draft: "bg-muted",
+    published: "bg-foreground/80",
+    sold_out: "bg-muted",
+    archived: "bg-muted",
   };
   return colors[status] || colors.draft;
 }
@@ -55,13 +55,13 @@ export function getAvailabilityStatus(soldQuantity: number, totalQuantity: numbe
   const percentage = calculateAvailability(soldQuantity, totalQuantity);
 
   if (percentage === 0) {
-    return { text: "Sold Out", color: "text-red-400" };
+    return { text: "Sold Out", color: "text-foreground" };
   } else if (percentage <= 10) {
-    return { text: `Only ${available} left!`, color: "text-orange-400" };
+    return { text: `Only ${available} left!`, color: "text-foreground" };
   } else if (percentage <= 25) {
-    return { text: `${available} remaining`, color: "text-yellow-400" };
+    return { text: `${available} remaining`, color: "text-muted-foreground" };
   } else {
-    return { text: `${available} available`, color: "text-green-400" };
+    return { text: `${available} available`, color: "text-muted-foreground" };
   }
 }
 

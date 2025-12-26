@@ -208,7 +208,7 @@ export function MediaSection({
     if (!file) return null;
     const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
     return (
-      <div className="text-xs text-white/40 mt-2">
+      <div className="text-xs text-muted-foreground mt-2">
         <p>{file.name}</p>
         <p>Size: {sizeInMB}MB</p>
       </div>
@@ -223,8 +223,8 @@ export function MediaSection({
     <div className="space-y-8 mt-10">
       {/* Section Header */}
       <div className="text-center space-y-2">
-        <h3 className="text-xl font-semibold text-white">Media Assets</h3>
-        <p className="text-sm text-white/50">
+        <h3 className="text-xl font-semibold text-foreground">Media Assets</h3>
+        <p className="text-sm text-muted-foreground">
           Upload images and videos to showcase your ticket
         </p>
       </div>
@@ -238,7 +238,7 @@ export function MediaSection({
           return (
             <div key={field.key} className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-white/70 text-sm font-medium flex items-center gap-2">
+                <Label className="text-foreground/70 text-sm font-medium flex items-center gap-2">
                   {field.icon}
                   <span>{field.label}</span>
                 </Label>
@@ -251,20 +251,20 @@ export function MediaSection({
 
               {!hasFile ? (
                 <div
-                  className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all duration-200 ${
+                  className={`relative border-2 border-dashed rounded-xl p-6 text-center ${
                     isDragOver
-                      ? "border-emerald-500 bg-emerald-500/10"
-                      : "border-white/20 hover:border-emerald-500/50 bg-white/5"
+                      ? "border-foreground bg-secondary"
+                      : "border-border hover:border-foreground/50 bg-secondary"
                   }`}
                   onDragOver={(e) => handleDragOver(e, field.key)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, field)}
                 >
-                  <Upload className="h-8 w-8 text-white/40 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-white/70 mb-1">
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm font-medium text-foreground/70 mb-1">
                     {isDragOver ? "Drop file here" : "Drag & drop or click"}
                   </p>
-                  <p className="text-xs text-white/40 mb-4">
+                  <p className="text-xs text-muted-foreground mb-4">
                     {field.description}
                   </p>
                   
@@ -274,7 +274,7 @@ export function MediaSection({
                     size="sm"
                     onClick={() => fileInputRefs.current[field.key]?.click()}
                     disabled={isReadOnly}
-                    className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10"
+                    className="w-full bg-background border-border text-foreground hover:bg-muted"
                   >
                     Choose File
                   </Button>
@@ -291,7 +291,7 @@ export function MediaSection({
                   />
                 </div>
               ) : (
-                <div className="space-y-3 p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="space-y-3 p-4 rounded-xl bg-secondary border border-border">
                   <div className="relative">
                     {getPreview(field)}
                     {!isReadOnly && (
@@ -315,7 +315,7 @@ export function MediaSection({
                       variant="outline"
                       size="sm"
                       onClick={() => fileInputRefs.current[field.key]?.click()}
-                      className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10"
+                      className="w-full bg-background border-border text-foreground hover:bg-muted"
                     >
                       Replace File
                     </Button>
@@ -328,12 +328,12 @@ export function MediaSection({
       </div>
 
       {/* Media Guidelines */}
-      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+      <div className="bg-secondary rounded-xl p-4 border border-border">
         <div className="flex items-start gap-3">
-          <Info className="h-5 w-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-white/70">
-            <h4 className="font-medium mb-1 text-white">Media Guidelines</h4>
-            <ul className="space-y-1 text-xs text-white/50">
+          <Info className="h-5 w-5 text-foreground mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-foreground/70">
+            <h4 className="font-medium mb-1 text-foreground">Media Guidelines</h4>
+            <ul className="space-y-1 text-xs text-muted-foreground">
               <li>• Images: JPEG, PNG, WebP up to 10MB</li>
               <li>• Videos: MP4, WebM, OGG up to 50MB</li>
               <li>• Thumbnail should be portrait orientation (9:16) for mobile</li>

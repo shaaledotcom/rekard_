@@ -83,8 +83,8 @@ export function BasicInfoSection({
     <div className="space-y-8">
       {/* Section Header */}
       <div className="text-center space-y-2">
-        <h3 className="text-xl font-semibold text-white">Basic Information</h3>
-        <p className="text-sm text-white/50">
+        <h3 className="text-xl font-semibold text-foreground">Basic Information</h3>
+        <p className="text-sm text-muted-foreground">
           Start by providing the essential details for your ticket
         </p>
       </div>
@@ -93,7 +93,7 @@ export function BasicInfoSection({
         {/* Title Field */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-white/70 text-sm font-medium">Title *</Label>
+            <Label className="text-foreground/70 text-sm font-medium">Title *</Label>
             <Badge 
               variant={isTitleValid ? "default" : "secondary"}
               className="text-xs"
@@ -108,26 +108,26 @@ export function BasicInfoSection({
               placeholder="Enter an engaging title for your ticket"
               disabled={isReadOnly}
               maxLength={50}
-              className={`h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl pr-10 ${
+              className={`h-12 bg-secondary border-border text-foreground placeholder:text-muted-foreground rounded-xl pr-10 ${
                 formData.title.length > 0 
                   ? isTitleValid 
-                    ? "border-emerald-500/50 focus:border-emerald-500" 
-                    : "border-red-500/50 focus:border-red-500"
-                  : "focus:border-emerald-500/50"
+                    ? "border-foreground/50 focus:border-foreground" 
+                    : "border-foreground/30 focus:border-foreground/50"
+                  : "focus:border-foreground/50"
               }`}
             />
             {formData.title.length > 0 && (
               <div className="absolute inset-y-0 right-0 flex items-center pr-4">
                 {isTitleValid ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <CheckCircle2 className="h-4 w-4 text-foreground" />
                 ) : (
-                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
             )}
           </div>
           {formData.title.length > 0 && (
-            <div className="flex items-start gap-2 text-xs text-white/40">
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
               <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
               <p>
                 {isTitleValid 
@@ -142,7 +142,7 @@ export function BasicInfoSection({
         {/* URL Field */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-white/70 text-sm font-medium">URL Slug *</Label>
+            <Label className="text-foreground/70 text-sm font-medium">URL Slug *</Label>
             <Badge 
               variant={isUrlValid ? "default" : "secondary"}
               className="text-xs"
@@ -152,7 +152,7 @@ export function BasicInfoSection({
           </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-              <Globe className="h-4 w-4 text-white/30" />
+              <Globe className="h-4 w-4 text-muted-foreground" />
             </div>
             <Input
               value={formData.url}
@@ -160,25 +160,25 @@ export function BasicInfoSection({
               placeholder="your-ticket-url"
               disabled={isReadOnly}
               maxLength={30}
-              className={`h-12 pl-11 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl pr-10 ${
+              className={`h-12 pl-11 bg-secondary border-border text-foreground placeholder:text-muted-foreground rounded-xl pr-10 ${
                 formData.url.length > 0 
                   ? isUrlValid 
-                    ? "border-emerald-500/50 focus:border-emerald-500" 
-                    : "border-red-500/50 focus:border-red-500"
-                  : "focus:border-emerald-500/50"
+                    ? "border-foreground/50 focus:border-foreground" 
+                    : "border-foreground/30 focus:border-foreground/50"
+                  : "focus:border-foreground/50"
               }`}
             />
             {formData.url.length > 0 && (
               <div className="absolute inset-y-0 right-0 flex items-center pr-4">
                 {isUrlValid ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <CheckCircle2 className="h-4 w-4 text-foreground" />
                 ) : (
-                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
             )}
           </div>
-          <div className="flex items-start gap-2 text-xs text-white/40">
+          <div className="flex items-start gap-2 text-xs text-muted-foreground">
             <Link className="h-3 w-3 mt-0.5 flex-shrink-0" />
             <p>
               {isUrlValid 
@@ -192,7 +192,7 @@ export function BasicInfoSection({
         {/* Description Field */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-white/70 text-sm font-medium">Description</Label>
+            <Label className="text-foreground/70 text-sm font-medium">Description</Label>
             <Badge 
               variant={isDescriptionValid ? "default" : "destructive"}
               className="text-xs"
@@ -207,7 +207,7 @@ export function BasicInfoSection({
             disabled={isReadOnly}
           />
           {descriptionLength > 0 && (
-            <div className="flex items-start gap-2 text-xs text-white/40">
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
               <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
               <p>
                 {isDescriptionValid 

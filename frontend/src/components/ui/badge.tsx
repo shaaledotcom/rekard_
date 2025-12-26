@@ -3,30 +3,30 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground shadow",
+          "border-transparent bg-primary text-primary-foreground",
         secondary:
           "border-transparent bg-secondary text-secondary-foreground",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground shadow",
-        outline: "text-foreground",
-        // Primitive color variants
-        red: "border-transparent bg-red-500 text-white shadow-lg shadow-red-500/25",
-        yellow: "border-transparent bg-yellow-500 text-black shadow-lg shadow-yellow-500/25",
-        blue: "border-transparent bg-blue-500 text-white shadow-lg shadow-blue-500/25",
-        // Status variants with primitive colors
-        draft: "border-yellow-500/30 bg-yellow-500/10 text-yellow-500",
-        published: "border-blue-500/30 bg-blue-500/10 text-blue-500",
-        live: "border-red-500/30 bg-red-500/10 text-red-500 animate-pulse",
-        completed: "border-green-500/30 bg-green-500/10 text-green-500",
-        cancelled: "border-gray-500/30 bg-gray-500/10 text-gray-500",
+          "border-transparent bg-foreground/80 text-background",
+        outline: "text-foreground border-border",
+        // Status variants - all black and white
+        draft: "border-border bg-secondary text-foreground",
+        published: "border-border bg-foreground text-background",
+        live: "border-border bg-foreground text-background",
+        completed: "border-border bg-secondary text-foreground",
+        cancelled: "border-border bg-muted text-muted-foreground",
         // Ticket-specific status variants
-        sold_out: "border-orange-500/30 bg-orange-500/10 text-orange-500",
-        archived: "border-slate-500/30 bg-slate-500/10 text-slate-400",
+        sold_out: "border-border bg-secondary text-foreground",
+        archived: "border-border bg-muted text-muted-foreground",
+        // Generic color variants mapped to black/white
+        red: "border-transparent bg-foreground text-background",
+        yellow: "border-transparent bg-secondary text-foreground",
+        blue: "border-transparent bg-foreground text-background",
       },
     },
     defaultVariants: {

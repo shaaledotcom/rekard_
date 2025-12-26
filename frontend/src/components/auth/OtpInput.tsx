@@ -81,8 +81,7 @@ export function OtpInput({
           className={cn(
             "w-12 h-14 text-center text-xl font-semibold rounded-lg border border-input bg-background",
             "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-            "transition-all duration-200"
+            "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
         />
       ))}
