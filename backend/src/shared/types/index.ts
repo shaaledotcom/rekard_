@@ -1,5 +1,15 @@
 import { Request } from 'express';
 
+// Plan tier types
+export type PlanTier = 'free' | 'pro' | 'premium';
+
+// Plan info attached by plan middleware
+export interface PlanInfo {
+  planTier: PlanTier;
+  planName: string | null;
+  isActive: boolean;
+}
+
 // Tenant context attached to every request
 export interface TenantContext {
   userId: string;
@@ -8,9 +18,10 @@ export interface TenantContext {
   fromDomain: boolean;
 }
 
-// Extended request with tenant context
+// Extended request with tenant context and plan info
 export interface AppRequest extends Request {
   tenant?: TenantContext;
+  planInfo?: PlanInfo;
 }
 
 // Pagination parameters

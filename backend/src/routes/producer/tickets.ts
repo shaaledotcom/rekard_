@@ -1,6 +1,8 @@
 // Producer tickets routes
+// Publishing requires an active plan and tickets in wallet
 import { Router, Response } from 'express';
 import * as ticketsService from '../../domains/tickets/service.js';
+import * as billingService from '../../domains/billing/service.js';
 import type {
   CreateTicketRequest,
   UpdateTicketRequest,
@@ -9,12 +11,10 @@ import type {
   SortParams,
 } from '../../domains/tickets/types.js';
 import { requireSession } from '../../domains/auth/session.js';
-import { requireRole } from '../../domains/auth/roles.js';
 import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
 import { asyncHandler } from '../../shared/middleware/error-handler.js';
-import { ok, okList, created, noContent, badRequest } from '../../shared/utils/response.js';
+import { ok, okList, created, noContent, badRequest, forbidden } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
-import { ROLE_PRODUCER } from '../../domains/auth/constants.js';
 import { mediaUpload } from '../../shared/utils/file-upload.js';
 
 const router = Router();
@@ -57,7 +57,46 @@ const parseFormBody = (body: Record<string, unknown>): Record<string, unknown> =
 // Apply middleware
 router.use(requireSession);
 router.use(tenantMiddleware);
-// router.use(requireRole(ROLE_PRODUCER));
+
+// Statuses that require active plan + tickets
+const PUBLISH_STATUSES = ['published', 'sold_out'];
+
+// Helper to check publishing requirements
+const checkPublishingRequirements = async (
+  appId: string,
+  tenantId: string,
+  userId: string,
+  status: string | undefined
+): Promise<{ canPublish: boolean; error?: string }> => {
+  // Only check if status is a publishing status
+  if (!status || !PUBLISH_STATUSES.includes(status)) {
+    return { canPublish: true };
+  }
+
+  const [subscription, wallet] = await Promise.all([
+    billingService.getSubscription(appId, tenantId, userId),
+    billingService.getWallet(appId, tenantId, userId),
+  ]);
+
+  const hasActivePlan = subscription?.status === 'active';
+  const hasTickets = (wallet?.ticket_balance || 0) > 0;
+
+  if (!hasActivePlan) {
+    return {
+      canPublish: false,
+      error: 'Publishing requires an active plan. Please upgrade to Pro or Premium to publish tickets.',
+    };
+  }
+
+  if (!hasTickets) {
+    return {
+      canPublish: false,
+      error: 'Publishing requires tickets in your wallet. Please purchase tickets to continue.',
+    };
+  }
+
+  return { canPublish: true };
+};
 
 // Create ticket (accepts form-data)
 router.post('/', mediaUpload.fields([
@@ -67,6 +106,17 @@ router.post('/', mediaUpload.fields([
 ]), asyncHandler(async (req: AppRequest, res: Response) => {
   const tenant = getTenantContext(req);
   const data = parseFormBody(req.body) as CreateTicketRequest;
+
+  // Check publishing requirements if creating with published status
+  const publishCheck = await checkPublishingRequirements(
+    tenant.appId,
+    tenant.tenantId,
+    tenant.userId,
+    data.status
+  );
+  if (!publishCheck.canPublish) {
+    return forbidden(res, publishCheck.error!);
+  }
 
   // TODO: Handle file uploads to S3 and set URLs
 
@@ -101,6 +151,17 @@ router.put('/:id', mediaUpload.fields([
   }
 
   const data = parseFormBody(req.body) as UpdateTicketRequest;
+
+  // Check publishing requirements if updating to published status
+  const publishCheck = await checkPublishingRequirements(
+    tenant.appId,
+    tenant.tenantId,
+    tenant.userId,
+    data.status
+  );
+  if (!publishCheck.canPublish) {
+    return forbidden(res, publishCheck.error!);
+  }
 
   // TODO: Handle file uploads to S3 and set URLs
 
@@ -145,13 +206,24 @@ router.get('/', asyncHandler(async (req: AppRequest, res: Response) => {
   okList(res, result);
 }));
 
-// Publish ticket
+// Publish ticket (requires active plan + tickets in wallet)
 router.post('/:id/publish', asyncHandler(async (req: AppRequest, res: Response) => {
   const tenant = getTenantContext(req);
   const ticketId = parseInt(req.params.id, 10);
 
   if (isNaN(ticketId)) {
     return badRequest(res, 'Invalid ticket ID');
+  }
+
+  // Check publishing requirements
+  const publishCheck = await checkPublishingRequirements(
+    tenant.appId,
+    tenant.tenantId,
+    tenant.userId,
+    'published' // Force check for publish action
+  );
+  if (!publishCheck.canPublish) {
+    return forbidden(res, publishCheck.error!);
   }
 
   const ticket = await ticketsService.publishTicket(tenant.appId, tenant.tenantId, ticketId);
