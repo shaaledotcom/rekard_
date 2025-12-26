@@ -2,9 +2,13 @@ import { Response, NextFunction, Request } from 'express';
 import { getSupabaseClient } from './supabase.js';
 import type { AppRequest, TenantContext } from '../../shared/types/index.js';
 import { log } from '../../shared/middleware/logger.js';
-import { isLocalOrMainDomain, TENANT_PUBLIC } from './constants.js';
+import { isLocalOrMainDomain } from './constants.js';
 import type { DomainOwner, DomainOwnerProvider } from './types.js';
 import * as tenantService from '../tenant/service.js';
+
+// System tenant UUID - used for unauthenticated/public requests
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000000';
+const DEFAULT_APP_ID = 'public';
 
 // Extended request with user info
 export interface AuthenticatedRequest extends AppRequest {
@@ -161,9 +165,9 @@ export const resolveTenantContext = async (
   if (!userId) {
     return {
       userId: '',
-      tenantId: '',
+      tenantId: SYSTEM_TENANT_ID,
       tenantUserId: '',
-      appId: TENANT_PUBLIC,
+      appId: DEFAULT_APP_ID,
       isPro: false,
       fromDomain: false,
       resolvedFrom: 'default',
@@ -195,12 +199,12 @@ export const tenantContextMiddleware = async (
     next();
   } catch (error) {
     log.error('Error in tenantContextMiddleware', error);
-    // Fallback to empty tenant
+    // Fallback to system tenant
     req.tenant = {
       userId: req.userId || '',
-      tenantId: '',
+      tenantId: SYSTEM_TENANT_ID,
       tenantUserId: req.userId || '',
-      appId: TENANT_PUBLIC,
+      appId: DEFAULT_APP_ID,
       isPro: false,
       fromDomain: false,
       resolvedFrom: 'default',

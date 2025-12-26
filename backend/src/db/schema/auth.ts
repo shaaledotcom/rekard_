@@ -1,5 +1,9 @@
 import { pgTable, uuid, varchar, timestamp, index, unique } from 'drizzle-orm/pg-core';
 
+// System tenant UUID - used for global/public resources
+export const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000000';
+export const DEFAULT_APP_ID = 'public';
+
 // Roles table
 export const roles = pgTable('roles', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -25,8 +29,8 @@ export const rolePermissions = pgTable('role_permissions', {
 // User metadata table
 export const userMetadata = pgTable('user_metadata', {
   userId: varchar('user_id', { length: 255 }).primaryKey(), // Supabase user ID
-  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull().default('public'),
+  appId: varchar('app_id', { length: 255 }).notNull().default(DEFAULT_APP_ID),
+  tenantId: varchar('tenant_id', { length: 255 }).notNull().default(SYSTEM_TENANT_ID),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
@@ -39,7 +43,7 @@ export const userRoles = pgTable('user_roles', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: varchar('user_id', { length: 255 }).notNull(), // Supabase user ID
   roleId: uuid('role_id').notNull().references(() => roles.id, { onDelete: 'cascade' }),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull().default('public'),
+  tenantId: varchar('tenant_id', { length: 255 }).notNull().default(SYSTEM_TENANT_ID),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({

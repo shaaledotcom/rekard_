@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { env } from '../../config/env.js';
 import { log } from '../../shared/middleware/logger.js';
 import { db, roles, userRoles, userMetadata, rolePermissions } from '../../db/index';
-import { ROLE_PRODUCER, ROLE_VIEWER, ROLE_ADMIN, DEFAULT_ROLE_PERMISSIONS } from './constants.js';
+import { ROLE_PRODUCER, ROLE_VIEWER, ROLE_ADMIN, DEFAULT_ROLE_PERMISSIONS, SYSTEM_TENANT_ID, DEFAULT_APP_ID } from './constants.js';
 
 // Domain owner provider (will be set from configuration service)
 let domainOwnerProvider: ((host: string) => Promise<{ userId: string } | null>) | null = null;
@@ -135,8 +135,8 @@ export const assignDefaultRoleToUser = async (
   userId: string,
   service: string,
   xHost: string,
-  appId: string = 'public',
-  tenantId: string = 'public'
+  appId: string = DEFAULT_APP_ID,
+  tenantId: string = SYSTEM_TENANT_ID
 ): Promise<void> => {
   try {
     let tenantIdValue = tenantId;

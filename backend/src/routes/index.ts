@@ -11,6 +11,7 @@ import { getUserMetadata, requireSession } from '../domains/auth/index.js';
 import type { AuthenticatedRequest } from '../domains/auth/index.js';
 import * as preferencesService from '../domains/preferences/service.js';
 import { asyncHandler } from '../shared/index.js';
+import { SYSTEM_TENANT_ID, DEFAULT_APP_ID } from '../domains/auth/constants.js';
 
 const router = Router();
 
@@ -44,8 +45,8 @@ router.put('/v1/preferences', requireSession, asyncHandler(async (req: Authentic
   }
 
   const metadata = await getUserMetadata(userId);
-  const appId = metadata.appId || 'public';
-  const tenantId = metadata.tenantId || 'public';
+  const appId = metadata.appId || DEFAULT_APP_ID;
+  const tenantId = metadata.tenantId || SYSTEM_TENANT_ID;
 
   const { theme, language, timezone, notifications_enabled } = req.body;
 

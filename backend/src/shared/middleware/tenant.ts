@@ -3,8 +3,9 @@ import type { AppRequest, TenantContext, TenantResolvedFrom } from '../types/ind
 import * as tenantService from '../../domains/tenant/service.js';
 import { log } from './logger.js';
 
-const DEFAULT_APP_ID = 'public';
-const DEFAULT_TENANT_ID = '';
+// System tenant UUID - used for unauthenticated/public requests
+export const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000000';
+export const DEFAULT_APP_ID = 'public';
 
 // Extended request with userId from auth middleware
 interface RequestWithAuth extends AppRequest {
@@ -53,7 +54,7 @@ export const extractTenantContext = async (req: AppRequest): Promise<TenantConte
   
   // Priority 2: Header-based (API calls with explicit tenant UUID)
   const headerTenantId = req.headers['x-tenant-id'] as string;
-  if (headerTenantId && headerTenantId !== DEFAULT_TENANT_ID) {
+  if (headerTenantId && headerTenantId !== SYSTEM_TENANT_ID) {
     try {
       // Check if it's a UUID (tenant.id) or user ID
       const tenant = await tenantService.getTenantById(headerTenantId);
@@ -92,10 +93,10 @@ export const extractTenantContext = async (req: AppRequest): Promise<TenantConte
     }
   }
   
-  // Priority 4: Default (unauthenticated or fallback)
+  // Priority 4: Default (unauthenticated or fallback) - use system tenant
   return {
     userId,
-    tenantId: DEFAULT_TENANT_ID,
+    tenantId: SYSTEM_TENANT_ID,
     tenantUserId: '',
     appId: DEFAULT_APP_ID,
     isPro: false,
@@ -113,9 +114,9 @@ export const extractTenantContextSync = (req: AppRequest): TenantContext => {
   const userId = authReq.userId || '';
   const fromDomain = req.headers['x-from-domain'] === 'true';
   
-  // Use header values directly (sync)
+  // Use header values directly (sync) - fall back to system tenant
   const appId = req.headers['x-app-id'] as string || DEFAULT_APP_ID;
-  const tenantId = req.headers['x-tenant-id'] as string || DEFAULT_TENANT_ID;
+  const tenantId = req.headers['x-tenant-id'] as string || SYSTEM_TENANT_ID;
   const tenantUserId = req.headers['x-tenant-user-id'] as string || userId;
   const isPro = req.headers['x-is-pro'] === 'true';
   

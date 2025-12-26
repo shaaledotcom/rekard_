@@ -1,12 +1,14 @@
-// Database seeding - default billing plans
+// Database seeding - default tenant and billing plans
 import 'dotenv/config';
 import { eq, and } from 'drizzle-orm';
-import { db, billingPlans } from './index.js';
+import { db, billingPlans, tenants } from './index.js';
 import { log } from '../shared/middleware/logger.js';
 
-// Default app/tenant for global plans (must match tenant middleware defaults)
-const DEFAULT_APP_ID = 'public';
-const DEFAULT_TENANT_ID = 'public';
+// System/Default tenant UUID - used for global/public resources
+// This is a fixed UUID that represents the "system" or "public" tenant
+export const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000000';
+export const SYSTEM_USER_ID = 'system';
+export const DEFAULT_APP_ID = 'public';
 
 // Default billing plans
 const DEFAULT_PLANS = [
@@ -50,12 +52,44 @@ const DEFAULT_PLANS = [
 ];
 
 /**
+ * Creates or gets the system tenant
+ * This tenant is used for global/public resources like default billing plans
+ */
+export const ensureSystemTenant = async (): Promise<{ id: string; created: boolean }> => {
+  // Check if system tenant exists
+  const [existing] = await db
+    .select()
+    .from(tenants)
+    .where(eq(tenants.id, SYSTEM_TENANT_ID))
+    .limit(1);
+
+  if (existing) {
+    return { id: existing.id, created: false };
+  }
+
+  // Create system tenant with fixed UUID
+  await db.insert(tenants).values({
+    id: SYSTEM_TENANT_ID,
+    userId: SYSTEM_USER_ID,
+    appId: DEFAULT_APP_ID,
+    isPro: false,
+    status: 'active',
+  });
+
+  log.info(`Created system tenant with ID: ${SYSTEM_TENANT_ID}`);
+  return { id: SYSTEM_TENANT_ID, created: true };
+};
+
+/**
  * Seeds default billing plans if they don't exist
  */
 export const seedDefaultPlans = async (
   appId: string = DEFAULT_APP_ID,
-  tenantId: string = DEFAULT_TENANT_ID
+  tenantId: string = SYSTEM_TENANT_ID
 ): Promise<{ created: number; skipped: number }> => {
+  // Ensure system tenant exists first (FK constraint)
+  await ensureSystemTenant();
+
   let created = 0;
   let skipped = 0;
 
@@ -66,7 +100,6 @@ export const seedDefaultPlans = async (
       .from(billingPlans)
       .where(
         and(
-          eq(billingPlans.appId, appId),
           eq(billingPlans.tenantId, tenantId),
           eq(billingPlans.name, plan.name)
         )
@@ -109,9 +142,12 @@ const runSeed = async (): Promise<void> => {
   try {
     log.info('Starting database seeding...');
     
-    const result = await seedDefaultPlans();
+    const tenantResult = await ensureSystemTenant();
+    log.info(`System tenant: ${tenantResult.created ? 'created' : 'already exists'}`);
     
-    log.info(`Seeding completed: ${result.created} created, ${result.skipped} skipped`);
+    const planResult = await seedDefaultPlans();
+    log.info(`Plans seeding completed: ${planResult.created} created, ${planResult.skipped} skipped`);
+    
     process.exit(0);
   } catch (error) {
     log.error('Seeding failed', error);
@@ -125,5 +161,5 @@ if (isMainModule) {
   runSeed();
 }
 
-export { DEFAULT_PLANS, DEFAULT_APP_ID, DEFAULT_TENANT_ID };
+export { DEFAULT_PLANS };
 
