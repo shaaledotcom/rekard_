@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { PublishingRestrictionAlert } from "@/components/ui/upgrade-button";
+import { usePlan } from "@/hooks/usePlan";
 import { 
   Globe2, 
   Settings2,
@@ -12,7 +14,8 @@ import {
   MapPin,
   X,
   Search,
-  Plus
+  Plus,
+  AlertTriangle
 } from "lucide-react";
 import type { TicketFormData } from "./types";
 import { STATUS_OPTIONS } from "./types";
@@ -55,8 +58,13 @@ export function SettingsSection({
 }: SettingsSectionProps) {
   const [countrySearch, setCountrySearch] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { canPublish, hasActivePlan, hasTickets } = usePlan();
 
   const geoblockingCountries = formData.geoblocking_countries || [];
+  
+  // Check if we should show publishing warning (when trying to set status to published but can't)
+  const isAttemptingPublish = formData.status === "published" || formData.status === "sold_out";
+  const showPublishingWarning = !canPublish && isAttemptingPublish;
 
   // Filter countries based on search and already selected
   const filteredCountries = COUNTRY_OPTIONS.filter((country) => {
@@ -105,8 +113,13 @@ export function SettingsSection({
         </p>
       </div>
 
+      {/* Publishing Restriction Alert */}
+      {showPublishingWarning && (
+        <PublishingRestrictionAlert />
+      )}
+
       {/* Status Selection */}
-      <div className="space-y-3 p-4 rounded-xl bg-secondary border border-border">
+      <div className={`space-y-3 p-4 rounded-xl bg-secondary border ${showPublishingWarning ? "border-destructive/30" : "border-border"}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${

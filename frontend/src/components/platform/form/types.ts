@@ -8,7 +8,7 @@ import type {
 } from "@/store/api";
 
 // Form step types
-export type FormStep = "header" | "footer" | "home" | "watch-page";
+export type FormStep = "configurations" | "header" | "footer" | "home" | "watch-page";
 
 export interface StepConfig {
   key: FormStep;
@@ -17,6 +17,7 @@ export interface StepConfig {
 }
 
 export const FORM_STEPS: StepConfig[] = [
+  { key: "configurations", title: "Configurations", description: "Pro Features: Payment Gateway, Domain & Payment Receiver" },
   { key: "header", title: "Header", description: "Logo, Cart & Coupon Settings" },
   { key: "footer", title: "Footer", description: "Legal Info, Policies & Social Links" },
   { key: "home", title: "Home", description: "Banner Images & Language" },

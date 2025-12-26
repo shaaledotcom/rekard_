@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { UpgradeButton } from "@/components/ui/upgrade-button";
 import {
   CheckCircle,
   Circle,
@@ -10,6 +11,7 @@ import {
   Save,  
   Loader2,
 } from "lucide-react";
+import { ConfigurationsSection } from "./ConfigurationsSection";
 import { HeaderSection } from "./HeaderSection";
 import { FooterSection } from "./FooterSection";
 import { HomeSection } from "./HomeSection";
@@ -38,14 +40,17 @@ export function PlatformForm({
   onSubmit,
 }: PlatformFormProps) {
   // Step state
-  const [currentStep, setCurrentStep] = useState<FormStep>("header");
-  const [visitedSteps, setVisitedSteps] = useState<Set<FormStep>>(new Set(["header"]));
+  const [currentStep, setCurrentStep] = useState<FormStep>("configurations");
+  const [visitedSteps, setVisitedSteps] = useState<Set<FormStep>>(new Set(["configurations"]));
 
   const currentStepIndex = FORM_STEPS.findIndex((step) => step.key === currentStep);
 
   // Step validation - platform settings are mostly optional
   const isStepValid = (step: FormStep): boolean => {
     switch (step) {
+      case "configurations":
+        // Configurations is always valid (Pro features have their own validation)
+        return true;
       case "header":
         // Header is always valid (cart and coupons are optional)
         return true;
@@ -112,6 +117,9 @@ export function PlatformForm({
   // Render step content
   const renderStepContent = () => {
     switch (currentStep) {
+      case "configurations":
+        return <ConfigurationsSection />;
+
       case "header":
         return (
           <HeaderSection
@@ -200,24 +208,26 @@ export function PlatformForm({
       </div>
 
       {/* Navigation Actions */}
-      {!isReadOnly && (
-        <div className="flex items-center justify-between bg-secondary rounded-xl p-4 border border-border">
-          <div className="flex items-center gap-3">
-            {currentStepIndex > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePreviousStep}
-                className="bg-background border-border text-foreground hover:bg-muted"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Previous
-              </Button>
-            )}
-          </div>
+      <div className="flex items-center justify-between bg-secondary rounded-xl p-4 border border-border">
+        <div className="flex items-center gap-3">
+          {currentStepIndex > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePreviousStep}
+              className="bg-background border-border text-foreground hover:bg-muted"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+          )}
+        </div>
 
-          <div className="flex items-center gap-3">
-            {/* Save button - available on all steps */}
+        <div className="flex items-center gap-3">
+          {/* Save or Upgrade button */}
+          {isReadOnly ? (
+            <UpgradeButton tooltipText="Upgrade to Pro to save platform settings" />
+          ) : (
             <Button
               type="button"
               variant="outline"
@@ -237,21 +247,21 @@ export function PlatformForm({
                 </>
               )}
             </Button>
+          )}
 
-            {/* Next button - only on non-final steps */}
-            {currentStepIndex < FORM_STEPS.length - 1 && (
-              <Button
-                type="button"
-                onClick={handleNextStep}
-                className="bg-foreground hover:bg-foreground/90 text-background"
-              >
-                Next
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            )}
-          </div>
+          {/* Next button - only on non-final steps */}
+          {currentStepIndex < FORM_STEPS.length - 1 && (
+            <Button
+              type="button"
+              onClick={handleNextStep}
+              className="bg-foreground hover:bg-foreground/90 text-background"
+            >
+              Next
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

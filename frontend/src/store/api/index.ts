@@ -139,3 +139,27 @@ export type {
   RazorpayVerifyResponse,
 } from "./paymentsApi";
 
+// Configuration API (Pro Features)
+export {
+  configurationApi,
+  useGetPaymentGatewaySettingsQuery,
+  useCreatePaymentGatewaySettingsMutation,
+  useUpdatePaymentGatewaySettingsMutation,
+  useDeletePaymentGatewaySettingsMutation,
+  useGetDomainSettingsQuery,
+  useCreateDomainSettingsMutation,
+  useUpdateDomainSettingsMutation,
+  useDeleteDomainSettingsMutation,
+  useGetPaymentReceiverSettingsQuery,
+  useCreatePaymentReceiverSettingsMutation,
+  useUpdatePaymentReceiverSettingsMutation,
+  useDeletePaymentReceiverSettingsMutation,
+} from "./configurationApi";
+export type {
+  PaymentGatewaySettings,
+  DomainSettings,
+  PaymentReceiverSettings,
+  SmsGatewaySettings,
+  EmailGatewaySettings,
+} from "./configurationApi";
+
