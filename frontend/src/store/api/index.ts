@@ -1,17 +1,24 @@
-export { store } from "./store";
-export type { RootState, AppDispatch } from "./store";
-export { useAppDispatch, useAppSelector } from "./hooks";
+// Base API
+export { api, tagTypes } from "./baseApi";
 
-// Re-export API
+// User API
 export {
-  api,
-  tagTypes,
-  // User hooks
+  userApi,
   useGetMeQuery,
   useGetPreferencesQuery,
   useUpdatePreferencesMutation,
   useHealthCheckQuery,
-  // Events hooks
+} from "./userApi";
+export type {
+  UserResponse,
+  PreferencesResponse,
+  UpdatePreferencesRequest,
+  HealthResponse,
+} from "./userApi";
+
+// Events API
+export {
+  eventsApi,
   useGetEventsQuery,
   useGetEventQuery,
   useCreateEventMutation,
@@ -20,41 +27,8 @@ export {
   usePublishEventMutation,
   useCancelEventMutation,
   useCompleteEventMutation,
-  // Tickets hooks
-  useGetTicketsQuery,
-  useGetTicketQuery,
-  useCreateTicketMutation,
-  useUpdateTicketMutation,
-  useDeleteTicketMutation,
-  usePublishTicketMutation,
-  useArchiveTicketMutation,
-  // Billing hooks
-  useGetBillingPlansQuery,
-  useGetPlanByIdQuery,
-  useGetUserWalletQuery,
-  useGetWalletTransactionsQuery,
-  useGetTicketPricingQuery,
-  usePurchaseTicketsMutation,
-  useGetUserSubscriptionQuery,
-  usePurchasePlanMutation,
-  useCancelSubscriptionMutation,
-  useGetInvoicesQuery,
-  // Platform hooks
-  useGetPlatformSettingsQuery,
-  useUpdatePlatformSettingsMutation,
-  // Payments hooks
-  useCreateRazorpayOrderMutation,
-  useVerifyRazorpayPaymentMutation,
-} from "./api";
-
-// Re-export types
+} from "./eventsApi";
 export type {
-  // User types
-  UserResponse,
-  PreferencesResponse,
-  UpdatePreferencesRequest,
-  HealthResponse,
-  // Events types
   Event,
   EventStatus,
   EventListResponse,
@@ -62,7 +36,20 @@ export type {
   EventQueryParams,
   CreateEventRequest,
   UpdateEventRequest,
-  // Tickets types
+} from "./eventsApi";
+
+// Tickets API
+export {
+  ticketsApi,
+  useGetTicketsQuery,
+  useGetTicketQuery,
+  useCreateTicketMutation,
+  useUpdateTicketMutation,
+  useDeleteTicketMutation,
+  usePublishTicketMutation,
+  useArchiveTicketMutation,
+} from "./ticketsApi";
+export type {
   Ticket,
   TicketStatus,
   TicketListResponse,
@@ -78,7 +65,23 @@ export type {
   CouponFormRequest,
   PricingFormRequest,
   SponsorFormRequest,
-  // Billing types
+} from "./ticketsApi";
+
+// Billing API
+export {
+  billingApi,
+  useGetBillingPlansQuery,
+  useGetPlanByIdQuery,
+  useGetUserWalletQuery,
+  useGetWalletTransactionsQuery,
+  useGetTicketPricingQuery,
+  usePurchaseTicketsMutation,
+  useGetUserSubscriptionQuery,
+  usePurchasePlanMutation,
+  useCancelSubscriptionMutation,
+  useGetInvoicesQuery,
+} from "./billingApi";
+export type {
   BillingPlan,
   BillingPlanListResponse,
   BillingPlanResponse,
@@ -102,7 +105,15 @@ export type {
   InvoiceListResponse,
   InvoiceQueryParams,
   PurchasePlanResponse,
-  // Platform types
+} from "./billingApi";
+
+// Platform API
+export {
+  platformApi,
+  useGetPlatformSettingsQuery,
+  useUpdatePlatformSettingsMutation,
+} from "./platformApi";
+export type {
   PlatformSettings,
   PlatformSettingsResponse,
   UpdatePlatformSettingsRequest,
@@ -113,11 +124,18 @@ export type {
   SupportChannelType,
   SocialLink,
   PlatformCouponCode,
-  // Payments types
+} from "./platformApi";
+
+// Payments API (Razorpay)
+export {
+  paymentsApi,
+  useCreateRazorpayOrderMutation,
+  useVerifyRazorpayPaymentMutation,
+} from "./paymentsApi";
+export type {
   RazorpayOrderRequest,
   RazorpayOrderResponse,
   RazorpayVerifyRequest,
   RazorpayVerifyResponse,
-} from "./api";
+} from "./paymentsApi";
 
-export { setAuth, clearAuth, setLoading } from "./slices/authSlice";

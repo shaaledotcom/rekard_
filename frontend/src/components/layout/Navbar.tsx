@@ -14,6 +14,8 @@ import {
   X,
   ChevronDown,
   Zap,
+  CreditCard,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +23,8 @@ import { useAuth } from "@/hooks/useAuth";
 const navItems = [
   { href: "/producer/events", label: "Events", icon: Calendar },
   { href: "/producer/tickets", label: "Tickets", icon: Ticket },
+  { href: "/producer/platform", label: "Platform", icon: Globe },
+  { href: "/producer/billing", label: "Billing", icon: CreditCard },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
