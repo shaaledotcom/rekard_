@@ -14,6 +14,7 @@ import {
   Zap,
   CreditCard,
   Globe,
+  Users,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "./ThemeToggle";
@@ -21,6 +22,7 @@ import { ThemeToggle } from "./ThemeToggle";
 const navItems = [
   { href: "/producer/events", label: "Events", icon: Calendar },
   { href: "/producer/tickets", label: "Tickets", icon: Ticket },
+  { href: "/producer/viewers", label: "Viewers", icon: Users },
   { href: "/producer/platform", label: "Platform", icon: Globe },
   { href: "/producer/billing", label: "Billing", icon: CreditCard },
 ];

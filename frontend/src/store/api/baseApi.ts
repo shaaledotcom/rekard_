@@ -27,6 +27,8 @@ export const tagTypes = [
   "Configuration",
   "Platform",
   "Currency",
+  "Viewers",
+  "ViewerAccess",
 ] as const;
 
 // API slice with RTK Query

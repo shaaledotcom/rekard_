@@ -163,3 +163,32 @@ export type {
   EmailGatewaySettings,
 } from "./configurationApi";
 
+// Viewers API
+export {
+  viewersApi,
+  useGetViewerAccessQuery,
+  useGetViewerAccessByIdQuery,
+  useGrantAccessMutation,
+  useBulkImportAccessMutation,
+  useValidateCSVMutation,
+  useRevokeAccessMutation,
+  useDeleteAccessMutation,
+  useGetTicketAccessQuery,
+  useGetViewersQuery,
+  useGetAccessStatsQuery,
+} from "./viewersApi";
+export type {
+  ViewerAccess,
+  ViewerAccessStatus,
+  ViewerAccessListResponse,
+  ViewerMapping,
+  ViewerMappingListResponse,
+  ViewerAccessQueryParams,
+  GrantAccessRequest,
+  GrantAccessResult,
+  BulkImportRequest,
+  BulkImportResult,
+  ValidateCSVResult,
+  AccessStats,
+} from "./viewersApi";
+

@@ -54,3 +54,23 @@ export type {
   TenantScopedTable,
 } from './tenant/types.js';
 
+// Viewers domain
+export { viewersRepository, viewersService } from './viewers/index.js';
+export type {
+  ViewerAccess,
+  ViewerAccessStatus,
+  ViewerAccessListResponse,
+  ViewerAccessFilter,
+  ViewerMapping,
+  Viewer,
+  ViewerListResponse,
+  GrantAccessRequest,
+  GrantAccessResult,
+  BulkGrantAccessRequest,
+  RevokeAccessRequest,
+  UpdateAccessRequest,
+  ViewerFilter,
+  CSVParseResult,
+  ParsedCSVRow,
+} from './viewers/types.js';
+
