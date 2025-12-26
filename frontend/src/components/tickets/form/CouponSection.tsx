@@ -1,0 +1,333 @@
+"use client";
+
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { 
+  Tag, 
+  Plus, 
+  Pencil, 
+  Trash2, 
+  Percent,
+  Calendar,
+  Hash,
+  AlertCircle
+} from "lucide-react";
+import type { TicketFormData, CouponFormData } from "./types";
+
+interface CouponSectionProps {
+  formData: TicketFormData;
+  onChange: (data: Partial<TicketFormData>) => void;
+  isReadOnly?: boolean;
+}
+
+const DEFAULT_COUPON: CouponFormData = {
+  title: "",
+  code: "",
+  count: 100,
+  activation_time: "",
+  expiry_time: "",
+  discount: "",
+};
+
+export function CouponSection({
+  formData,
+  onChange,
+  isReadOnly = false,
+}: CouponSectionProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [couponForm, setCouponForm] = useState<CouponFormData>(DEFAULT_COUPON);
+
+  const coupons = formData.coupons || [];
+
+  const handleAdd = () => {
+    setCouponForm(DEFAULT_COUPON);
+    setEditIndex(null);
+    setDialogOpen(true);
+  };
+
+  const handleEdit = (index: number) => {
+    setCouponForm(coupons[index]);
+    setEditIndex(index);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (index: number) => {
+    onChange({ coupons: coupons.filter((_, i) => i !== index) });
+  };
+
+  const handleSubmit = () => {
+    if (!couponForm.title || !couponForm.code || !couponForm.discount) {
+      return;
+    }
+
+    if (editIndex !== null) {
+      const newCoupons = [...coupons];
+      newCoupons[editIndex] = couponForm;
+      onChange({ coupons: newCoupons });
+    } else {
+      onChange({ coupons: [...coupons, couponForm] });
+    }
+
+    setDialogOpen(false);
+    setCouponForm(DEFAULT_COUPON);
+    setEditIndex(null);
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return null;
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return null;
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Section Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <Label className="text-white/70 text-sm font-medium flex items-center gap-2">
+            <Tag className="h-4 w-4 text-emerald-400" />
+            Coupon Codes
+          </Label>
+          <p className="text-xs text-white/40 mt-1">
+            Create discount codes for your viewers
+          </p>
+        </div>
+        {!isReadOnly && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAdd}
+            className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Coupon
+          </Button>
+        )}
+      </div>
+
+      {/* Coupons List */}
+      <div className="border-2 border-dashed border-white/10 rounded-xl overflow-hidden">
+        {coupons.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <Tag className="h-12 w-12 text-white/20 mb-3" />
+            <p className="text-white/50">No coupon codes added yet</p>
+            {!isReadOnly && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleAdd}
+                className="mt-3 text-emerald-400 hover:text-emerald-300"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create your first coupon
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="divide-y divide-white/5">
+            {coupons.map((coupon, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="font-medium text-white">{coupon.title}</span>
+                    <Badge variant="secondary" className="font-mono">
+                      {coupon.code}
+                    </Badge>
+                    <Badge variant="default" className="bg-emerald-500/20 text-emerald-400">
+                      {coupon.discount}% off
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-white/40">
+                    <span className="flex items-center gap-1">
+                      <Hash className="h-3 w-3" />
+                      {coupon.count} uses
+                    </span>
+                    {coupon.activation_time && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        From: {formatDate(coupon.activation_time) || "N/A"}
+                      </span>
+                    )}
+                    {coupon.expiry_time && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Until: {formatDate(coupon.expiry_time) || "N/A"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {!isReadOnly && (
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(index)}
+                      className="h-8 w-8 text-white/50 hover:text-white"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(index)}
+                      className="h-8 w-8 text-white/50 hover:text-red-400"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Coupon Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-[#12121a] border-white/10 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-white">
+              {editIndex !== null ? "Edit Coupon" : "Add Coupon"}
+            </DialogTitle>
+            <DialogDescription className="text-white/50">
+              Create a discount code for your viewers
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-white/70 text-sm">Title *</Label>
+                <Input
+                  value={couponForm.title}
+                  onChange={(e) => setCouponForm({ ...couponForm, title: e.target.value })}
+                  placeholder="Early Bird Discount"
+                  className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/70 text-sm">Code *</Label>
+                <Input
+                  value={couponForm.code}
+                  onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                  placeholder="EARLY20"
+                  className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-lg font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-white/70 text-sm">Usage Limit</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={couponForm.count || ""}
+                  onChange={(e) => setCouponForm({ ...couponForm, count: parseInt(e.target.value) || 0 })}
+                  placeholder="100"
+                  className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/70 text-sm">Discount % *</Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={couponForm.discount || ""}
+                    onChange={(e) => setCouponForm({ ...couponForm, discount: e.target.value })}
+                    placeholder="20"
+                    className="h-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-lg"
+                  />
+                  <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-white/70 text-sm">Activation Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={couponForm.activation_time}
+                  onChange={(e) => setCouponForm({ ...couponForm, activation_time: e.target.value })}
+                  className="h-10 bg-white/5 border-white/10 text-white rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/70 text-sm">Expiry Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={couponForm.expiry_time}
+                  onChange={(e) => setCouponForm({ ...couponForm, expiry_time: e.target.value })}
+                  className="h-10 bg-white/5 border-white/10 text-white rounded-lg"
+                />
+              </div>
+            </div>
+
+            {(!couponForm.title || !couponForm.code || !couponForm.discount) && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <AlertCircle className="h-4 w-4 text-amber-400" />
+                <p className="text-xs text-amber-300">
+                  Please fill in all required fields (title, code, discount)
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setDialogOpen(false)}
+              className="text-white/70 hover:text-white hover:bg-white/5"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!couponForm.title || !couponForm.code || !couponForm.discount}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+            >
+              {editIndex !== null ? "Update" : "Add"} Coupon
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+

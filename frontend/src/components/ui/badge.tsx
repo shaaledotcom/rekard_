@@ -24,6 +24,9 @@ const badgeVariants = cva(
         live: "border-red-500/30 bg-red-500/10 text-red-500 animate-pulse",
         completed: "border-green-500/30 bg-green-500/10 text-green-500",
         cancelled: "border-gray-500/30 bg-gray-500/10 text-gray-500",
+        // Ticket-specific status variants
+        sold_out: "border-orange-500/30 bg-orange-500/10 text-orange-500",
+        archived: "border-slate-500/30 bg-slate-500/10 text-slate-400",
       },
     },
     defaultVariants: {

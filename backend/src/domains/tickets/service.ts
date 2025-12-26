@@ -13,15 +13,20 @@ import type {
 import { log } from '../../shared/middleware/logger.js';
 import { badRequest, notFound } from '../../shared/errors/app-error.js';
 
-// URL normalization
-const normalizeUrl = (url: string | undefined): string | undefined => {
+// URL slug normalization - store only the slug, not a full URL
+const normalizeUrlSlug = (url: string | undefined): string | undefined => {
   if (!url) return undefined;
-  const trimmed = url.trim();
-  if (!trimmed) return undefined;
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed;
-  }
-  return `https://${trimmed}`;
+  let slug = url.trim();
+  if (!slug) return undefined;
+  
+  // Remove any http/https prefix if user accidentally added it
+  slug = slug.replace(/^https?:\/\//, '');
+  // Remove any domain prefix if present (e.g., "watch.rekard.com/")
+  slug = slug.replace(/^[^/]+\//, '');
+  // Normalize to lowercase, alphanumeric and hyphens only
+  slug = slug.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+  
+  return slug || undefined;
 };
 
 // Validation
@@ -45,9 +50,9 @@ export const createTicket = async (
 ): Promise<Ticket> => {
   validateTicketRequest(data);
 
-  // Normalize URL
+  // Normalize URL slug
   if (data.url) {
-    data.url = normalizeUrl(data.url);
+    data.url = normalizeUrlSlug(data.url);
   }
 
   const ticket = await repo.createTicket(appId, tenantId, data);
@@ -81,9 +86,9 @@ export const updateTicket = async (
     throw badRequest('Total quantity must be greater than 0');
   }
 
-  // Normalize URL
+  // Normalize URL slug
   if (data.url) {
-    data.url = normalizeUrl(data.url);
+    data.url = normalizeUrlSlug(data.url);
   }
 
   const ticket = await repo.updateTicket(appId, tenantId, ticketId, data);

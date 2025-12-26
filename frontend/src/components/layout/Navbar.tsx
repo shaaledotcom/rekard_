@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { href: "/producer/events", label: "Events", icon: Calendar },
-  { href: "/tickets", label: "Tickets", icon: Ticket },
+  { href: "/producer/tickets", label: "Tickets", icon: Ticket },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

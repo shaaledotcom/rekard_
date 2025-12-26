@@ -1,0 +1,136 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { Navbar } from "@/components/layout";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useGetTicketsQuery,
+  useDeleteTicketMutation,
+  Ticket,
+  TicketStatus,
+} from "@/store/api";
+import {
+  TicketsBackground,
+  TicketsFilters,
+  TicketsGrid,
+  TicketsPagination,
+  DeleteTicketDialog,
+} from "@/components/tickets";
+
+function TicketsContent() {
+  const router = useRouter();
+  const { toast } = useToast();
+
+  // UI state
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | "">("");
+  const [page, setPage] = useState(1);
+
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+
+  // API hooks
+  const { data: ticketsData, isLoading } = useGetTicketsQuery({
+    page,
+    page_size: 9,
+    status: statusFilter || undefined,
+    search: search || undefined,
+    sort_by: "created_at",
+    sort_order: "desc",
+  });
+
+  const [deleteTicket, { isLoading: isDeleting }] = useDeleteTicketMutation();
+
+  const tickets = ticketsData?.data || [];
+  const totalPages = ticketsData?.total_pages || 1;
+
+  // Navigation handlers
+  const handleCreateClick = useCallback(() => {
+    router.push("/producer/tickets/create");
+  }, [router]);
+
+  const handleEditClick = useCallback((ticket: Ticket) => {
+    router.push(`/producer/tickets/${ticket.id}`);
+  }, [router]);
+
+  const handleDeleteClick = useCallback((ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setIsDeleteDialogOpen(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!selectedTicket) return;
+    
+    try {
+      await deleteTicket(selectedTicket.id).unwrap();
+      toast({
+        title: "Ticket Deleted",
+        description: "The ticket has been removed successfully.",
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedTicket(null);
+    } catch {
+      toast({
+        title: "Oops!",
+        description: "Couldn't delete the ticket. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [deleteTicket, selectedTicket, toast]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setIsDeleteDialogOpen(false);
+    setSelectedTicket(null);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+      <TicketsBackground />
+
+      <Navbar />
+
+      <main className="container mx-auto px-4 lg:px-6 py-8 relative z-10">
+        <TicketsFilters
+          search={search}
+          onSearchChange={setSearch}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+        />
+
+        <TicketsGrid
+          tickets={tickets}
+          isLoading={isLoading}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          onCreateClick={handleCreateClick}
+        />
+
+        <TicketsPagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      </main>
+
+      {/* Only Delete Dialog remains - Create/Edit are full pages now */}
+      <DeleteTicketDialog
+        isOpen={isDeleteDialogOpen}
+        ticketTitle={selectedTicket?.title || ""}
+        isDeleting={isDeleting}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+      />
+    </div>
+  );
+}
+
+export default function ProducerTicketsPage() {
+  return (
+    <ProtectedRoute>
+      <TicketsContent />
+    </ProtectedRoute>
+  );
+}
