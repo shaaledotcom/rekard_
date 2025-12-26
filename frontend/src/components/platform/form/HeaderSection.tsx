@@ -172,13 +172,13 @@ export function HeaderSection({
             type="button"
             onClick={() => !isReadOnly && onChange({ enable_cart: !formData.enable_cart })}
             disabled={isReadOnly}
-            className={`relative w-12 h-6 rounded-full transition-colors ${
-              formData.enable_cart ? "bg-foreground" : "bg-muted"
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
+              formData.enable_cart ? "bg-primary" : "bg-muted"
             } ${isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
           >
             <span
-              className={`absolute top-1 w-4 h-4 rounded-full bg-background transition-transform ${
-                formData.enable_cart ? "translate-x-6" : "translate-x-1"
+              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ${
+                formData.enable_cart ? "translate-x-5" : "translate-x-0.5"
               }`}
             />
           </button>
@@ -403,13 +403,13 @@ export function HeaderSection({
                             handleCouponChange(coupon.id, "is_active", !coupon.is_active)
                           }
                           disabled={isReadOnly}
-                          className={`relative w-10 h-5 rounded-full transition-colors ${
-                            coupon.is_active ? "bg-foreground" : "bg-muted"
+                          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
+                            coupon.is_active ? "bg-primary" : "bg-muted"
                           } ${isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                         >
                           <span
-                            className={`absolute top-0.5 w-4 h-4 rounded-full bg-background transition-transform ${
-                              coupon.is_active ? "translate-x-5" : "translate-x-0.5"
+                            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ${
+                              coupon.is_active ? "translate-x-4" : "translate-x-0.5"
                             }`}
                           />
                         </button>

@@ -6,8 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   Calendar,
   Ticket,
-  BarChart3,
-  Settings,
   LogOut,
   User,
   Menu,
@@ -25,8 +23,6 @@ const navItems = [
   { href: "/producer/tickets", label: "Tickets", icon: Ticket },
   { href: "/producer/platform", label: "Platform", icon: Globe },
   { href: "/producer/billing", label: "Billing", icon: CreditCard },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Navbar() {
@@ -113,16 +109,6 @@ export function Navbar() {
                         <p className="text-xs text-muted-foreground mt-0.5">Producer Account</p>
                       </div>
                       <div className="py-1">
-                        <Link
-                          href="/settings"
-                          className="flex items-center gap-3 px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary"
-                          onClick={() => setProfileMenuOpen(false)}
-                        >
-                          <Settings className="h-4 w-4" />
-                          Settings
-                        </Link>
-                      </div>
-                      <div className="border-t border-border pt-1 mt-1">
                         <button
                           onClick={() => {
                             setProfileMenuOpen(false);

@@ -1,72 +1,47 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
   Circle,
   ArrowRight,
   ArrowLeft,
-  Save,
+  Save,  
   Loader2,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { HeaderSection } from "./HeaderSection";
 import { FooterSection } from "./FooterSection";
 import { HomeSection } from "./HomeSection";
 import { WatchPageSection } from "./WatchPageSection";
 import {
   FORM_STEPS,
-  DEFAULT_PLATFORM_FORM_VALUES,
   type FormStep,
   type PlatformFormData,
 } from "./types";
 
 interface PlatformFormProps {
-  initialData?: Partial<PlatformFormData>;
+  formData: PlatformFormData;
   isLoading?: boolean;
   isSubmitting?: boolean;
   isReadOnly?: boolean;
+  onChange: (data: Partial<PlatformFormData>) => void;
   onSubmit: (data: PlatformFormData) => void;
 }
 
 export function PlatformForm({
-  initialData,
+  formData,
   isLoading = false,
   isSubmitting = false,
   isReadOnly = false,
+  onChange,
   onSubmit,
 }: PlatformFormProps) {
-  const { toast } = useToast();
-
-  // Form state
-  const [formData, setFormData] = useState<PlatformFormData>({
-    ...DEFAULT_PLATFORM_FORM_VALUES,
-    ...initialData,
-  });
-  const [hasInitialized, setHasInitialized] = useState(false);
-
   // Step state
   const [currentStep, setCurrentStep] = useState<FormStep>("header");
   const [visitedSteps, setVisitedSteps] = useState<Set<FormStep>>(new Set(["header"]));
 
   const currentStepIndex = FORM_STEPS.findIndex((step) => step.key === currentStep);
-
-  // Sync form data when initialData changes (e.g., after API fetch)
-  useEffect(() => {
-    if (initialData && !hasInitialized) {
-      setFormData({
-        ...DEFAULT_PLATFORM_FORM_VALUES,
-        ...initialData,
-      });
-      setHasInitialized(true);
-    }
-  }, [initialData, hasInitialized]);
-
-  // Form change handler
-  const handleFormChange = useCallback((data: Partial<PlatformFormData>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-  }, []);
 
   // Step validation - platform settings are mostly optional
   const isStepValid = (step: FormStep): boolean => {
@@ -141,7 +116,7 @@ export function PlatformForm({
         return (
           <HeaderSection
             formData={formData}
-            onChange={handleFormChange}
+            onChange={onChange}
             isReadOnly={isReadOnly}
           />
         );
@@ -150,7 +125,7 @@ export function PlatformForm({
         return (
           <FooterSection
             formData={formData}
-            onChange={handleFormChange}
+            onChange={onChange}
             isReadOnly={isReadOnly}
           />
         );
@@ -159,7 +134,7 @@ export function PlatformForm({
         return (
           <HomeSection
             formData={formData}
-            onChange={handleFormChange}
+            onChange={onChange}
             isReadOnly={isReadOnly}
           />
         );
@@ -168,7 +143,7 @@ export function PlatformForm({
         return (
           <WatchPageSection
             formData={formData}
-            onChange={handleFormChange}
+            onChange={onChange}
             isReadOnly={isReadOnly}
           />
         );
@@ -242,7 +217,29 @@ export function PlatformForm({
           </div>
 
           <div className="flex items-center gap-3">
-            {currentStepIndex < FORM_STEPS.length - 1 ? (
+            {/* Save button - available on all steps */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="bg-background border-border text-foreground hover:bg-muted disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </>
+              )}
+            </Button>
+
+            {/* Next button - only on non-final steps */}
+            {currentStepIndex < FORM_STEPS.length - 1 && (
               <Button
                 type="button"
                 onClick={handleNextStep}
@@ -250,25 +247,6 @@ export function PlatformForm({
               >
                 Next
                 <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="bg-foreground hover:bg-foreground/90 text-background disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Settings
-                  </>
-                )}
               </Button>
             )}
           </div>
