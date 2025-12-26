@@ -1,6 +1,5 @@
 // Components
 export { EventsBackground } from "./EventsBackground";
-export { EventsHeader } from "./EventsHeader";
 export { EventsFilters } from "./EventsFilters";
 export { EventCard } from "./EventCard";
 export { EventsGrid } from "./EventsGrid";

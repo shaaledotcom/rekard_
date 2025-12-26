@@ -1,10 +1,10 @@
 "use client";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { Navbar } from "@/components/layout";
 import { useEventsPage } from "@/hooks/useEventsPage";
 import {
   EventsBackground,
-  EventsHeader,
   EventsFilters,
   EventsGrid,
   EventsPagination,
@@ -53,9 +53,9 @@ function EventsContent() {
     <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
       <EventsBackground />
 
-      <EventsHeader onCreateClick={openCreateDialog} />
+      <Navbar />
 
-      <main className="container mx-auto px-6 py-8 relative z-10">
+      <main className="container mx-auto px-4 lg:px-6 py-8 relative z-10">
         <EventsFilters
           search={search}
           onSearchChange={setSearch}
