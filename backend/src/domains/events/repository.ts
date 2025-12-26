@@ -67,7 +67,7 @@ export const createEvent = async (
       signupDisabled: data.signup_disabled ?? false,
       purchaseDisabled: data.purchase_disabled ?? false,
       embed: data.embed,
-      status: data.status || 'draft',
+      status: data.status || 'published',
       watchUpto: data.watch_upto ? new Date(data.watch_upto) : undefined,
       archiveAfter: data.archive_after ? new Date(data.archive_after) : undefined,
       thumbnailImagePortrait: data.thumbnail_image_portrait,

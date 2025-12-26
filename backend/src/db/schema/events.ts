@@ -18,7 +18,7 @@ export const events = pgTable('events', {
   signupDisabled: boolean('signup_disabled').default(false),
   purchaseDisabled: boolean('purchase_disabled').default(false),
   embed: text('embed'),
-  status: varchar('status', { length: 50 }).default('draft'),
+  status: varchar('status', { length: 50 }).default('published'),
   watchUpto: timestamp('watch_upto'),
   archiveAfter: timestamp('archive_after'),
   thumbnailImagePortrait: text('thumbnail_image_portrait'),

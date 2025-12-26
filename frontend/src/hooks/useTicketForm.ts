@@ -3,6 +3,8 @@
 import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useFileUpload } from "@/hooks/useFileUpload";
 import {
   useGetTicketQuery,
   useGetEventsQuery,
@@ -20,6 +22,8 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
   const { ticketId } = options;
   const router = useRouter();
   const { toast } = useToast();
+  const { getAccessToken } = useAuth();
+  const { uploadFileSimple, uploadMedia, isUploading: isUploadingFile } = useFileUpload({ category: "tickets" });
 
   // Events pagination state
   const [eventsPage, setEventsPage] = useState(1);
@@ -96,9 +100,161 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
     };
   }, [ticketData]);
 
+  // Upload media files to S3 and return URLs
+  const uploadMediaFiles = useCallback(
+    async (
+      mediaFiles: MediaFiles,
+      formData: TicketFormData
+    ): Promise<{
+      thumbnail_image_portrait?: string;
+      featured_image?: string;
+      featured_video?: string;
+    }> => {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        throw new Error("Not authenticated");
+      }
+
+      const urls: {
+        thumbnail_image_portrait?: string;
+        featured_image?: string;
+        featured_video?: string;
+      } = {
+        // Keep existing URLs if no new file is uploaded
+        thumbnail_image_portrait: formData.thumbnail_image_portrait,
+        featured_image: formData.featured_image,
+        featured_video: formData.featured_video,
+      };
+
+      // Upload thumbnail image
+      if (mediaFiles.thumbnailImagePortrait) {
+        const result = await uploadFileSimple(
+          mediaFiles.thumbnailImagePortrait,
+          accessToken,
+          "tickets"
+        );
+        if (result.success && result.file) {
+          urls.thumbnail_image_portrait = result.file.url;
+        } else {
+          throw new Error(result.error || "Failed to upload thumbnail image");
+        }
+      }
+
+      // Upload featured image
+      if (mediaFiles.featuredImage) {
+        const result = await uploadFileSimple(
+          mediaFiles.featuredImage,
+          accessToken,
+          "tickets"
+        );
+        if (result.success && result.file) {
+          urls.featured_image = result.file.url;
+        } else {
+          throw new Error(result.error || "Failed to upload featured image");
+        }
+      }
+
+      // Upload featured video
+      if (mediaFiles.featuredVideo) {
+        const result = await uploadMedia(
+          mediaFiles.featuredVideo,
+          accessToken,
+          "tickets"
+        );
+        if (result.success && result.file) {
+          urls.featured_video = result.file.url;
+        } else {
+          throw new Error(result.error || "Failed to upload featured video");
+        }
+      }
+
+      return urls;
+    },
+    [getAccessToken, uploadFileSimple, uploadMedia]
+  );
+
+  // Upload sponsor images to S3
+  const uploadSponsorImages = useCallback(
+    async (
+      sponsors: TicketFormData["sponsors"]
+    ): Promise<Array<{ title: string; image_url?: string }>> => {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        throw new Error("Not authenticated");
+      }
+
+      const uploadedSponsors: Array<{ title: string; image_url?: string }> = [];
+
+      for (const sponsor of sponsors) {
+        if (sponsor.image_file) {
+          // Upload the sponsor image
+          const result = await uploadFileSimple(
+            sponsor.image_file,
+            accessToken,
+            "tickets"
+          );
+          if (result.success && result.file) {
+            uploadedSponsors.push({
+              title: sponsor.title,
+              image_url: result.file.url,
+            });
+          } else {
+            throw new Error(result.error || "Failed to upload sponsor image");
+          }
+        } else {
+          // Keep existing URL or no image
+          uploadedSponsors.push({
+            title: sponsor.title,
+            image_url: sponsor.image_url,
+          });
+        }
+      }
+
+      return uploadedSponsors;
+    },
+    [getAccessToken, uploadFileSimple]
+  );
+
   // Handle form submission
   const handleSubmit = useCallback(async (formData: TicketFormData, mediaFiles: MediaFiles) => {
     try {
+      // Upload media files to S3 first
+      const hasMediaFiles = 
+        mediaFiles.thumbnailImagePortrait || 
+        mediaFiles.featuredImage || 
+        mediaFiles.featuredVideo;
+      
+      const hasSponsorFiles = formData.sponsors.some((s) => s.image_file);
+
+      let mediaUrls: {
+        thumbnail_image_portrait?: string;
+        featured_image?: string;
+        featured_video?: string;
+      } = {
+        thumbnail_image_portrait: formData.thumbnail_image_portrait,
+        featured_image: formData.featured_image,
+        featured_video: formData.featured_video,
+      };
+
+      let uploadedSponsors: Array<{ title: string; image_url?: string }> = formData.sponsors.map((s) => ({
+        title: s.title,
+        image_url: s.image_url,
+      }));
+
+      // Upload media files if any
+      if (hasMediaFiles) {
+        toast({
+          title: "Uploading media...",
+          description: "Please wait while we upload your images and videos.",
+        });
+        mediaUrls = await uploadMediaFiles(mediaFiles, formData);
+      }
+
+      // Upload sponsor images if any
+      if (hasSponsorFiles) {
+        uploadedSponsors = await uploadSponsorImages(formData.sponsors);
+      }
+
       // Build the request data
       const mainPricing = formData.pricing[0] || { currency: "INR", price: 0 };
       
@@ -122,18 +278,18 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
           }))
         : undefined;
 
-      // Transform sponsors for API
-      const sponsorsForApi = formData.sponsors.length > 0
-        ? formData.sponsors.map((s) => ({
-            title: s.title,
-            image_url: s.image_url,
-          }))
+      // Transform sponsors for API with uploaded URLs
+      const sponsorsForApi = uploadedSponsors.length > 0
+        ? uploadedSponsors.filter((s) => s.title) // Only include sponsors with titles
         : undefined;
       
       const requestData = {
         title: formData.title,
         description: formData.description || undefined,
         url: formData.url || undefined,
+        thumbnail_image_portrait: mediaUrls.thumbnail_image_portrait || undefined,
+        featured_image: mediaUrls.featured_image || undefined,
+        featured_video: mediaUrls.featured_video || undefined,
         price: mainPricing.price,
         currency: mainPricing.currency,
         total_quantity: formData.total_quantity,
@@ -165,13 +321,14 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
       // Navigate back to tickets list
       router.push("/producer/tickets");
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       toast({
         title: "Oops!",
-        description: "Something went wrong. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
-  }, [ticketId, createTicket, updateTicket, router, toast]);
+  }, [ticketId, createTicket, updateTicket, router, toast, uploadMediaFiles, uploadSponsorImages]);
 
   // Handle cancel
   const handleCancel = useCallback(() => {
@@ -194,7 +351,7 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
     ticketId,
     initialData,
     isLoading: ticketLoading,
-    isSubmitting: isCreating || isUpdating,
+    isSubmitting: isCreating || isUpdating || isUploadingFile,
 
     // Events data
     events: eventsData?.data || [],
