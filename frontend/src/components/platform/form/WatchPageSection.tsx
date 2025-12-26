@@ -71,15 +71,6 @@ export function WatchPageSection({
           </div>
         </div>
       </div>
-
-      {/* Placeholder for future settings */}
-      <div className="text-center p-8 rounded-xl bg-secondary/30 border border-dashed border-border">
-        <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-        <p className="text-sm font-medium text-foreground mb-1">More Settings Coming Soon</p>
-        <p className="text-xs text-muted-foreground">
-          Additional watch page customization options will be available in future updates
-        </p>
-      </div>
     </div>
   );
 }
