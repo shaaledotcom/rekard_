@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAuth } from "@/hooks/useAuth";
 import { useGetMeQuery } from "@/store";
+import Link from "next/link";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -29,7 +30,7 @@ function DashboardContent() {
   const { data: meData, isLoading: isLoadingMe } = useGetMeQuery();
 
   const quickActions = [
-    { icon: Calendar, label: "Events", description: "Manage your events", href: "/events" },
+    { icon: Calendar, label: "Events", description: "Manage your events", href: "/producer/events" },
     { icon: Ticket, label: "Tickets", description: "View ticket sales", href: "/tickets" },
     { icon: BarChart3, label: "Analytics", description: "View performance", href: "/analytics" },
     { icon: Settings, label: "Settings", description: "Configure your account", href: "/settings" },
@@ -137,22 +138,21 @@ function DashboardContent() {
             <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {quickActions.map((action) => (
-                <Card
-                  key={action.label}
-                  className="cursor-pointer hover:bg-accent/50 transition-colors group"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        <action.icon className="h-5 w-5" />
+                <Link key={action.label} href={action.href}>
+                  <Card className="cursor-pointer hover:bg-accent/50 transition-colors group h-full">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <action.icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">{action.label}</h3>
+                          <p className="text-sm text-muted-foreground">{action.description}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-medium">{action.label}</h3>
-                        <p className="text-sm text-muted-foreground">{action.description}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </motion.div>

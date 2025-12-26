@@ -5,6 +5,8 @@ import { Request, Response, NextFunction } from 'express';
 export const securityMiddleware = helmet({
   contentSecurityPolicy: false, // Disable for API
   crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false, // Allow cross-origin requests
+  crossOriginOpenerPolicy: false,
 });
 
 // Request timeout middleware

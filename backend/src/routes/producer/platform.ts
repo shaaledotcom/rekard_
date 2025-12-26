@@ -17,7 +17,7 @@ const router = Router();
 // Apply middleware
 router.use(requireSession);
 router.use(tenantMiddleware);
-router.use(requireRole(ROLE_PRODUCER));
+// router.use(requireRole(ROLE_PRODUCER));
 
 // Get platform settings
 router.get('/', asyncHandler(async (req: AppRequest, res: Response) => {

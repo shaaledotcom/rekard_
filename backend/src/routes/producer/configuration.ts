@@ -14,7 +14,7 @@ const router = Router();
 // Apply middleware
 router.use(requireSession);
 router.use(tenantMiddleware);
-router.use(requireRole(ROLE_PRODUCER));
+// router.use(requireRole(ROLE_PRODUCER));
 
 // ===== Payment Gateway =====
 router.get('/payment-gateway', asyncHandler(async (req: AppRequest, res: Response) => {

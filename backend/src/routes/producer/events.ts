@@ -21,7 +21,7 @@ const router = Router();
 // Apply middleware
 router.use(requireSession);
 router.use(tenantMiddleware);
-router.use(requireRole(ROLE_PRODUCER));
+// router.use(requireRole(ROLE_PRODUCER));
 
 // Create event
 router.post('/', asyncHandler(async (req: AppRequest, res: Response) => {

@@ -1,11 +1,16 @@
 import cors from 'cors';
 import { env } from '../../config/env.js';
 
-// Always allow localhost regardless of config
+// Always allow localhost regardless of config (any port)
 const isLocalhost = (origin: string): boolean => {
   try {
     const url = new URL(origin);
-    return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    return (
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1' ||
+      url.hostname === '0.0.0.0' ||
+      url.hostname.endsWith('.localhost')
+    );
   } catch {
     return false;
   }
@@ -20,9 +25,9 @@ export const corsMiddleware = cors({
       return;
     }
 
-    // Always allow localhost
+    // Always allow localhost (any port)
     if (isLocalhost(origin)) {
-      callback(null, true);
+      callback(null, origin);
       return;
     }
 
@@ -41,8 +46,9 @@ export const corsMiddleware = cors({
     });
 
     if (allowed) {
-      callback(null, true);
+      callback(null, origin);
     } else {
+      console.warn(`CORS blocked origin: ${origin}`);
       callback(null, false);
     }
   },
@@ -56,6 +62,7 @@ export const corsMiddleware = cors({
     'X-Requested-With',
     'X-Organization-Id',
     'X-Host',
+    'X-Service',
   ],
   exposedHeaders: ['Authorization', 'X-Organization-Id'],
   maxAge: env.cors.maxAge,

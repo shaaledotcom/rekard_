@@ -55,8 +55,8 @@ export const createEvent = async (
       tenantId,
       title: data.title,
       description: data.description,
-      startDatetime: data.start_datetime,
-      endDatetime: data.end_datetime,
+      startDatetime: new Date(data.start_datetime),
+      endDatetime: new Date(data.end_datetime),
       language: data.language || 'en',
       isVod: data.is_vod ?? false,
       convertToVodAfterEvent: data.convert_to_vod_after_event ?? false,
@@ -69,7 +69,7 @@ export const createEvent = async (
       embed: data.embed,
       status: data.status || 'draft',
       watchUpto: data.watch_upto ? new Date(data.watch_upto) : undefined,
-      archiveAfter: data.archive_after,
+      archiveAfter: data.archive_after ? new Date(data.archive_after) : undefined,
       thumbnailImagePortrait: data.thumbnail_image_portrait,
       featuredImage: data.featured_image,
       featuredVideo: data.featured_video,
@@ -109,8 +109,8 @@ export const updateEvent = async (
 
   if (data.title !== undefined) updates.title = data.title;
   if (data.description !== undefined) updates.description = data.description;
-  if (data.start_datetime !== undefined) updates.startDatetime = data.start_datetime;
-  if (data.end_datetime !== undefined) updates.endDatetime = data.end_datetime;
+  if (data.start_datetime !== undefined) updates.startDatetime = new Date(data.start_datetime);
+  if (data.end_datetime !== undefined) updates.endDatetime = new Date(data.end_datetime);
   if (data.language !== undefined) updates.language = data.language;
   if (data.is_vod !== undefined) updates.isVod = data.is_vod;
   if (data.convert_to_vod_after_event !== undefined) updates.convertToVodAfterEvent = data.convert_to_vod_after_event;
@@ -122,8 +122,8 @@ export const updateEvent = async (
   if (data.purchase_disabled !== undefined) updates.purchaseDisabled = data.purchase_disabled;
   if (data.embed !== undefined) updates.embed = data.embed;
   if (data.status !== undefined) updates.status = data.status;
-  if (data.watch_upto !== undefined) updates.watchUpto = new Date(data.watch_upto);
-  if (data.archive_after !== undefined) updates.archiveAfter = data.archive_after;
+  if (data.watch_upto !== undefined) updates.watchUpto = data.watch_upto ? new Date(data.watch_upto) : null;
+  if (data.archive_after !== undefined) updates.archiveAfter = data.archive_after ? new Date(data.archive_after) : null;
   if (data.thumbnail_image_portrait !== undefined) updates.thumbnailImagePortrait = data.thumbnail_image_portrait;
   if (data.featured_image !== undefined) updates.featuredImage = data.featured_image;
   if (data.featured_video !== undefined) updates.featuredVideo = data.featured_video;

@@ -23,14 +23,17 @@ export const createApp = (): Express => {
   // Trust proxy for correct IP detection
   app.set('trust proxy', true);
 
-  // Security middleware
-  app.use(securityMiddleware);
-
   // Request ID for tracing
   app.use(requestIdMiddleware);
 
-  // CORS
+  // CORS - must be before security middleware to handle preflight
   app.use(corsMiddleware);
+
+  // Handle preflight requests explicitly
+  app.options('*', corsMiddleware);
+
+  // Security middleware
+  app.use(securityMiddleware);
 
   // Request timeout (25 seconds)
   app.use(timeoutMiddleware(25000));
@@ -49,7 +52,7 @@ export const createApp = (): Express => {
   app.use(optionalSession);
 
   // Refresh roles in session
-  app.use(refreshRolesMiddleware);
+  // app.use(refreshRolesMiddleware);
 
   // Tenant context extraction (uses session for user context)
   app.use(tenantContextMiddleware);

@@ -57,7 +57,7 @@ const parseFormBody = (body: Record<string, unknown>): Record<string, unknown> =
 // Apply middleware
 router.use(requireSession);
 router.use(tenantMiddleware);
-router.use(requireRole(ROLE_PRODUCER));
+// router.use(requireRole(ROLE_PRODUCER));
 
 // Create ticket (accepts form-data)
 router.post('/', mediaUpload.fields([

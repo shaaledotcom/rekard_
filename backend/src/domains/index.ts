@@ -35,3 +35,7 @@ export type { Currency, CreateCurrencyRequest, UpdateCurrencyRequest, CurrencyFi
 export { chatRepo, chatService, chatWebSocket } from './chat/index.js';
 export type { Message, CreateMessageRequest, UpdateMessageRequest, MessagesResponse, WsMessage } from './chat/types.js';
 
+// Uploads domain
+export { uploadsService } from './uploads/index.js';
+export type { UploadedFile, PresignedUrlRequest, PresignedUrlResponse, UploadResult, UploadCategory } from './uploads/types.js';
+
