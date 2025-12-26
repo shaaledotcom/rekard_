@@ -1,0 +1,52 @@
+{
+  "name": "rekard-tests",
+  "version": "1.0.0",
+  "description": "Test suite for Rekard - E2E, Integration, and API tests",
+  "main": "test-login-with-otp.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.config.ts integration/",
+    "test:events": "vitest run integration/events-api.test.ts",
+    "test:tickets": "vitest run integration/tickets-api.test.ts",
+    "test:currency": "vitest run integration/currency-api.test.ts",
+    "test:billing": "vitest run integration/billing-api.test.ts",
+    "test:configuration": "vitest run integration/configuration-api.test.ts",
+    "test:login": "node test-login-with-otp.js",
+    "test:otp": "node -e \"require('./test-login-with-otp.js').runLoginOtpTest()\"",
+    "install-deps": "npm install",
+    "start": "node test-login-with-otp.js"
+  },
+  "keywords": [
+    "authentication",
+    "testing",
+    "puppeteer",
+    "login",
+    "otp",
+    "api",
+    "rekard",
+    "integration",
+    "vitest"
+  ],
+  "author": "Rekard Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/ui": "^1.6.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shaale/rekard.git"
+  },
+  "dependencies": {
+    "puppeteer": "^19.11.1"
+  }
+}
