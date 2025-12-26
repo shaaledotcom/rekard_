@@ -1,5 +1,6 @@
 // Billing service - business logic for billing operations
 import * as repo from './repository.js';
+import * as tenantService from '../tenant/service.js';
 import type {
   BillingPlan,
   UserWallet,
@@ -19,6 +20,7 @@ import type {
   InvoiceItem,
 } from './types.js';
 import { log } from '../../shared/middleware/logger.js';
+import { getPlanTier } from '../../shared/middleware/plan.js';
 
 // Ticket pricing tiers
 const TICKET_PRICE_TIERS = [
@@ -119,7 +121,7 @@ export const purchasePlan = async (
   tenantId: string,
   userId: string,
   request: PurchasePlanRequest
-): Promise<{ subscription: UserSubscription; invoice: Invoice }> => {
+): Promise<{ subscription: UserSubscription; invoice: Invoice; proActivation?: { success: boolean; old_app_id: string; new_app_id: string } }> => {
   const plan = await repo.getBillingPlanById(appId, tenantId, request.plan_id);
   if (!plan) {
     throw new Error('Plan not found');
@@ -201,7 +203,38 @@ export const purchasePlan = async (
 
   log.info(`User ${userId} purchased plan ${plan.id} (subscription ${subscription.id})`);
 
-  return { subscription, invoice };
+  // Check if this is a Pro or Premium plan and activate Pro features
+  const planTier = getPlanTier(plan.name);
+  let proActivation: { success: boolean; old_app_id: string; new_app_id: string } | undefined;
+
+  if (planTier === 'pro' || planTier === 'premium') {
+    try {
+      // Get or create the tenant for this user
+      const { tenant } = await tenantService.getOrCreateTenantForUser(userId);
+      
+      // Activate Pro: Update appId from 'public' to tenant.id (UUID)
+      // This cascades the change across all tenant-scoped tables
+      const result = await tenantService.activatePro({
+        tenant_id: tenant.id,
+        // Use tenant.id as the new appId for Pro users
+        custom_app_id: tenant.id,
+      });
+
+      proActivation = {
+        success: result.success,
+        old_app_id: result.old_app_id,
+        new_app_id: result.new_app_id,
+      };
+
+      log.info(`Pro activation for tenant ${tenant.id} (user ${userId}): ${result.old_app_id} -> ${result.new_app_id}, ${result.total_rows_affected} rows updated`);
+    } catch (error) {
+      log.error(`Failed to activate Pro for user ${userId}:`, error);
+      // Don't fail the subscription, just log the error
+      // The cascade can be retried later
+    }
+  }
+
+  return { subscription, invoice, proActivation };
 };
 
 export const cancelSubscription = async (

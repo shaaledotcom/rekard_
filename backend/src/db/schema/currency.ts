@@ -1,9 +1,10 @@
-import { pgTable, serial, varchar, decimal, boolean, timestamp, index, unique } from 'drizzle-orm/pg-core';
+import { pgTable, serial, uuid, varchar, decimal, boolean, timestamp, index, unique } from 'drizzle-orm/pg-core';
+import { tenants } from './tenants';
 
 export const currencies = pgTable('currencies', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   code: varchar('code', { length: 10 }).notNull(),
   name: varchar('name', { length: 255 }).notNull(),
   symbol: varchar('symbol', { length: 10 }),
@@ -13,7 +14,7 @@ export const currencies = pgTable('currencies', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
-  appTenantCodeUnique: unique('currencies_app_tenant_code_unique').on(table.appId, table.tenantId, table.code),
-  appTenantIdx: index('idx_currencies_app_tenant').on(table.appId, table.tenantId),
+  tenantCodeUnique: unique('currencies_tenant_code_unique').on(table.tenantId, table.code),
+  tenantIdx: index('idx_currencies_tenant').on(table.tenantId),
 }));
 

@@ -1,11 +1,12 @@
-import { pgTable, serial, varchar, integer, decimal, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, uuid, varchar, integer, decimal, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
 import { tickets } from './tickets';
 import { events } from './events';
+import { tenants } from './tenants';
 
 export const orders = pgTable('orders', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   userId: varchar('user_id', { length: 255 }).notNull(),
   ticketId: integer('ticket_id').references(() => tickets.id),
   eventId: integer('event_id').references(() => events.id),

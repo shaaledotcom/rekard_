@@ -1,12 +1,13 @@
-import { pgTable, serial, varchar, integer, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, uuid, varchar, integer, text, timestamp, index } from 'drizzle-orm/pg-core';
 import { orders } from './orders';
 import { tickets } from './tickets';
 import { events } from './events';
+import { tenants } from './tenants';
 
 export const streamingSessions = pgTable('streaming_sessions', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   orderId: integer('order_id').references(() => orders.id),
   ticketId: integer('ticket_id').notNull().references(() => tickets.id),
   eventId: integer('event_id').references(() => events.id),
@@ -21,6 +22,7 @@ export const streamingSessions = pgTable('streaming_sessions', {
   lastActivityAt: timestamp('last_activity_at').notNull().defaultNow(),
   endedAt: timestamp('ended_at'),
 }, (table) => ({
+  tenantIdx: index('idx_streaming_sessions_tenant').on(table.tenantId),
   userIdIdx: index('idx_streaming_sessions_user_id').on(table.userId),
   tokenIdx: index('idx_streaming_sessions_token').on(table.sessionToken),
   statusIdx: index('idx_streaming_sessions_status').on(table.status),

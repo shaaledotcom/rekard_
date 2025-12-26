@@ -39,3 +39,18 @@ export type { Message, CreateMessageRequest, UpdateMessageRequest, MessagesRespo
 export { uploadsService } from './uploads/index.js';
 export type { UploadedFile, PresignedUrlRequest, PresignedUrlResponse, UploadResult, UploadCategory } from './uploads/types.js';
 
+// Tenant domain
+export * as tenantService from './tenant/service.js';
+export type {
+  Tenant,
+  ViewerTenantMapping,
+  CreateTenantRequest,
+  CreateViewerMappingRequest,
+  ActivateProRequest,
+  CascadeUpdateResult,
+  TenantContextInfo,
+  ViewerSource,
+  ViewerStatus,
+  TenantScopedTable,
+} from './tenant/types.js';
+

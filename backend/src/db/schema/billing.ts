@@ -1,11 +1,12 @@
-import { pgTable, serial, varchar, integer, decimal, text, jsonb, timestamp, boolean, index, unique } from 'drizzle-orm/pg-core';
+import { pgTable, serial, uuid, varchar, integer, decimal, text, jsonb, timestamp, boolean, index, unique } from 'drizzle-orm/pg-core';
 import { tickets } from './tickets';
 import { orders } from './orders';
+import { tenants } from './tenants';
 
 export const billingPlans = pgTable('billing_plans', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
   price: decimal('price', { precision: 10, scale: 2 }).notNull(),
@@ -24,22 +25,22 @@ export const billingPlans = pgTable('billing_plans', {
 
 export const userWallets = pgTable('user_wallets', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   userId: varchar('user_id', { length: 255 }).notNull(),
   ticketBalance: integer('ticket_balance').default(0),
   currency: varchar('currency', { length: 10 }).default('INR'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
-  appTenantUserUnique: unique('user_wallets_app_tenant_user_unique').on(table.appId, table.tenantId, table.userId),
-  appTenantUserIdx: index('idx_user_wallets_app_tenant_user').on(table.appId, table.tenantId, table.userId),
+  tenantUserUnique: unique('user_wallets_tenant_user_unique').on(table.tenantId, table.userId),
+  tenantUserIdx: index('idx_user_wallets_tenant_user').on(table.tenantId, table.userId),
 }));
 
 export const walletTransactions = pgTable('wallet_transactions', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   userId: varchar('user_id', { length: 255 }).notNull(),
   transactionType: varchar('transaction_type', { length: 50 }).notNull(),
   amount: integer('amount').notNull(),
@@ -52,14 +53,15 @@ export const walletTransactions = pgTable('wallet_transactions', {
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
+  tenantIdx: index('idx_wallet_transactions_tenant').on(table.tenantId),
   userIdIdx: index('idx_wallet_transactions_user_id').on(table.userId),
   createdAtIdx: index('idx_wallet_transactions_created_at').on(table.createdAt),
 }));
 
 export const invoices = pgTable('invoices', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   userId: varchar('user_id', { length: 255 }).notNull(),
   invoiceNumber: varchar('invoice_number', { length: 255 }).notNull().unique(),
   status: varchar('status', { length: 50 }).default('pending'),
@@ -78,15 +80,15 @@ export const invoices = pgTable('invoices', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
-  appTenantIdx: index('idx_invoices_app_tenant').on(table.appId, table.tenantId),
+  tenantIdx: index('idx_invoices_tenant').on(table.tenantId),
   userIdIdx: index('idx_invoices_user_id').on(table.userId),
   statusIdx: index('idx_invoices_status').on(table.status),
 }));
 
 export const userSubscriptions = pgTable('user_subscriptions', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   userId: varchar('user_id', { length: 255 }).notNull(),
   planId: integer('plan_id').notNull().references(() => billingPlans.id),
   status: varchar('status', { length: 50 }).default('active'),
@@ -101,26 +103,29 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
+  tenantIdx: index('idx_user_subscriptions_tenant').on(table.tenantId),
   userIdIdx: index('idx_user_subscriptions_user_id').on(table.userId),
   statusIdx: index('idx_user_subscriptions_status').on(table.status),
 }));
 
 export const billingAuditLogs = pgTable('billing_audit_logs', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   userId: varchar('user_id', { length: 255 }).notNull(),
   action: varchar('action', { length: 100 }).notNull(),
   entityType: varchar('entity_type', { length: 100 }),
   entityId: integer('entity_id'),
   details: jsonb('details'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  tenantIdx: index('idx_billing_audit_logs_tenant').on(table.tenantId),
+}));
 
 export const ticketWalletAllocations = pgTable('ticket_wallet_allocations', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   userId: varchar('user_id', { length: 255 }).notNull(),
   ticketId: integer('ticket_id').notNull().references(() => tickets.id),
   orderId: integer('order_id').references(() => orders.id),
@@ -130,14 +135,15 @@ export const ticketWalletAllocations = pgTable('ticket_wallet_allocations', {
   usedAt: timestamp('used_at'),
   status: varchar('status', { length: 50 }).default('active'),
 }, (table) => ({
+  tenantIdx: index('idx_ticket_wallet_allocations_tenant').on(table.tenantId),
   userIdIdx: index('idx_ticket_wallet_allocations_user_id').on(table.userId),
   ticketIdIdx: index('idx_ticket_wallet_allocations_ticket_id').on(table.ticketId),
 }));
 
 export const emailAccessGrants = pgTable('email_access_grants', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   userId: varchar('user_id', { length: 255 }).notNull(),
   ticketId: integer('ticket_id').notNull().references(() => tickets.id),
   email: varchar('email', { length: 255 }).notNull(),
@@ -146,14 +152,15 @@ export const emailAccessGrants = pgTable('email_access_grants', {
   usedAt: timestamp('used_at'),
   status: varchar('status', { length: 50 }).default('active'),
 }, (table) => ({
+  tenantIdx: index('idx_email_access_grants_tenant').on(table.tenantId),
   emailIdx: index('idx_email_access_grants_email').on(table.email),
   ticketIdIdx: index('idx_email_access_grants_ticket_id').on(table.ticketId),
 }));
 
 export const ticketBuyers = pgTable('ticket_buyers', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   ticketId: integer('ticket_id').notNull().references(() => tickets.id),
   buyerEmail: varchar('buyer_email', { length: 255 }).notNull(),
   buyerName: varchar('buyer_name', { length: 255 }),
@@ -161,6 +168,7 @@ export const ticketBuyers = pgTable('ticket_buyers', {
   orderId: integer('order_id').references(() => orders.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
+  tenantIdx: index('idx_ticket_buyers_tenant').on(table.tenantId),
   ticketIdIdx: index('idx_ticket_buyers_ticket_id').on(table.ticketId),
   emailIdx: index('idx_ticket_buyers_email').on(table.buyerEmail),
   ticketEmailUnique: unique('ticket_buyers_ticket_id_buyer_email_unique').on(table.ticketId, table.buyerEmail),

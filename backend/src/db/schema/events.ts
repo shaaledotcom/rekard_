@@ -1,9 +1,10 @@
-import { pgTable, serial, varchar, integer, text, timestamp, boolean, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, uuid, varchar, integer, text, timestamp, boolean, index } from 'drizzle-orm/pg-core';
+import { tenants } from './tenants';
 
 export const events = pgTable('events', {
   id: serial('id').primaryKey(),
-  appId: varchar('app_id', { length: 255 }).notNull(),
-  tenantId: varchar('tenant_id', { length: 255 }).notNull(),
+  appId: varchar('app_id', { length: 255 }).notNull().default('public'),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 500 }).notNull(),
   description: text('description'),
   startDatetime: timestamp('start_datetime'),

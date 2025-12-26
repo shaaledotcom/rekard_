@@ -10,12 +10,18 @@ export interface PlanInfo {
   isActive: boolean;
 }
 
+// How tenant context was resolved
+export type TenantResolvedFrom = 'domain' | 'session' | 'header' | 'default';
+
 // Tenant context attached to every request
 export interface TenantContext {
-  userId: string;
-  appId: string;
-  tenantId: string;
-  fromDomain: boolean;
+  userId: string;             // Current user's Supabase ID
+  tenantId: string;           // Tenant UUID (from tenants table)
+  tenantUserId: string;       // Producer's Supabase user ID (tenant owner)
+  appId: string;              // 'public' for free, unique ID for Pro
+  isPro: boolean;             // Whether this tenant is on Pro plan
+  fromDomain: boolean;        // Legacy: true if resolved from domain
+  resolvedFrom: TenantResolvedFrom; // How the context was determined
 }
 
 // Extended request with tenant context and plan info

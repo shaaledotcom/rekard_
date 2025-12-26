@@ -4,7 +4,7 @@ import type { AppRequest, TenantContext } from '../../shared/types/index.js';
 import { log } from '../../shared/middleware/logger.js';
 import { isLocalOrMainDomain, TENANT_PUBLIC } from './constants.js';
 import type { DomainOwner, DomainOwnerProvider } from './types.js';
-import { getUserMetadata } from './user.js';
+import * as tenantService from '../tenant/service.js';
 
 // Extended request with user info
 export interface AuthenticatedRequest extends AppRequest {
@@ -93,8 +93,8 @@ export const getUserIdFromSession = (req: AuthenticatedRequest): string | null =
   return req.userId || null;
 };
 
-// Resolve domain owner from host
-const resolveDomainOwner = async (host: string): Promise<DomainOwner | null> => {
+// Resolve domain owner from host (legacy provider)
+const resolveDomainOwnerLegacy = async (host: string): Promise<DomainOwner | null> => {
   if (!globalDomainOwnerProvider) return null;
   if (isLocalOrMainDomain(host)) return null;
 
@@ -105,42 +105,82 @@ const resolveDomainOwner = async (host: string): Promise<DomainOwner | null> => 
   }
 };
 
-// Resolve tenant context from request
+// Resolve domain owner using new tenant service
+const resolveDomainOwner = async (host: string): Promise<{ tenantId: string; appId: string } | null> => {
+  if (isLocalOrMainDomain(host)) return null;
+  
+  try {
+    // Try new tenant service first
+    const result = await tenantService.resolveTenantFromDomain(host);
+    if (result) {
+      return result;
+    }
+    
+    // Fall back to legacy provider
+    const legacy = await resolveDomainOwnerLegacy(host);
+    if (legacy) {
+      return { tenantId: legacy.tenantId, appId: legacy.appId };
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Resolve tenant context from request
+ * 
+ * For producers: tenantId = UUID from tenants table (auto-created)
+ * For viewers: tenantId = producer's tenant UUID (resolved from domain)
+ */
 export const resolveTenantContext = async (
   req: AuthenticatedRequest
 ): Promise<TenantContext> => {
   // Get host from X-Host header or Host header
   const host = (req.headers['x-host'] as string) || req.headers.host || '';
 
-  // Try domain-based resolution first
+  // Try domain-based resolution first (for viewer pages)
   const domainOwner = await resolveDomainOwner(host);
   if (domainOwner) {
+    const context = await tenantService.getTenantContext(domainOwner.tenantId);
     return {
-      userId: domainOwner.userId,
-      appId: domainOwner.appId,
-      tenantId: domainOwner.tenantId,
+      userId: req.userId || '',
+      tenantId: context.tenantId,
+      tenantUserId: context.userId,
+      appId: context.appId,
+      isPro: context.isPro,
       fromDomain: true,
+      resolvedFrom: 'domain',
     };
   }
 
   // Fall back to session-based resolution
+  // For producers: auto-create/get their tenant
   const userId = req.userId;
   if (!userId) {
     return {
       userId: '',
+      tenantId: '',
+      tenantUserId: '',
       appId: TENANT_PUBLIC,
-      tenantId: TENANT_PUBLIC,
+      isPro: false,
       fromDomain: false,
+      resolvedFrom: 'default',
     };
   }
 
-  const { appId, tenantId } = await getUserMetadata(userId);
+  // Get or create tenant for this producer
+  const context = await tenantService.getTenantContext(userId);
 
   return {
     userId,
-    appId,
-    tenantId,
+    tenantId: context.tenantId,
+    tenantUserId: context.userId,
+    appId: context.appId,
+    isPro: context.isPro,
     fromDomain: false,
+    resolvedFrom: 'session',
   };
 };
 
@@ -154,7 +194,18 @@ export const tenantContextMiddleware = async (
     req.tenant = await resolveTenantContext(req);
     next();
   } catch (error) {
-    next(error);
+    log.error('Error in tenantContextMiddleware', error);
+    // Fallback to empty tenant
+    req.tenant = {
+      userId: req.userId || '',
+      tenantId: '',
+      tenantUserId: req.userId || '',
+      appId: TENANT_PUBLIC,
+      isPro: false,
+      fromDomain: false,
+      resolvedFrom: 'default',
+    };
+    next();
   }
 };
 
