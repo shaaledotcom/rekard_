@@ -2,10 +2,12 @@ import { api } from "./baseApi";
 
 // Billing types
 export interface PlanFeature {
-  code: string;
-  label: string;
-  icon: string;
+  code?: string;
+  label?: string;
+  name?: string; // Legacy field - fallback for label
+  icon?: string;
   description?: string;
+  included?: boolean;
 }
 
 export interface BillingPlan {

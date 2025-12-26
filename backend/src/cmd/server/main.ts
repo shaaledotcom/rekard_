@@ -3,6 +3,7 @@ import { env, initDatabase, closeDatabase } from '../../config/index.js';
 import { log } from '../../shared/middleware/logger.js';
 import { initSupabase, setupDefaultRoles } from '../../domains/auth/index.js';
 import { razorpay } from '../../domains/payments/index.js';
+import { seedDefaultPlans } from '../../db/seed.js';
 
 // Graceful shutdown handler
 const gracefulShutdown = async (signal: string): Promise<void> => {
@@ -31,6 +32,11 @@ const main = async (): Promise<void> => {
     // Initialize database
     log.info('Initializing database connection...');
     await initDatabase();
+
+    // Seed default billing plans
+    log.info('Seeding default billing plans...');
+    const seedResult = await seedDefaultPlans();
+    log.info(`Plans seeding: ${seedResult.created} created, ${seedResult.skipped} already exist`);
 
     // Initialize Razorpay (if configured)
     if (env.razorpay.keyId && env.razorpay.keySecret) {

@@ -112,21 +112,6 @@ function BillingContent() {
             />
           </TabsContent>
         </Tabs>
-
-        {/* Wallet Info Card */}
-        {walletData?.data && (
-          <div className="mt-8 p-4 rounded-xl bg-secondary/30 border border-border/30 max-w-md mx-auto sm:mx-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Ticket className="w-4 h-4" />
-                Wallet Balance
-              </div>
-              <div className="font-semibold text-foreground">
-                {walletData.data.ticket_balance.toLocaleString()} tickets
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

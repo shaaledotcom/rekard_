@@ -207,14 +207,15 @@ export function BillingPlans({
                 {plan.features && plan.features.length > 0 && (
                   <ul className="space-y-2.5 mb-6 flex-1">
                     {plan.features.map((feature: PlanFeature, i: number) => {
-                      const Icon = getIcon(feature.icon);
+                      const Icon = getIcon(feature.icon || 'ticket');
+                      const featureLabel = feature.label || feature.name || '';
                       return (
                         <li
                           key={i}
                           className="flex items-start gap-2.5 text-sm text-muted-foreground"
                         >
                           <Icon className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                          <span>{feature.label}</span>
+                          <span>{featureLabel}</span>
                         </li>
                       );
                     })}

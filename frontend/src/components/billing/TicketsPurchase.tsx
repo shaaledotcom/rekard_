@@ -236,32 +236,6 @@ export function TicketsPurchase({ setActiveTab, subscription }: TicketsPurchaseP
               ) : null}
             </div>
 
-            {/* Pricing Tiers */}
-            {pricing?.pricing_tiers && (
-              <div className="w-full max-w-md">
-                <p className="text-xs text-center text-muted-foreground mb-2">
-                  Volume discounts available:
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {pricing.pricing_tiers.map((tier, idx) => (
-                    <div
-                      key={idx}
-                      className={`text-xs px-3 py-1 rounded-full border ${
-                        quantity >= tier.min_quantity &&
-                        quantity <= (tier.max_quantity === Infinity ? maxTickets : tier.max_quantity)
-                          ? "bg-primary/10 border-primary/30 text-primary"
-                          : "bg-secondary/30 border-border/30 text-muted-foreground"
-                      }`}
-                    >
-                      {tier.min_quantity}-
-                      {tier.max_quantity === Infinity ? "∞" : tier.max_quantity}: ₹
-                      {tier.unit_price}/ticket
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Purchase Button */}
             <Button
               onClick={handlePurchase}
