@@ -46,10 +46,7 @@ export function Navbar() {
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link href="/dashboard" className="flex items-center gap-3 group">
-              <div className="relative w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
-                <Zap className="h-5 w-5 text-background" />
-              </div>
-              <span className="text-xl font-bold text-foreground">
+              <span className="text-3xl font-bold text-red-400">
                 Rekard
               </span>
             </Link>
