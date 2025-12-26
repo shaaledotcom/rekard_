@@ -50,7 +50,7 @@ function EventsContent() {
   } = useEventsPage();
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <EventsBackground />
 
       <Navbar />

@@ -15,8 +15,8 @@ import {
   CreditCard,
   Globe,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "./ThemeToggle";
 
 const navItems = [
   { href: "/producer/events", label: "Events", icon: Calendar },
@@ -77,6 +77,9 @@ export function Navbar() {
 
             {/* Desktop Profile & Actions */}
             <div className="hidden md:flex items-center gap-3">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+
               {/* Profile Dropdown */}
               <div className="relative">
                 <button
@@ -163,6 +166,14 @@ export function Navbar() {
                 </Link>
               );
             })}
+
+            {/* Mobile Theme Toggle */}
+            <div className="pt-4 mt-4 border-t border-border">
+              <div className="px-4 py-2">
+                <p className="text-xs text-muted-foreground mb-2">Theme</p>
+                <ThemeToggle />
+              </div>
+            </div>
 
             {/* Mobile User Section */}
             <div className="pt-4 mt-4 border-t border-border">

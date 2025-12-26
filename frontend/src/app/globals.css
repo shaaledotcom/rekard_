@@ -4,26 +4,32 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 0%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 0% 0%;
+    /* Subtle warm light theme - soft cream tones for easy reading */
+    --background: 40 20% 98%;
+    --foreground: 240 10% 15%;
+    --card: 40 15% 96%;
+    --card-foreground: 240 10% 15%;
+    --popover: 40 20% 99%;
+    --popover-foreground: 240 10% 15%;
+    --primary: 240 10% 20%;
+    --primary-foreground: 40 20% 98%;
+    --secondary: 40 10% 92%;
+    --secondary-foreground: 240 10% 20%;
+    --muted: 40 10% 90%;
+    --muted-foreground: 240 5% 45%;
+    --accent: 40 15% 90%;
+    --accent-foreground: 240 10% 20%;
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 0%;
+    --border: 40 10% 88%;
+    --input: 40 10% 88%;
+    --ring: 240 10% 30%;
     --radius: 0.5rem;
+    
+    /* Light theme surface colors for subtle depth */
+    --surface-elevated: 40 20% 99%;
+    --surface-sunken: 40 15% 94%;
+    --overlay: 240 10% 15%;
   }
 
   .dark {
@@ -46,6 +52,11 @@
     --border: 0 0% 20%;
     --input: 0 0% 20%;
     --ring: 0 0% 100%;
+    
+    /* Dark theme surface colors */
+    --surface-elevated: 0 0% 8%;
+    --surface-sunken: 0 0% 3%;
+    --overlay: 0 0% 100%;
   }
 }
 

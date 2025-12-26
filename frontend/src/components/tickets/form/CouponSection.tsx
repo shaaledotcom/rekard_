@@ -107,11 +107,11 @@ export function CouponSection({
       {/* Section Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Label className="text-white/70 text-sm font-medium flex items-center gap-2">
-            <Tag className="h-4 w-4 text-emerald-400" />
+          <Label className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+            <Tag className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
             Coupon Codes
           </Label>
-          <p className="text-xs text-white/40 mt-1">
+          <p className="text-xs text-muted-foreground/70 mt-1">
             Create discount codes for your viewers
           </p>
         </div>
@@ -121,7 +121,7 @@ export function CouponSection({
             variant="outline"
             size="sm"
             onClick={handleAdd}
-            className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+            className="bg-secondary/50 border-border text-foreground hover:bg-secondary"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Coupon
@@ -130,18 +130,18 @@ export function CouponSection({
       </div>
 
       {/* Coupons List */}
-      <div className="border-2 border-dashed border-white/10 rounded-xl overflow-hidden">
+      <div className="border-2 border-dashed border-border rounded-xl overflow-hidden">
         {coupons.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <Tag className="h-12 w-12 text-white/20 mb-3" />
-            <p className="text-white/50">No coupon codes added yet</p>
+            <Tag className="h-12 w-12 text-muted-foreground/30 mb-3" />
+            <p className="text-muted-foreground">No coupon codes added yet</p>
             {!isReadOnly && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={handleAdd}
-                className="mt-3 text-emerald-400 hover:text-emerald-300"
+                className="mt-3 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create your first coupon
@@ -149,23 +149,23 @@ export function CouponSection({
             )}
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-border">
             {coupons.map((coupon, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+                className="flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-1">
-                    <span className="font-medium text-white">{coupon.title}</span>
+                    <span className="font-medium text-foreground">{coupon.title}</span>
                     <Badge variant="secondary" className="font-mono">
                       {coupon.code}
                     </Badge>
-                    <Badge variant="default" className="bg-emerald-500/20 text-emerald-400">
+                    <Badge variant="default" className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
                       {coupon.discount}% off
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-white/40">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Hash className="h-3 w-3" />
                       {coupon.count} uses
@@ -192,7 +192,7 @@ export function CouponSection({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleEdit(index)}
-                      className="h-8 w-8 text-white/50 hover:text-white"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -201,7 +201,7 @@ export function CouponSection({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDelete(index)}
-                      className="h-8 w-8 text-white/50 hover:text-red-400"
+                      className="h-8 w-8 text-muted-foreground hover:text-red-500"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -215,12 +215,12 @@ export function CouponSection({
 
       {/* Coupon Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#12121a] border-white/10 max-w-lg">
+        <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-xl text-white">
+            <DialogTitle className="text-xl text-foreground">
               {editIndex !== null ? "Edit Coupon" : "Add Coupon"}
             </DialogTitle>
-            <DialogDescription className="text-white/50">
+            <DialogDescription className="text-muted-foreground">
               Create a discount code for your viewers
             </DialogDescription>
           </DialogHeader>
@@ -228,39 +228,39 @@ export function CouponSection({
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Title *</Label>
+                <Label className="text-muted-foreground text-sm">Title *</Label>
                 <Input
                   value={couponForm.title}
                   onChange={(e) => setCouponForm({ ...couponForm, title: e.target.value })}
                   placeholder="Early Bird Discount"
-                  className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-lg"
+                  className="h-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/50 rounded-lg"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Code *</Label>
+                <Label className="text-muted-foreground text-sm">Code *</Label>
                 <Input
                   value={couponForm.code}
                   onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
                   placeholder="EARLY20"
-                  className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-lg font-mono"
+                  className="h-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/50 rounded-lg font-mono"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Usage Limit</Label>
+                <Label className="text-muted-foreground text-sm">Usage Limit</Label>
                 <Input
                   type="number"
                   min="1"
                   value={couponForm.count || ""}
                   onChange={(e) => setCouponForm({ ...couponForm, count: parseInt(e.target.value) || 0 })}
                   placeholder="100"
-                  className="h-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-lg"
+                  className="h-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/50 rounded-lg"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Discount % *</Label>
+                <Label className="text-muted-foreground text-sm">Discount % *</Label>
                 <div className="relative">
                   <Input
                     type="number"
@@ -269,38 +269,38 @@ export function CouponSection({
                     value={couponForm.discount || ""}
                     onChange={(e) => setCouponForm({ ...couponForm, discount: e.target.value })}
                     placeholder="20"
-                    className="h-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-lg"
+                    className="h-10 pr-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/50 rounded-lg"
                   />
-                  <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                  <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Activation Time</Label>
+                <Label className="text-muted-foreground text-sm">Activation Time</Label>
                 <Input
                   type="datetime-local"
                   value={couponForm.activation_time}
                   onChange={(e) => setCouponForm({ ...couponForm, activation_time: e.target.value })}
-                  className="h-10 bg-white/5 border-white/10 text-white rounded-lg"
+                  className="h-10 bg-secondary/50 border-border text-foreground rounded-lg"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Expiry Time</Label>
+                <Label className="text-muted-foreground text-sm">Expiry Time</Label>
                 <Input
                   type="datetime-local"
                   value={couponForm.expiry_time}
                   onChange={(e) => setCouponForm({ ...couponForm, expiry_time: e.target.value })}
-                  className="h-10 bg-white/5 border-white/10 text-white rounded-lg"
+                  className="h-10 bg-secondary/50 border-border text-foreground rounded-lg"
                 />
               </div>
             </div>
 
             {(!couponForm.title || !couponForm.code || !couponForm.discount) && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <AlertCircle className="h-4 w-4 text-amber-400" />
-                <p className="text-xs text-amber-300">
+                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <p className="text-xs text-amber-600 dark:text-amber-300">
                   Please fill in all required fields (title, code, discount)
                 </p>
               </div>
@@ -312,7 +312,7 @@ export function CouponSection({
               type="button"
               variant="ghost"
               onClick={() => setDialogOpen(false)}
-              className="text-white/70 hover:text-white hover:bg-white/5"
+              className="text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             >
               Cancel
             </Button>

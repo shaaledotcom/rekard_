@@ -43,6 +43,11 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        surface: {
+          elevated: "hsl(var(--surface-elevated))",
+          sunken: "hsl(var(--surface-sunken))",
+        },
+        overlay: "hsl(var(--overlay))",
       },
       borderRadius: {
         lg: "var(--radius)",

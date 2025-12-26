@@ -35,20 +35,20 @@ function BillingContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none">
         {/* Gradient orbs */}
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/5 dark:bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/5 dark:bg-purple-500/10 rounded-full blur-3xl" />
         
-        {/* Grid pattern */}
+        {/* Grid pattern - theme aware */}
         <div 
-          className="absolute inset-0 opacity-[0.02]"
+          className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02]"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+              linear-gradient(hsl(var(--foreground) / 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, hsl(var(--foreground) / 0.1) 1px, transparent 1px)
             `,
             backgroundSize: "64px 64px",
           }}

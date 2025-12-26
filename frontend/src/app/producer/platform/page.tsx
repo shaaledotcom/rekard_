@@ -14,7 +14,7 @@ function PlatformContent() {
   const { hasProFeatures, isLoading: isPlanLoading } = usePlan();
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <PlatformBackground />
 
       <Navbar />
@@ -39,7 +39,7 @@ function PlatformContent() {
                     </p>
                   </div>
                 </div>
-                <UpgradeButton className="shrink-0 bg-destructive hover:bg-destructive/90 text-white">
+                <UpgradeButton className="shrink-0 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                   Upgrade to Pro
                 </UpgradeButton>
               </div>

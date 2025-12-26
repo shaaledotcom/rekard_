@@ -25,7 +25,7 @@ function CreateTicketContent() {
   } = useTicketForm();
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <TicketsBackground />
       <Navbar />
 
@@ -34,7 +34,7 @@ function CreateTicketContent() {
         <div className="mb-8">
           <Link 
             href="/producer/tickets"
-            className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-4"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Tickets
@@ -45,8 +45,8 @@ function CreateTicketContent() {
               <Ticket className="h-6 w-6 text-emerald-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Create New Ticket</h1>
-              <p className="text-white/50 text-sm">
+              <h1 className="text-2xl font-bold text-foreground">Create New Ticket</h1>
+              <p className="text-muted-foreground text-sm">
                 Set up a new ticket for your events
               </p>
             </div>

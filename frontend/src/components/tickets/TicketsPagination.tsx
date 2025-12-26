@@ -25,7 +25,7 @@ export function TicketsPagination({
         size="icon"
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        className="rounded-full bg-white/5 text-white disabled:opacity-30"
+        className="rounded-full bg-secondary/50 text-foreground disabled:opacity-30"
       >
         <ChevronLeft className="h-5 w-5" />
       </Button>
@@ -40,7 +40,7 @@ export function TicketsPagination({
             className={`rounded-full w-10 h-10 ${
               p === currentPage
                 ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
-                : "bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
+                : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
           >
             {p}
@@ -53,7 +53,7 @@ export function TicketsPagination({
         size="icon"
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
-        className="rounded-full bg-white/5 text-white disabled:opacity-30"
+        className="rounded-full bg-secondary/50 text-foreground disabled:opacity-30"
       >
         <ChevronRight className="h-5 w-5" />
       </Button>

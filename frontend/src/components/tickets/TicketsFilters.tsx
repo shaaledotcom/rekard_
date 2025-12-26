@@ -21,18 +21,18 @@ export function TicketsFilters({
   return (
     <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
       <div className="relative flex-1">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/30" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/50" />
         <Input
           placeholder="Search your tickets..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-12 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20"
+          className="pl-12 h-12 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/50 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20"
         />
       </div>
       <Select
         value={statusFilter}
         onChange={(e) => onStatusFilterChange(e.target.value as TicketStatus | "")}
-        className="h-12 w-full sm:w-48 bg-white/5 border-white/10 text-white rounded-xl"
+        className="h-12 w-full sm:w-48 bg-secondary/50 border-border text-foreground rounded-xl"
       >
         <option value="">All Status</option>
         <option value="draft">📝 Drafts</option>

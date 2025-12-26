@@ -31,7 +31,7 @@ function EditTicketContent({ ticketId }: { ticketId: number }) {
   } = useTicketForm({ ticketId });
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <TicketsBackground />
       <Navbar />
 
@@ -40,7 +40,7 @@ function EditTicketContent({ ticketId }: { ticketId: number }) {
         <div className="mb-8">
           <Link 
             href="/producer/tickets"
-            className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-4"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Tickets
@@ -51,8 +51,8 @@ function EditTicketContent({ ticketId }: { ticketId: number }) {
               <Ticket className="h-6 w-6 text-teal-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Edit Ticket</h1>
-              <p className="text-white/50 text-sm">
+              <h1 className="text-2xl font-bold text-foreground">Edit Ticket</h1>
+              <p className="text-muted-foreground text-sm">
                 Update your ticket configuration
               </p>
             </div>
@@ -88,13 +88,13 @@ export default function EditTicketPage({ params }: EditTicketPageProps) {
   if (isNaN(ticketId)) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-white mb-2">Invalid Ticket ID</h1>
-            <p className="text-white/50 mb-4">The ticket ID provided is not valid.</p>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Invalid Ticket ID</h1>
+            <p className="text-muted-foreground mb-4">The ticket ID provided is not valid.</p>
             <Link 
               href="/producer/tickets"
-              className="text-emerald-400 hover:text-emerald-300"
+              className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300"
             >
               Return to Tickets
             </Link>
