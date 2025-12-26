@@ -58,21 +58,6 @@ function BillingContent() {
       <Navbar />
 
       <main className="container mx-auto px-4 lg:px-6 py-8 relative z-10">
-        {/* Header Section */}
-        <div className="mb-8 text-center sm:text-left">
-          <div className="flex items-center justify-center sm:justify-start gap-3 mb-2">
-            <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
-              <Sparkles className="w-6 h-6 text-primary" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Billing & Subscriptions
-            </h1>
-          </div>
-          <p className="text-muted-foreground mt-2">
-            Manage your plans and ticket purchases
-          </p>
-        </div>
-
         {/* Tabs */}
         <Tabs 
           value={activeTab} 

@@ -5,14 +5,13 @@ import { Navbar } from "@/components/layout";
 import { usePlatformForm } from "@/hooks/usePlatformForm";
 import { PlatformForm, PlatformBackground } from "@/components/platform";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { UpgradeButton } from "@/components/ui/upgrade-button";
 import { usePlan } from "@/hooks/usePlan";
-import { Crown, Shield, AlertTriangle, Lock } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 function PlatformContent() {
   const { formData, isLoading, isSubmitting, handleFormChange, handleSubmit } = usePlatformForm();
-  const { planTier, hasProFeatures, hasActivePlan, ticketBalance, isLoading: isPlanLoading } = usePlan();
+  const { hasProFeatures, isLoading: isPlanLoading } = usePlan();
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
@@ -21,49 +20,6 @@ function PlatformContent() {
       <Navbar />
 
       <main className="container mx-auto px-4 lg:px-6 py-8 relative z-10">
-        {/* Page Header */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-foreground">Platform Settings</h1>
-                {!hasProFeatures && !isPlanLoading && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Lock className="h-3 w-3" />
-                    Pro Only
-                  </Badge>
-                )}
-              </div>
-              <p className="text-muted-foreground">
-                Configure your platform appearance, functionality, and branding
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge 
-                variant={hasProFeatures ? "default" : "secondary"} 
-                className="gap-1"
-              >
-                {hasProFeatures ? (
-                  <>
-                    <Crown className="h-3 w-3" />
-                    {planTier === "premium" ? "Premium" : "Pro"} Plan
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-3 w-3" />
-                    {hasActivePlan ? "Active" : "Free"} Plan
-                  </>
-                )}
-              </Badge>
-              {hasActivePlan && (
-                <Badge variant="outline" className="gap-1">
-                  {ticketBalance} tickets
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Upgrade Banner - Show prominently when user doesn't have Pro */}
         {!hasProFeatures && !isPlanLoading && (
           <Card className="mb-6 border-destructive/30 bg-destructive/5">
