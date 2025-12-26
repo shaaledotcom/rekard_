@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Phone, ArrowRight, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Mail, ArrowRight, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,10 +15,10 @@ type LoginStep = "input" | "otp" | "success";
 
 export function LoginForm() {
   const router = useRouter();
-  const { sendPhoneOtp, verifyPhoneOtp } = useAuth();
+  const { sendEmailOtp, verifyEmailOtp } = useAuth();
 
   const [step, setStep] = React.useState<LoginStep>("input");
-  const [phone, setPhone] = React.useState("");
+  const [email, setEmail] = React.useState("");
   const [otp, setOtp] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const [countdown, setCountdown] = React.useState(0);
@@ -34,12 +34,12 @@ export function LoginForm() {
   const handleSendOtp = async () => {
     setIsLoading(true);
     try {
-      await sendPhoneOtp(phone);
+      await sendEmailOtp(email);
       setStep("otp");
       setCountdown(60);
       toast({
         title: "OTP Sent!",
-        description: "We've sent a verification code to your phone.",
+        description: "We've sent a verification code to your email.",
       });
     } catch (error) {
       toast({
@@ -57,7 +57,7 @@ export function LoginForm() {
 
     setIsLoading(true);
     try {
-      await verifyPhoneOtp(phone, otp);
+      await verifyEmailOtp(email, otp);
       setStep("success");
       toast({
         title: "Welcome!",
@@ -87,7 +87,8 @@ export function LoginForm() {
     setOtp("");
   };
 
-  const isValidPhone = phone.length >= 10;
+  // Basic email validation
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   return (
     <Card className="w-full max-w-md border-border bg-card">
@@ -97,8 +98,8 @@ export function LoginForm() {
         </div>
         <CardTitle className="text-2xl font-bold">Welcome to Rekard</CardTitle>
         <CardDescription>
-          {step === "input" && "Enter your phone number to continue"}
-          {step === "otp" && `Enter the code sent to ${phone}`}
+          {step === "input" && "Enter your email to continue"}
+          {step === "otp" && `Enter the code sent to ${email}`}
           {step === "success" && "You're all set!"}
         </CardDescription>
       </CardHeader>
@@ -106,15 +107,15 @@ export function LoginForm() {
         {step === "input" && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone number</Label>
+              <Label htmlFor="email">Email address</Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+91 98765 43210"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="h-11 pl-10"
                 />
               </div>
@@ -123,7 +124,7 @@ export function LoginForm() {
             <Button
               className="w-full h-11"
               onClick={handleSendOtp}
-              disabled={!isValidPhone || isLoading}
+              disabled={!isValidEmail || isLoading}
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4" />

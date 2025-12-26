@@ -113,7 +113,17 @@ export const getSubscription = async (
   tenantId: string,
   userId: string
 ): Promise<UserSubscription | null> => {
-  return repo.getUserSubscription(appId, tenantId, userId);
+  const subscription = await repo.getUserSubscription(appId, tenantId, userId);
+  
+  // Include plan details if subscription exists
+  if (subscription) {
+    const plan = await repo.getBillingPlanById(appId, tenantId, subscription.plan_id);
+    if (plan) {
+      subscription.plan = plan;
+    }
+  }
+  
+  return subscription;
 };
 
 export const purchasePlan = async (

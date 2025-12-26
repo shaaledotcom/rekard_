@@ -1,6 +1,7 @@
 // Billing repository - tenant-aware database operations using Drizzle ORM
-import { eq, and, ilike, gte, lte, desc, asc, count, sql } from 'drizzle-orm';
+import { eq, and, or, ilike, gte, lte, desc, asc, count, sql } from 'drizzle-orm';
 import { db, billingPlans, userWallets, walletTransactions, invoices, userSubscriptions, billingAuditLogs, ticketWalletAllocations, emailAccessGrants, tickets, orders } from '../../db/index';
+import { SYSTEM_TENANT_ID, DEFAULT_APP_ID } from '../../domains/auth/constants.js';
 import type {
   BillingPlan,
   PlanFeature,
@@ -132,10 +133,13 @@ export const getBillingPlans = async (
   const pageSize = Math.max(1, Math.min(100, pagination.page_size || 10));
   const offset = (page - 1) * pageSize;
 
-  const conditions = [
-    eq(billingPlans.appId, appId),
-    eq(billingPlans.tenantId, tenantId),
-  ];
+  // Include both user's tenant plans AND system/default plans
+  const tenantCondition = or(
+    and(eq(billingPlans.appId, appId), eq(billingPlans.tenantId, tenantId)),
+    and(eq(billingPlans.appId, DEFAULT_APP_ID), eq(billingPlans.tenantId, SYSTEM_TENANT_ID))
+  );
+
+  const conditions = [tenantCondition];
 
   if (filter.is_active !== undefined) {
     conditions.push(eq(billingPlans.isActive, filter.is_active));
@@ -183,13 +187,18 @@ export const getBillingPlanById = async (
   tenantId: string,
   planId: number
 ): Promise<BillingPlan | null> => {
+  // Look for plan in user's tenant OR system tenant
+  const tenantCondition = or(
+    and(eq(billingPlans.appId, appId), eq(billingPlans.tenantId, tenantId)),
+    and(eq(billingPlans.appId, DEFAULT_APP_ID), eq(billingPlans.tenantId, SYSTEM_TENANT_ID))
+  );
+
   const [row] = await db
     .select()
     .from(billingPlans)
     .where(
       and(
-        eq(billingPlans.appId, appId),
-        eq(billingPlans.tenantId, tenantId),
+        tenantCondition,
         eq(billingPlans.id, planId)
       )
     )
