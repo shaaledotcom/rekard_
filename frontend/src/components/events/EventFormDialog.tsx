@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import type { CreateEventRequest } from "@/store/api";
 import { formatDateTimeLocal } from "./utils";
-import { Film, Radio, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Film, Radio, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
 
 interface EventFormDialogProps {
   isOpen: boolean;
@@ -36,6 +38,16 @@ export function EventFormDialog({
   onFormChange,
 }: EventFormDialogProps) {
   const isVOD = formData.is_vod;
+  const [showEmbedPreview, setShowEmbedPreview] = useState(false);
+
+  // Check if embed code looks valid (contains iframe or common embed patterns)
+  const embedCode = formData.embed || "";
+  const isValidEmbed = embedCode.trim().length > 0 && (
+    embedCode.includes("<iframe") ||
+    embedCode.includes("<embed") ||
+    embedCode.includes("<video") ||
+    embedCode.includes("<object")
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -122,6 +134,74 @@ export function EventFormDialog({
               onChange={(value) => onFormChange({ ...formData, description: value })}
               placeholder="Tell your audience what makes this event special..."
             />
+          </div>
+
+          {/* Embed Code */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-foreground/70 text-sm font-medium">Embed Code</Label>
+              {embedCode.trim() && (
+                <div className="flex items-center gap-2">
+                  {isValidEmbed ? (
+                    <span className="flex items-center gap-1 text-xs text-green-500">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Valid embed detected
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-yellow-500">
+                      <AlertCircle className="w-3 h-3" />
+                      Check embed format
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            <Textarea
+              value={formData.embed || ""}
+              onChange={(e) => onFormChange({ ...formData, embed: e.target.value })}
+              placeholder="Paste your embed code or iframe here...&#10;Example: <iframe src='https://player.example.com/...' width='100%' height='400'></iframe>"
+              className="min-h-[100px] bg-secondary border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:border-foreground/50 font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Add an embed code for your streaming player (e.g., YouTube, Vimeo, custom player)
+            </p>
+
+            {/* Embed Preview Toggle */}
+            {embedCode.trim() && (
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEmbedPreview(!showEmbedPreview)}
+                  className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
+                >
+                  {showEmbedPreview ? (
+                    <>
+                      <EyeOff className="w-4 h-4" />
+                      Hide Preview
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4" />
+                      Show Preview
+                    </>
+                  )}
+                </button>
+
+                {/* Embed Preview */}
+                {showEmbedPreview && (
+                  <div className="rounded-xl border border-border overflow-hidden bg-black/50">
+                    <div className="px-3 py-2 bg-secondary/50 border-b border-border flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground font-medium">Embed Preview</span>
+                    </div>
+                    <div 
+                      className="p-4 min-h-[200px] flex items-center justify-center [&>iframe]:max-w-full [&>iframe]:rounded-lg [&>video]:max-w-full [&>video]:rounded-lg"
+                      dangerouslySetInnerHTML={{ __html: embedCode }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Live Event Fields - Only shown when NOT VOD */}

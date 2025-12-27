@@ -37,6 +37,7 @@ export const defaultFormValues: CreateEventRequest = {
   max_concurrent_viewers_per_link: 1,
   signup_disabled: false,
   purchase_disabled: false,
+  embed: "",
   status: "published",
   watch_upto: "",
   archive_after: "",

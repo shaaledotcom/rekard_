@@ -157,6 +157,7 @@ export function useEventsPage() {
       max_concurrent_viewers_per_link: event.max_concurrent_viewers_per_link,
       signup_disabled: event.signup_disabled,
       purchase_disabled: event.purchase_disabled,
+      embed: event.embed || "",
       status: event.status,
       featured_image: event.featured_image,
       watch_upto: event.watch_upto || "",

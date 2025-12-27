@@ -81,6 +81,8 @@ export type PublicEventDetails = {
   status: string;
   thumbnail_image_portrait?: string;
   featured_image?: string;
+  embed?: string;
+  watch_link?: string;
 };
 
 export type PublicTicketPricing = {

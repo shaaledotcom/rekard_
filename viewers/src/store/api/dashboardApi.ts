@@ -34,6 +34,8 @@ export interface PublicEventDetails {
   status: string;
   thumbnail_image_portrait?: string;
   featured_image?: string;
+  embed?: string;
+  watch_link?: string;
 }
 
 export interface PublicTicketPricing {

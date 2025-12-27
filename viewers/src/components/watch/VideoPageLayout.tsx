@@ -121,10 +121,8 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
 
   const currentThumbnailSrc =
     selectedEvent?.thumbnail_image_portrait || thumbnailSrc;
-  // Note: embed field may not exist in the current API - adjust as needed
-  const currentEmbed = (selectedEvent as PublicEventDetails & { embed?: string })?.embed;
-  // Note: watch_link field may need to be fetched separately
-  const videoSrcToUse = (selectedEvent as PublicEventDetails & { watch_link?: string })?.watch_link || videoSrc;
+  const currentEmbed = selectedEvent?.embed;
+  const videoSrcToUse = selectedEvent?.watch_link || videoSrc;
 
   if (!ticketId) {
     return (

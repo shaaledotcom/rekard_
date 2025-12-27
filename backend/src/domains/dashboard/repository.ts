@@ -243,6 +243,8 @@ export const getTicketEvents = async (ticketId: number): Promise<PublicEventDeta
     status: e.status || 'draft',
     thumbnail_image_portrait: e.thumbnailImagePortrait || undefined,
     featured_image: e.featuredImage || undefined,
+    embed: e.embed || undefined,
+    watch_link: e.watchLink || undefined,
   }));
 };
 
