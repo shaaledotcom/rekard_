@@ -1,6 +1,6 @@
 // Dashboard repository - public access database operations using Drizzle ORM
-import { eq, and, gte, lte, desc, asc, sql, inArray } from 'drizzle-orm';
-import { db, tickets, ticketEvents, ticketPricing, ticketSponsors, events } from '../../db/index';
+import { eq, and, gte, lte, gt, desc, asc, inArray } from 'drizzle-orm';
+import { db, tickets, ticketEvents, ticketPricing, ticketSponsors, events, tenants } from '../../db/index';
 import type {
   DashboardTicket,
   DashboardTicketFilter,
@@ -13,7 +13,10 @@ import type {
   PublicTicketSponsor,
 } from './types';
 
-// List all tickets for dashboard (global - all tenants)
+/**
+ * List all tickets for dashboard (global - shared domain)
+ * Only shows tickets from PRO/premium users
+ */
 export const listAllTicketsForDashboard = async (
   filter: DashboardTicketFilter = {},
   pagination: PaginationParams = {},
@@ -24,21 +27,25 @@ export const listAllTicketsForDashboard = async (
   const offset = (page - 1) * pageSize;
   const now = filter.now || new Date();
 
-  // Build conditions
-  const conditions = [eq(tickets.status, 'published')];
+  // Build conditions - only show published tickets from PRO users
+  const conditions = [
+    eq(tickets.status, 'published'),
+    eq(tenants.isPro, true), // Only premium/pro users
+    eq(tenants.status, 'active'), // Only active tenants
+  ];
 
   if (filter.live_only) {
     conditions.push(lte(events.startDatetime, now));
     conditions.push(gte(events.endDatetime, now));
   }
   if (filter.upcoming_only) {
-    conditions.push(sql`${events.startDatetime} > ${now}`);
+    conditions.push(gt(events.startDatetime, now));
   }
   if (filter.on_demand_only) {
     conditions.push(eq(events.isVod, true));
   }
 
-  // Get tickets with their events
+  // Get tickets with their events - join with tenants to filter by pro status
   const ticketData = await db
     .selectDistinct({
       id: tickets.id,
@@ -49,6 +56,7 @@ export const listAllTicketsForDashboard = async (
       createdAt: tickets.createdAt,
     })
     .from(tickets)
+    .innerJoin(tenants, eq(tenants.id, tickets.tenantId))
     .innerJoin(ticketEvents, eq(ticketEvents.ticketId, tickets.id))
     .innerJoin(events, eq(events.id, ticketEvents.eventId))
     .where(and(...conditions))
@@ -93,7 +101,7 @@ export const listTicketsForDashboardByDomain = async (
     conditions.push(gte(events.endDatetime, now));
   }
   if (filter.upcoming_only) {
-    conditions.push(sql`${events.startDatetime} > ${now}`);
+    conditions.push(gt(events.startDatetime, now));
   }
   if (filter.on_demand_only) {
     conditions.push(eq(events.isVod, true));
@@ -174,7 +182,8 @@ export const getPublicTicketById = async (ticketId: number): Promise<PublicTicke
 
 // Get ticket by URL for public view
 export const getPublicTicketByUrl = async (url: string): Promise<PublicTicketDetails | null> => {
-  const [ticket] = await db
+  // Try exact match first
+  let [ticket] = await db
     .select()
     .from(tickets)
     .where(
@@ -184,6 +193,21 @@ export const getPublicTicketByUrl = async (url: string): Promise<PublicTicketDet
       )
     )
     .limit(1);
+
+  // If not found, try without leading slash or with leading slash
+  if (!ticket) {
+    const alternateUrl = url.startsWith('/') ? url.slice(1) : `/${url}`;
+    [ticket] = await db
+      .select()
+      .from(tickets)
+      .where(
+        and(
+          eq(tickets.url, alternateUrl),
+          eq(tickets.status, 'published')
+        )
+      )
+      .limit(1);
+  }
 
   if (!ticket) return null;
 

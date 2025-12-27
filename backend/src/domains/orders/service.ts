@@ -1,6 +1,7 @@
 // Orders service - business logic
 import * as repo from './repository.js';
 import * as ticketsRepo from '../tickets/repository.js';
+import * as dashboardRepo from '../dashboard/repository.js';
 import { createUser } from '../auth/user.js';
 import type {
   Order,
@@ -29,8 +30,8 @@ export const createOrder = async (
   userId: string,
   data: CreateOrderRequest
 ): Promise<Order> => {
-  // Validate ticket exists and is available
-  const ticket = await ticketsRepo.getTicketById(appId, tenantId, data.ticket_id, false);
+  // Validate ticket exists and is available (use public lookup - no tenant filter)
+  const ticket = await dashboardRepo.getPublicTicketById(data.ticket_id);
   if (!ticket) {
     throw notFound('Ticket');
   }
@@ -45,16 +46,17 @@ export const createOrder = async (
     throw badRequest(`Only ${remainingQuantity} tickets available`);
   }
 
-  // Check max quantity per user
-  const existingOrders = await repo.getUserTicketOrders(appId, tenantId, userId, data.ticket_id);
+  // Check max quantity per user - use public appId for viewer orders
+  const existingOrders = await repo.getUserTicketOrders('public', tenantId, userId, data.ticket_id);
   const existingQuantity = existingOrders.reduce((sum, o) => sum + o.quantity, 0);
 
-  if (existingQuantity + data.quantity > ticket.max_quantity_per_user) {
-    throw badRequest(`Maximum ${ticket.max_quantity_per_user} tickets allowed per user`);
+  const maxPerUser = 10; // Default max if not set on ticket
+  if (existingQuantity + data.quantity > maxPerUser) {
+    throw badRequest(`Maximum ${maxPerUser} tickets allowed per user`);
   }
 
-  // Create order
-  const order = await repo.createOrder(appId, tenantId, userId, data);
+  // Create order with public appId for viewer orders
+  const order = await repo.createOrder('public', tenantId, userId, data);
 
   // Increment sold quantity
   await ticketsRepo.incrementSoldQuantity(data.ticket_id, data.quantity);
@@ -346,14 +348,14 @@ export const getWatchLink = async (
   };
 };
 
-// Get user's purchases (completed orders)
+// Get user's purchases (completed orders with ticket details)
 export const getMyPurchases = async (
   appId: string,
   tenantId: string,
   userId: string,
   pagination: PaginationParams = {}
-): Promise<OrderListResponse> => {
-  return repo.listUserOrders(appId, tenantId, userId, pagination, { status: 'completed' });
+) => {
+  return repo.listUserPurchasesWithTicketDetails(appId, tenantId, userId, pagination);
 };
 
 // Validate coupon for a ticket

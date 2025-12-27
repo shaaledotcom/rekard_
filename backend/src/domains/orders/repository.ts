@@ -1,6 +1,6 @@
 // Orders repository - tenant-aware database operations using Drizzle ORM
 import { eq, and, ilike, gte, lte, desc, asc, count, sum, inArray } from 'drizzle-orm';
-import { db, orders, tickets, events } from '../../db/index';
+import { db, orders, tickets, events, ticketEvents } from '../../db/index';
 import type {
   Order,
   CreateOrderRequest,
@@ -408,4 +408,89 @@ export const getUserTicketOrders = async (
     );
 
   return data.map(transformOrder);
+};
+
+// Get user purchases with ticket details (for my-purchases endpoint)
+export const listUserPurchasesWithTicketDetails = async (
+  appId: string,
+  tenantId: string,
+  userId: string,
+  pagination: PaginationParams = {}
+) => {
+  const page = Math.max(1, pagination.page || 1);
+  const pageSize = Math.max(1, Math.min(100, pagination.page_size || 10));
+  const offset = (page - 1) * pageSize;
+
+  const conditions = [
+    eq(orders.appId, appId),
+    eq(orders.tenantId, tenantId),
+    eq(orders.userId, userId),
+    eq(orders.status, 'completed'),
+  ];
+
+  const [countResult] = await db
+    .select({ count: count() })
+    .from(orders)
+    .where(and(...conditions));
+
+  const total = countResult?.count || 0;
+
+  const data = await db
+    .select({
+      orderId: orders.id,
+      ticketId: orders.ticketId,
+      purchasedAt: orders.createdAt,
+      ticketTitle: tickets.title,
+      ticketDescription: tickets.description,
+      ticketUrl: tickets.url,
+      ticketThumbnail: tickets.thumbnailImagePortrait,
+    })
+    .from(orders)
+    .leftJoin(tickets, eq(orders.ticketId, tickets.id))
+    .where(and(...conditions))
+    .orderBy(desc(orders.createdAt))
+    .limit(pageSize)
+    .offset(offset);
+
+  // Get the earliest event start datetime for each ticket via ticketEvents join table
+  const ticketIds = data.map(d => d.ticketId).filter((id): id is number => id !== null);
+  
+  let eventStartDates: Record<number, string> = {};
+  if (ticketIds.length > 0) {
+    // Join ticketEvents with events to get start datetime for each ticket
+    const eventData = await db
+      .select({
+        ticketId: ticketEvents.ticketId,
+        startDatetime: events.startDatetime,
+      })
+      .from(ticketEvents)
+      .innerJoin(events, eq(ticketEvents.eventId, events.id))
+      .where(inArray(ticketEvents.ticketId, ticketIds))
+      .orderBy(asc(events.startDatetime));
+
+    // Get the earliest start datetime for each ticket
+    for (const event of eventData) {
+      if (event.ticketId && event.startDatetime && !eventStartDates[event.ticketId]) {
+        eventStartDates[event.ticketId] = event.startDatetime.toISOString();
+      }
+    }
+  }
+
+  return {
+    data: data.map(d => ({
+      id: d.ticketId || 0,
+      title: d.ticketTitle || '',
+      description: d.ticketDescription || undefined,
+      thumbnail_image_portrait: d.ticketThumbnail || undefined,
+      url: d.ticketUrl || undefined,
+      start_datetime: d.ticketId ? eventStartDates[d.ticketId] : undefined,
+      ticket_id: d.ticketId || 0,
+      order_id: d.orderId,
+      purchased_at: d.purchasedAt,
+    })),
+    total,
+    page,
+    page_size: pageSize,
+    total_pages: Math.ceil(total / pageSize),
+  };
 };

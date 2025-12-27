@@ -97,6 +97,17 @@ export const env = {
     supportEmail: getEnv('SUPPORT_EMAIL', 'live@rekard.com'),
     supportPhone: getEnv('SUPPORT_PHONE', ''),
   },
+
+  // Default platform settings for shared domain (watch.rekard.com)
+  platform: {
+    defaultLegalName: getEnv('DEFAULT_LEGAL_NAME', 'Rekard Media Pvt Ltd'),
+    defaultLogoUrl: getEnv('DEFAULT_LOGO_URL', '/rekard_logo.png'),
+    defaultSupportEmail: getEnv('DEFAULT_SUPPORT_EMAIL', 'support@rekard.com'),
+    sharedDomains: getEnvArray('SHARED_DOMAINS', ['watch.rekard.com', 'localhost:3001', 'localhost']),
+    defaultTermsUrl: getEnv('DEFAULT_TERMS_URL', '/terms'),
+    defaultPrivacyUrl: getEnv('DEFAULT_PRIVACY_URL', '/privacy'),
+    defaultRefundUrl: getEnv('DEFAULT_REFUND_URL', '/refund'),
+  },
 } as const;
 
 export type Env = typeof env;

@@ -196,3 +196,75 @@ export const requireAuth = (
   next();
 };
 
+/**
+ * Extract tenant context for viewers (doesn't auto-create tenants)
+ * Resolves tenant from domain only, falls back to system tenant
+ */
+export const extractViewerTenantContext = async (req: AppRequest): Promise<TenantContext> => {
+  const authReq = req as RequestWithAuth;
+  const userId = authReq.userId || '';
+  
+  // Get host from X-Host header
+  const host = (req.headers['x-host'] as string) || req.headers.host || '';
+  
+  // Try to resolve tenant from domain
+  if (host) {
+    try {
+      const tenant = await tenantService.resolveTenantFromDomain(host);
+      if (tenant) {
+        const tenantInfo = await tenantService.getTenantById(tenant.tenantId);
+        return {
+          userId,
+          tenantId: tenant.tenantId,
+          tenantUserId: tenantInfo?.user_id || '',
+          appId: tenant.appId,
+          isPro: tenantInfo?.is_pro ?? false,
+          fromDomain: true,
+          resolvedFrom: 'domain',
+        };
+      }
+    } catch (error) {
+      log.warn(`Failed to resolve viewer tenant from domain: ${host}`, error);
+    }
+  }
+  
+  // Fall back to system tenant (for shared domain like watch.rekard.com)
+  return {
+    userId,
+    tenantId: SYSTEM_TENANT_ID,
+    tenantUserId: '',
+    appId: DEFAULT_APP_ID,
+    isPro: false,
+    fromDomain: false,
+    resolvedFrom: 'default',
+  };
+};
+
+/**
+ * Viewer-specific tenant middleware
+ * Doesn't auto-create tenants - viewers use domain-resolved or system tenant
+ */
+export const viewerTenantMiddleware = async (
+  req: AppRequest,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    req.tenant = await extractViewerTenantContext(req);
+    next();
+  } catch (error) {
+    log.error('Error in viewer tenant middleware', error);
+    // Fall back to system tenant
+    req.tenant = {
+      userId: (req as RequestWithAuth).userId || '',
+      tenantId: SYSTEM_TENANT_ID,
+      tenantUserId: '',
+      appId: DEFAULT_APP_ID,
+      isPro: false,
+      fromDomain: false,
+      resolvedFrom: 'default',
+    };
+    next();
+  }
+};
+

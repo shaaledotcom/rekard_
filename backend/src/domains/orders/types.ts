@@ -143,6 +143,27 @@ export type WatchLinkResponse = {
   order_id: number;
 };
 
+// Purchase with ticket details (for my-purchases endpoint)
+export type PurchaseWithTicketDetails = {
+  id: number;
+  title: string;
+  description?: string;
+  thumbnail_image_portrait?: string;
+  url?: string;
+  start_datetime?: string;
+  ticket_id: number;
+  order_id: number;
+  purchased_at: Date;
+};
+
+export type MyPurchasesListResponse = {
+  data: PurchaseWithTicketDetails[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+};
+
 // Coupon validation request
 export type ValidateCouponRequest = {
   coupon_code: string;

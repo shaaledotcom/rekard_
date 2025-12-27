@@ -6,14 +6,14 @@ import type {
   CreateMessageRequest,
   UpdateMessageRequest,
 } from '../../domains/chat/types.js';
-import { tenantMiddleware } from '../../shared/middleware/tenant.js';
+import { viewerTenantMiddleware } from '../../shared/middleware/tenant.js';
 import { ok, created, noContent, badRequest } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
 
 const router = Router();
 
 // Apply tenant middleware (optional auth - anonymous allowed)
-router.use(tenantMiddleware);
+router.use(viewerTenantMiddleware);
 
 // Get username from request (session or body)
 const getUsername = (req: AppRequest, bodyUsername?: string): string => {

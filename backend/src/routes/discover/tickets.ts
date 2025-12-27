@@ -19,11 +19,12 @@ router.get('/:id', asyncHandler(async (req: AppRequest, res: Response) => {
   ok(res, ticket);
 }));
 
-// Get public ticket by URL
-router.get('/by-url/:url', asyncHandler(async (req: AppRequest, res: Response) => {
-  const url = req.params.url;
+// Get public ticket by URL (use wildcard to capture URL with slashes)
+router.get('/by-url/*', asyncHandler(async (req: AppRequest, res: Response) => {
+  // Get the URL from the wildcard parameter (everything after /by-url/)
+  const url = '/' + req.params[0];
 
-  if (!url) {
+  if (!url || url === '/') {
     return badRequest(res, 'URL is required');
   }
 

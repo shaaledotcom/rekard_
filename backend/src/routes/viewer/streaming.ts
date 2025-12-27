@@ -5,7 +5,7 @@ import type {
   CreateStreamingSessionRequest,
 } from '../../domains/streaming/types.js';
 import { requireSession } from '../../domains/auth/session.js';
-import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
+import { viewerTenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
 import { ok, created, noContent, badRequest } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
 import { asyncHandler } from '@/shared/index.js';
@@ -14,7 +14,7 @@ const router = Router();
 
 // Apply middleware for protected routes
 router.use(requireSession);
-router.use(tenantMiddleware);
+router.use(viewerTenantMiddleware);
 
 // Create streaming session
 router.post('/sessions', asyncHandler(async (req: AppRequest, res: Response) => {

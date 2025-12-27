@@ -6,7 +6,7 @@ import type {
   UpdateCartItemRequest,
 } from '../../domains/cart/types.js';
 import { requireSession } from '../../domains/auth/session.js';
-import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
+import { viewerTenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
 import { ok, created, noContent, badRequest } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
 import { asyncHandler } from '@/shared/index.js';
@@ -15,7 +15,7 @@ const router = Router();
 
 // Apply middleware
 router.use(requireSession);
-router.use(tenantMiddleware);
+router.use(viewerTenantMiddleware);
 
 // Get cart
 router.get('/', asyncHandler(async (req: AppRequest, res: Response) => {

@@ -7,7 +7,7 @@ import type {
   PaginationParams,
 } from '../../domains/orders/types.js';
 import { requireSession } from '../../domains/auth/session.js';
-import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
+import { viewerTenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
 import { ok, created, badRequest } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
 import { asyncHandler } from '@/shared/index.js';
@@ -17,7 +17,7 @@ const router = Router();
 // ===== Public routes (no auth required) =====
 
 // Create user and order (purchase without login)
-router.post('/create', tenantMiddleware, asyncHandler(async (req: AppRequest, res: Response) => {
+router.post('/create', viewerTenantMiddleware, asyncHandler(async (req: AppRequest, res: Response) => {
   const tenant = getTenantContext(req);
   const data: CreateUserAndOrderRequest = req.body;
 
@@ -39,7 +39,7 @@ router.post('/create', tenantMiddleware, asyncHandler(async (req: AppRequest, re
 }));
 
 // Complete order after payment
-router.post('/complete', tenantMiddleware, asyncHandler(async (req: AppRequest, res: Response) => {
+router.post('/complete', viewerTenantMiddleware, asyncHandler(async (req: AppRequest, res: Response) => {
   const tenant = getTenantContext(req);
   const { order_id, payment_id, user_id } = req.body;
 
@@ -66,7 +66,7 @@ router.post('/complete', tenantMiddleware, asyncHandler(async (req: AppRequest, 
 }));
 
 // Validate coupon for purchase without login
-router.post('/validate-coupon', tenantMiddleware, asyncHandler(async (req: AppRequest, res: Response) => {
+router.post('/validate-coupon', viewerTenantMiddleware, asyncHandler(async (req: AppRequest, res: Response) => {
   const tenant = getTenantContext(req);
   const { coupon_code, ticket_id, order_amount } = req.body;
 
@@ -92,7 +92,7 @@ router.post('/validate-coupon', tenantMiddleware, asyncHandler(async (req: AppRe
 
 // ===== Protected routes (auth required) =====
 router.use(requireSession);
-router.use(tenantMiddleware);
+router.use(viewerTenantMiddleware);
 
 // Get user purchase status for a ticket
 router.get('/purchase-status/:ticketId', asyncHandler(async (req: AppRequest, res: Response) => {
