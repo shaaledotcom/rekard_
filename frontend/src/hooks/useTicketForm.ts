@@ -37,7 +37,8 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
     skip: !ticketId,
   });
 
-  // Fetch events for selection
+  // Fetch events for selection - exclude draft events
+  // Events in draft status should not be available for ticket creation
   const { 
     data: eventsData, 
     isLoading: eventsLoading 
@@ -48,6 +49,11 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
     sort_by: "start_datetime",
     sort_order: "desc",
   });
+  
+  // Filter out draft events - only published, live, completed events can be linked to tickets
+  const filteredEvents = (eventsData?.data || []).filter(
+    (event) => event.status !== "draft" && event.status !== "cancelled" && event.status !== "archived"
+  );
 
   // Mutations
   const [createTicket, { isLoading: isCreating }] = useCreateTicketMutation();
@@ -353,10 +359,10 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
     isLoading: ticketLoading,
     isSubmitting: isCreating || isUpdating || isUploadingFile,
 
-    // Events data
-    events: eventsData?.data || [],
+    // Events data - filtered to exclude drafts, cancelled, archived
+    events: filteredEvents,
     eventsLoading,
-    totalEvents: eventsData?.total || 0,
+    totalEvents: filteredEvents.length,
     totalEventsPages: eventsData?.total_pages || 1,
     currentEventsPage: eventsPage,
     eventsSearchQuery: eventsSearch,

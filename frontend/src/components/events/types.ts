@@ -4,6 +4,7 @@ import {
   Zap,
   CheckCircle,
   XCircle,
+  Archive,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { EventStatus, CreateEventRequest } from "@/store/api";
@@ -11,7 +12,7 @@ import type { EventStatus, CreateEventRequest } from "@/store/api";
 // Status configuration
 export interface StatusConfig {
   label: string;
-  variant: "draft" | "published" | "live" | "completed" | "cancelled";
+  variant: "draft" | "published" | "live" | "completed" | "cancelled" | "archived";
   icon: LucideIcon;
 }
 
@@ -21,6 +22,7 @@ export const statusConfig: Record<EventStatus, StatusConfig> = {
   live: { label: "LIVE", variant: "live", icon: Zap },
   completed: { label: "Completed", variant: "completed", icon: CheckCircle },
   cancelled: { label: "Cancelled", variant: "cancelled", icon: XCircle },
+  archived: { label: "Archived", variant: "archived", icon: Archive },
 };
 
 // Default form values

@@ -40,6 +40,7 @@ export function EventsFilters({
         <option value="live">⚡ Live Now</option>
         <option value="completed">✅ Completed</option>
         <option value="cancelled">❌ Cancelled</option>
+        <option value="archived">📦 Archived</option>
       </Select>
     </div>
   );

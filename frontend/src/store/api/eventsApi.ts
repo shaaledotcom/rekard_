@@ -1,7 +1,7 @@
 import { api } from "./baseApi";
 
 // Event types
-export type EventStatus = "draft" | "published" | "live" | "completed" | "cancelled";
+export type EventStatus = "draft" | "published" | "live" | "completed" | "cancelled" | "archived";
 
 export interface Event {
   id: number;
@@ -191,6 +191,28 @@ export const eventsApi = api.injectEndpoints({
         { type: "Events", id: "LIST" },
       ],
     }),
+
+    archiveEvent: builder.mutation<EventResponse, number>({
+      query: (id) => ({
+        url: `/v1/producer/events/${id}/archive`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Events", id },
+        { type: "Events", id: "LIST" },
+      ],
+    }),
+
+    setEventDraft: builder.mutation<EventResponse, number>({
+      query: (id) => ({
+        url: `/v1/producer/events/${id}/draft`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Events", id },
+        { type: "Events", id: "LIST" },
+      ],
+    }),
   }),
 });
 
@@ -204,5 +226,7 @@ export const {
   usePublishEventMutation,
   useCancelEventMutation,
   useCompleteEventMutation,
+  useArchiveEventMutation,
+  useSetEventDraftMutation,
 } = eventsApi;
 

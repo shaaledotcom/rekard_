@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   useGetTicketsQuery,
   useDeleteTicketMutation,
+  usePublishTicketMutation,
+  useArchiveTicketMutation,
   Ticket,
   TicketStatus,
 } from "@/store/api";
@@ -43,6 +45,8 @@ function TicketsContent() {
   });
 
   const [deleteTicket, { isLoading: isDeleting }] = useDeleteTicketMutation();
+  const [publishTicket] = usePublishTicketMutation();
+  const [archiveTicket] = useArchiveTicketMutation();
 
   const tickets = ticketsData?.data || [];
   const totalPages = ticketsData?.total_pages || 1;
@@ -86,6 +90,38 @@ function TicketsContent() {
     setSelectedTicket(null);
   }, []);
 
+  const handlePublish = useCallback(async (ticket: Ticket) => {
+    try {
+      await publishTicket(ticket.id).unwrap();
+      toast({
+        title: "Ticket Published! 🎫",
+        description: "The ticket is now available for purchase.",
+      });
+    } catch {
+      toast({
+        title: "Oops!",
+        description: "Couldn't publish the ticket. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [publishTicket, toast]);
+
+  const handleArchive = useCallback(async (ticket: Ticket) => {
+    try {
+      await archiveTicket(ticket.id).unwrap();
+      toast({
+        title: "Ticket Archived 📦",
+        description: "The ticket has been archived.",
+      });
+    } catch {
+      toast({
+        title: "Oops!",
+        description: "Couldn't archive the ticket. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [archiveTicket, toast]);
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       <TicketsBackground />
@@ -106,6 +142,8 @@ function TicketsContent() {
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
           onCreateClick={handleCreateClick}
+          onPublish={handlePublish}
+          onArchive={handleArchive}
         />
 
         <TicketsPagination

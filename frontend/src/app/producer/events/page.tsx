@@ -47,6 +47,11 @@ function EventsContent() {
     closeFormDialog,
     closeDeleteDialog,
     handleDeleteEvent,
+    handlePublish,
+    handleCancel,
+    handleComplete,
+    handleArchive,
+    handleSetDraft,
   } = useEventsPage();
 
   return (
@@ -69,6 +74,11 @@ function EventsContent() {
           onEdit={openEditDialog}
           onDelete={openDeleteDialog}
           onCreateClick={openCreateDialog}
+          onPublish={handlePublish}
+          onArchive={handleArchive}
+          onDraft={handleSetDraft}
+          onComplete={handleComplete}
+          onCancel={handleCancel}
         />
 
         <EventsPagination

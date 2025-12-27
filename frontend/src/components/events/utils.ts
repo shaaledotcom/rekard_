@@ -35,6 +35,10 @@ export const getStatusBackgroundColor = (status: string): string => {
       return "bg-muted";
     case "completed":
       return "bg-muted";
+    case "archived":
+      return "bg-muted/50";
+    case "cancelled":
+      return "bg-muted/50";
     default:
       return "bg-muted";
   }

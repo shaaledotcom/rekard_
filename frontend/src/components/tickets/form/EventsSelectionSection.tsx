@@ -94,7 +94,7 @@ export function EventsSelectionSection({
         <div>
           <Label className="text-foreground/70 text-sm font-medium">Link to Events *</Label>
           <p className="text-xs text-muted-foreground mt-1">
-            Select the events this ticket provides access to
+            Select the events this ticket provides access to (only published/live events shown)
           </p>
         </div>
         <Badge variant={selectedEventIds.length > 0 ? "default" : "secondary"}>

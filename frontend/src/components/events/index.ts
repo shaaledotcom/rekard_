@@ -9,9 +9,6 @@ export { DeleteEventDialog } from "./DeleteEventDialog";
 
 // Types and constants
 export {
-  containerVariants,
-  itemVariants,
-  cardHover,
   statusConfig,
   defaultFormValues,
   type StatusConfig,

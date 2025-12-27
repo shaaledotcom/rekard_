@@ -146,6 +146,32 @@ router.post('/:id/complete', asyncHandler(async (req: AppRequest, res: Response)
   ok(res, event, 'Event completed successfully');
 }));
 
+// Archive event
+router.post('/:id/archive', asyncHandler(async (req: AppRequest, res: Response) => {
+  const tenant = getTenantContext(req);
+  const eventId = parseInt(req.params.id, 10);
+
+  if (isNaN(eventId)) {
+    return badRequest(res, 'Invalid event ID');
+  }
+
+  const event = await eventsService.archiveEvent(tenant.appId, tenant.tenantId, eventId);
+  ok(res, event, 'Event archived successfully');
+}));
+
+// Set event to draft
+router.post('/:id/draft', asyncHandler(async (req: AppRequest, res: Response) => {
+  const tenant = getTenantContext(req);
+  const eventId = parseInt(req.params.id, 10);
+
+  if (isNaN(eventId)) {
+    return badRequest(res, 'Invalid event ID');
+  }
+
+  const event = await eventsService.setEventDraft(tenant.appId, tenant.tenantId, eventId);
+  ok(res, event, 'Event set to draft successfully');
+}));
+
 // Get live events
 router.get('/dashboard/live', asyncHandler(async (req: AppRequest, res: Response) => {
   const tenant = getTenantContext(req);

@@ -628,3 +628,61 @@ export const getTicketsByEventId = async (
 
   return data.map(transformTicket);
 };
+
+// Get all tickets that contain a specific event
+export const getTicketsContainingEvent = async (
+  appId: string,
+  tenantId: string,
+  eventId: number
+): Promise<{ ticket: Ticket; events: Event[] }[]> => {
+  const ticketIds = await db
+    .select({ ticketId: ticketEvents.ticketId })
+    .from(ticketEvents)
+    .where(eq(ticketEvents.eventId, eventId));
+
+  if (ticketIds.length === 0) return [];
+
+  const ticketData = await db
+    .select()
+    .from(tickets)
+    .where(
+      and(
+        eq(tickets.appId, appId),
+        eq(tickets.tenantId, tenantId),
+        inArray(tickets.id, ticketIds.map(t => t.ticketId))
+      )
+    );
+
+  const result: { ticket: Ticket; events: Event[] }[] = [];
+  
+  for (const ticket of ticketData) {
+    const ticketEventsData = await getTicketEvents(ticket.id);
+    result.push({
+      ticket: transformTicket(ticket),
+      events: ticketEventsData,
+    });
+  }
+
+  return result;
+};
+
+// Archive ticket
+export const archiveTicketById = async (
+  appId: string,
+  tenantId: string,
+  ticketId: number
+): Promise<boolean> => {
+  const result = await db
+    .update(tickets)
+    .set({ status: 'archived', updatedAt: new Date() })
+    .where(
+      and(
+        eq(tickets.appId, appId),
+        eq(tickets.tenantId, tenantId),
+        eq(tickets.id, ticketId)
+      )
+    )
+    .returning({ id: tickets.id });
+
+  return result.length > 0;
+};

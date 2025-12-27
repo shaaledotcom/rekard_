@@ -1,5 +1,6 @@
 // Events service - business logic
 import * as repo from './repository.js';
+import * as ticketRepo from '../tickets/repository.js';
 import type {
   Event,
   CreateEventRequest,
@@ -164,6 +165,71 @@ export const completeEvent = async (
 
   const updated = await repo.updateEvent(appId, tenantId, eventId, { status: 'completed' });
   log.info(`Completed event ${eventId}`);
+  return updated!;
+};
+
+export const archiveEvent = async (
+  appId: string,
+  tenantId: string,
+  eventId: number
+): Promise<Event> => {
+  const event = await repo.getEventById(appId, tenantId, eventId);
+  if (!event) {
+    throw notFound('Event');
+  }
+
+  if (event.status === 'archived') {
+    throw badRequest('Event is already archived');
+  }
+
+  const updated = await repo.updateEvent(appId, tenantId, eventId, { status: 'archived' });
+  log.info(`Archived event ${eventId}`);
+
+  // Check if any tickets that contain this event should be auto-archived
+  // A ticket is auto-archived when ALL of its events are archived
+  await checkAndArchiveTicketsForEvent(appId, tenantId, eventId);
+
+  return updated!;
+};
+
+// Helper function to check and archive tickets when all their events are archived
+const checkAndArchiveTicketsForEvent = async (
+  appId: string,
+  tenantId: string,
+  eventId: number
+): Promise<void> => {
+  const ticketsWithEvents = await ticketRepo.getTicketsContainingEvent(appId, tenantId, eventId);
+
+  for (const { ticket, events } of ticketsWithEvents) {
+    // Skip if ticket is already archived
+    if (ticket.status === 'archived') continue;
+
+    // Check if ALL events in this ticket are now archived
+    const allEventsArchived = events.every((e) => e.status === 'archived');
+    
+    if (allEventsArchived) {
+      await ticketRepo.archiveTicketById(appId, tenantId, ticket.id);
+      log.info(`Auto-archived ticket ${ticket.id} because all its events are archived`);
+    }
+  }
+};
+
+export const setEventDraft = async (
+  appId: string,
+  tenantId: string,
+  eventId: number
+): Promise<Event> => {
+  const event = await repo.getEventById(appId, tenantId, eventId);
+  if (!event) {
+    throw notFound('Event');
+  }
+
+  if (event.status === 'draft') {
+    throw badRequest('Event is already a draft');
+  }
+
+  const updated = await repo.updateEvent(appId, tenantId, eventId, { status: 'draft' });
+  log.info(`Set event ${eventId} to draft`);
   return updated!;
 };
 

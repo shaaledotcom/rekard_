@@ -11,6 +11,8 @@ interface TicketsGridProps {
   onEdit: (ticket: TicketType) => void;
   onDelete: (ticket: TicketType) => void;
   onCreateClick: () => void;
+  onPublish?: (ticket: TicketType) => void;
+  onArchive?: (ticket: TicketType) => void;
 }
 
 // Loading skeleton component
@@ -83,6 +85,8 @@ export function TicketsGrid({
   onEdit,
   onDelete,
   onCreateClick,
+  onPublish,
+  onArchive,
 }: TicketsGridProps) {
   if (isLoading) {
     return <LoadingSkeleton />;
@@ -102,6 +106,8 @@ export function TicketsGrid({
             ticket={ticket}
             onEdit={() => onEdit(ticket)}
             onDelete={() => onDelete(ticket)}
+            onPublish={onPublish ? () => onPublish(ticket) : undefined}
+            onArchive={onArchive ? () => onArchive(ticket) : undefined}
           />
         ))
       )}

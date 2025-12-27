@@ -28,9 +28,9 @@ export type Event = {
   updated_at: Date;
 };
 
-export type EventStatus = 'draft' | 'published' | 'live' | 'completed' | 'cancelled';
+export type EventStatus = 'draft' | 'published' | 'live' | 'completed' | 'cancelled' | 'archived';
 
-export const VALID_EVENT_STATUSES: EventStatus[] = ['draft', 'published', 'live', 'completed', 'cancelled'];
+export const VALID_EVENT_STATUSES: EventStatus[] = ['draft', 'published', 'live', 'completed', 'cancelled', 'archived'];
 
 export type CreateEventRequest = {
   title: string;

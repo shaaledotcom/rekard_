@@ -27,6 +27,8 @@ export {
   usePublishEventMutation,
   useCancelEventMutation,
   useCompleteEventMutation,
+  useArchiveEventMutation,
+  useSetEventDraftMutation,
 } from "./eventsApi";
 export type {
   Event,

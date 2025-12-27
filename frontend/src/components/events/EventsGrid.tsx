@@ -11,6 +11,11 @@ interface EventsGridProps {
   onEdit: (event: Event) => void;
   onDelete: (event: Event) => void;
   onCreateClick: () => void;
+  onPublish?: (event: Event) => void;
+  onArchive?: (event: Event) => void;
+  onDraft?: (event: Event) => void;
+  onComplete?: (event: Event) => void;
+  onCancel?: (event: Event) => void;
 }
 
 // Loading skeleton component
@@ -83,6 +88,11 @@ export function EventsGrid({
   onEdit,
   onDelete,
   onCreateClick,
+  onPublish,
+  onArchive,
+  onDraft,
+  onComplete,
+  onCancel,
 }: EventsGridProps) {
   if (isLoading) {
     return <LoadingSkeleton />;
@@ -102,6 +112,11 @@ export function EventsGrid({
             event={event}
             onEdit={() => onEdit(event)}
             onDelete={() => onDelete(event)}
+            onPublish={onPublish ? () => onPublish(event) : undefined}
+            onArchive={onArchive ? () => onArchive(event) : undefined}
+            onDraft={onDraft ? () => onDraft(event) : undefined}
+            onComplete={onComplete ? () => onComplete(event) : undefined}
+            onCancel={onCancel ? () => onCancel(event) : undefined}
           />
         ))
       )}

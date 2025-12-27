@@ -10,6 +10,8 @@ import {
   usePublishEventMutation,
   useCancelEventMutation,
   useCompleteEventMutation,
+  useArchiveEventMutation,
+  useSetEventDraftMutation,
   Event,
   EventStatus,
   CreateEventRequest,
@@ -49,6 +51,8 @@ export function useEventsPage() {
   const [publishEvent] = usePublishEventMutation();
   const [cancelEvent] = useCancelEventMutation();
   const [completeEvent] = useCompleteEventMutation();
+  const [archiveEvent] = useArchiveEventMutation();
+  const [setEventDraft] = useSetEventDraftMutation();
 
   const events = eventsData?.data || [];
   const totalPages = eventsData?.total_pages || 1;
@@ -119,6 +123,26 @@ export function useEventsPage() {
       toast({ title: "Oops!", description: "Couldn't complete the event.", variant: "destructive" });
     }
   }, [completeEvent, toast]);
+
+  const handleArchive = useCallback(async (event: Event) => {
+    try {
+      await archiveEvent(event.id).unwrap();
+      toast({ title: "Event Archived 📦", description: "The event has been archived." });
+      setActionMenuOpen(null);
+    } catch {
+      toast({ title: "Oops!", description: "Couldn't archive the event.", variant: "destructive" });
+    }
+  }, [archiveEvent, toast]);
+
+  const handleSetDraft = useCallback(async (event: Event) => {
+    try {
+      await setEventDraft(event.id).unwrap();
+      toast({ title: "Event is Draft 📝", description: "The event has been set to draft." });
+      setActionMenuOpen(null);
+    } catch {
+      toast({ title: "Oops!", description: "Couldn't set the event to draft.", variant: "destructive" });
+    }
+  }, [setEventDraft, toast]);
 
   const openEditDialog = useCallback((event: Event) => {
     setSelectedEvent(event);
@@ -204,6 +228,8 @@ export function useEventsPage() {
     handlePublish,
     handleCancel,
     handleComplete,
+    handleArchive,
+    handleSetDraft,
     openEditDialog,
     openDeleteDialog,
     openCreateDialog,
