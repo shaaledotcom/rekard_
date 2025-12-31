@@ -31,6 +31,8 @@ COPY package.json pnpm-lock.yaml ./
 # Copy source files
 COPY tsconfig.json ./
 COPY src ./src
+COPY drizzle ./drizzle
+COPY drizzle.config.ts ./
 
 # Build TypeScript
 RUN pnpm run build
@@ -57,8 +59,8 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/dist ./dist
 
 # Copy drizzle migrations if needed
-COPY drizzle ./drizzle
-COPY drizzle.config.ts ./
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/drizzle.config.ts ./
 
 # Set ownership
 RUN chown -R nodejs:nodejs /app
