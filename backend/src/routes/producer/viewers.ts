@@ -1,6 +1,6 @@
 // Producer viewers routes - manage viewer access to tickets
 import { Router, Response } from 'express';
-import { ok, created, notFound, badRequest, internalError } from '../../shared/utils/response.js';
+import { ok, created, notFound, badRequest } from '../../shared/utils/response.js';
 import { asyncHandler } from '../../shared/index.js';
 import { requireSession, tenantContextMiddleware } from '../../domains/auth/index.js';
 import type { AuthenticatedRequest } from '../../domains/auth/index.js';

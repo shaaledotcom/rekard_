@@ -10,11 +10,9 @@ import type {
   PurchasePlanRequest,
 } from '../../domains/billing/types.js';
 import { requireSession } from '../../domains/auth/session.js';
-import { requireRole } from '../../domains/auth/roles.js';
 import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
 import { ok, okList, created, noContent, badRequest, notFound } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
-import { ROLE_PRODUCER } from '../../domains/auth/constants.js';
 import { asyncHandler } from '@/shared/index.js';
 
 const router = Router();

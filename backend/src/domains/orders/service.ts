@@ -25,7 +25,7 @@ import { badRequest, notFound } from '../../shared/errors/app-error.js';
 
 // Create order with validation
 export const createOrder = async (
-  appId: string,
+  _appId: string,
   tenantId: string,
   userId: string,
   data: CreateOrderRequest

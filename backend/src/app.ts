@@ -11,7 +11,6 @@ import {
 } from './shared/middleware/index.js';
 import {
   optionalSession,
-  refreshRolesMiddleware,
   tenantContextMiddleware,
 } from './domains/auth/index.js';
 import { routes } from './routes/index.js';
