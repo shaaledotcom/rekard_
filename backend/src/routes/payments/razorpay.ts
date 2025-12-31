@@ -6,7 +6,7 @@ import { tenantMiddleware } from '../../shared/middleware/tenant.js';
 import { ok, created, badRequest } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
 import { log } from '../../shared/middleware/logger.js';
-import { asyncHandler } from '@/shared/index.js';
+import { asyncHandler } from '../../shared/index.js';
 
 const router = Router();
 

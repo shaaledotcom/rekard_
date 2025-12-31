@@ -9,7 +9,7 @@ import { requireSession } from '../../domains/auth/session.js';
 import { viewerTenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
 import { ok, created, noContent, badRequest } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
-import { asyncHandler } from '@/shared/index.js';
+import { asyncHandler } from '../../shared/index.js';
 
 const router = Router();
 

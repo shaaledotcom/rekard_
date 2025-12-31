@@ -3,7 +3,7 @@ import { ok, unauthorized } from '../shared/utils/response.js';
 import { getUserMetadata, getUserRoles, getUserPermissions, getUserById, requireSession } from '../domains/auth/index.js';
 import type { AuthenticatedRequest } from '../domains/auth/index.js';
 import * as preferencesService from '../domains/preferences/service.js';
-import { asyncHandler } from '@/shared/index.js';
+import { asyncHandler } from '../shared/index.js';
 import { SYSTEM_TENANT_ID, DEFAULT_APP_ID } from '../domains/auth/constants.js';
 
 const router = Router();

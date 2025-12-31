@@ -13,7 +13,7 @@ import { requireSession } from '../../domains/auth/session.js';
 import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
 import { ok, okList, created, noContent, badRequest, notFound } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
-import { asyncHandler } from '@/shared/index.js';
+import { asyncHandler } from '../../shared/index.js';
 
 const router = Router();
 

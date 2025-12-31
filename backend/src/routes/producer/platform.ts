@@ -10,7 +10,7 @@ import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tena
 import { requireProPlan } from '../../shared/middleware/plan.js';
 import { ok } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
-import { asyncHandler } from '@/shared/index.js';
+import { asyncHandler } from '../../shared/index.js';
 
 const router = Router();
 
