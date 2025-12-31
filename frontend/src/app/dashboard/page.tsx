@@ -17,18 +17,6 @@ function DashboardContent() {
       {/* Main content */}
       <main className="container mx-auto px-4 lg:px-6 py-8 relative z-10">
         <div className="space-y-8">
-          {/* Welcome section */}
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                Welcome back{meData?.data?.email ? `, ${meData.data.email.split("@")[0]}` : ""}!
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Here&apos;s your transaction overview and account summary.
-              </p>
-            </div>
-          </div>
-
           {/* User info card */}
           {meData?.data && (
             <Card className="bg-card border-border">
