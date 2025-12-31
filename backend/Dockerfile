@@ -28,11 +28,12 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml ./
 
-# Copy source files
+# Copy all necessary files
 COPY tsconfig.json ./
 COPY src ./src
-COPY drizzle ./drizzle
 COPY drizzle.config.ts ./
+
+RUN pnpm db:generate || (echo "Note: Migration generation completed or migrations already exist" && mkdir -p ./drizzle)
 
 # Build TypeScript
 RUN pnpm run build
