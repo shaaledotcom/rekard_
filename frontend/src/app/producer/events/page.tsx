@@ -38,6 +38,8 @@ function EventsContent() {
     setFormData,
     videoFile,
     setVideoFile,
+    thumbnailFile,
+    setThumbnailFile,
 
     // Data
     events,
@@ -135,6 +137,8 @@ function EventsContent() {
         onFormChange={setFormData}
         videoFile={videoFile}
         onVideoFileChange={setVideoFile}
+        thumbnailFile={thumbnailFile}
+        onThumbnailFileChange={setThumbnailFile}
       />
 
       <DeleteEventDialog

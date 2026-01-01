@@ -24,7 +24,7 @@ import { defaultFormValues } from "@/components/events";
 export function useEventsPage() {
   const { toast } = useToast();
   const { getAccessToken } = useAuth();
-  const { uploadMedia } = useFileUpload({ category: "events" });
+  const { uploadMedia, uploadFile } = useFileUpload({ category: "events" });
 
   // UI state
   const [search, setSearch] = useState("");
@@ -39,6 +39,7 @@ export function useEventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [formData, setFormData] = useState<CreateEventRequest>(defaultFormValues);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
 
   // API hooks
   const { data: eventsData, isLoading } = useGetEventsQuery({
@@ -68,15 +69,29 @@ export function useEventsPage() {
   const handleCreateEvent = useCallback(async () => {
     try {
       let finalFormData = { ...formData };
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
+        return;
+      }
+
+      // Upload thumbnail file if selected
+      if (thumbnailFile) {
+        const uploadResult = await uploadFile(thumbnailFile, accessToken, "events");
+        if (uploadResult.success && uploadResult.file) {
+          finalFormData = { ...finalFormData, thumbnail_image_portrait: uploadResult.file.url };
+        } else {
+          toast({ 
+            title: "Upload Failed", 
+            description: uploadResult.error || "Failed to upload thumbnail image.", 
+            variant: "destructive" 
+          });
+          return;
+        }
+      }
 
       // Upload video file if VOD and video file is selected
       if (formData.is_vod && videoFile) {
-        const accessToken = await getAccessToken();
-        if (!accessToken) {
-          toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
-          return;
-        }
-
         const uploadResult = await uploadMedia(videoFile, accessToken, "events");
         if (uploadResult.success && uploadResult.file) {
           finalFormData = { ...finalFormData, embed: uploadResult.file.url };
@@ -95,25 +110,40 @@ export function useEventsPage() {
       setIsCreateDialogOpen(false);
       setFormData(defaultFormValues);
       setVideoFile(null);
+      setThumbnailFile(null);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       toast({ title: "Oops!", description: errorMessage, variant: "destructive" });
     }
-  }, [createEvent, formData, videoFile, getAccessToken, uploadMedia, toast]);
+  }, [createEvent, formData, videoFile, thumbnailFile, getAccessToken, uploadMedia, toast]);
 
   const handleUpdateEvent = useCallback(async () => {
     if (!selectedEvent) return;
     try {
       let finalFormData = { ...formData };
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
+        return;
+      }
+
+      // Upload thumbnail file if selected
+      if (thumbnailFile) {
+        const uploadResult = await uploadFile(thumbnailFile, accessToken, "events");
+        if (uploadResult.success && uploadResult.file) {
+          finalFormData = { ...finalFormData, thumbnail_image_portrait: uploadResult.file.url };
+        } else {
+          toast({ 
+            title: "Upload Failed", 
+            description: uploadResult.error || "Failed to upload thumbnail image.", 
+            variant: "destructive" 
+          });
+          return;
+        }
+      }
 
       // Upload video file if VOD and video file is selected
       if (formData.is_vod && videoFile) {
-        const accessToken = await getAccessToken();
-        if (!accessToken) {
-          toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
-          return;
-        }
-
         const uploadResult = await uploadMedia(videoFile, accessToken, "events");
         if (uploadResult.success && uploadResult.file) {
           finalFormData = { ...finalFormData, embed: uploadResult.file.url };
@@ -133,11 +163,12 @@ export function useEventsPage() {
       setSelectedEvent(null);
       setFormData(defaultFormValues);
       setVideoFile(null);
+      setThumbnailFile(null);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Couldn't update the event. Please try again.";
       toast({ title: "Oops!", description: errorMessage, variant: "destructive" });
     }
-  }, [updateEvent, selectedEvent, formData, videoFile, getAccessToken, uploadMedia, toast]);
+  }, [updateEvent, selectedEvent, formData, videoFile, thumbnailFile, getAccessToken, uploadMedia, toast]);
 
   const handleDeleteEvent = useCallback(async () => {
     if (!selectedEvent) return;
@@ -216,11 +247,13 @@ export function useEventsPage() {
       purchase_disabled: event.purchase_disabled,
       embed: event.embed || "",
       status: event.status,
+      thumbnail_image_portrait: event.thumbnail_image_portrait,
       featured_image: event.featured_image,
       watch_upto: event.watch_upto || "",
       archive_after: event.archive_after || "",
     });
     setVideoFile(null); // Reset video file when opening edit dialog
+    setThumbnailFile(null); // Reset thumbnail file when opening edit dialog
     setIsEditDialogOpen(true);
     setActionMenuOpen(null);
   }, []);
@@ -234,6 +267,7 @@ export function useEventsPage() {
   const openCreateDialog = useCallback(() => {
     setFormData(defaultFormValues);
     setVideoFile(null);
+    setThumbnailFile(null);
     setIsCreateDialogOpen(true);
   }, []);
 
@@ -243,6 +277,7 @@ export function useEventsPage() {
     setSelectedEvent(null);
     setFormData(defaultFormValues);
     setVideoFile(null);
+    setThumbnailFile(null);
   }, []);
 
   const closeDeleteDialog = useCallback(() => {
@@ -275,6 +310,8 @@ export function useEventsPage() {
     setFormData,
     videoFile,
     setVideoFile,
+    thumbnailFile,
+    setThumbnailFile,
 
     // Data
     events,

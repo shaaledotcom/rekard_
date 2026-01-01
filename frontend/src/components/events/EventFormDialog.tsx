@@ -16,7 +16,7 @@ import type { CreateEventRequest } from "@/store/api";
 import { formatDateTimeLocal } from "./utils";
 import { localToUTC } from "@/lib/datetime";
 import { Textarea } from "@/components/ui/textarea";
-import { Film, Radio, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2, Upload, X, Video } from "lucide-react";
+import { Film, Radio, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2, Upload, X, Video, FileImage } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 
 interface EventFormDialogProps {
@@ -29,10 +29,14 @@ interface EventFormDialogProps {
   onFormChange: (data: CreateEventRequest) => void;
   videoFile?: File | null;
   onVideoFileChange?: (file: File | null) => void;
+  thumbnailFile?: File | null;
+  onThumbnailFileChange?: (file: File | null) => void;
 }
 
 const MAX_VIDEO_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export function EventFormDialog({
   isOpen,
@@ -44,11 +48,15 @@ export function EventFormDialog({
   onFormChange,
   videoFile,
   onVideoFileChange,
+  thumbnailFile,
+  onThumbnailFileChange,
 }: EventFormDialogProps) {
   const isVOD = formData.is_vod;
   const [showEmbedPreview, setShowEmbedPreview] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [thumbnailDragOver, setThumbnailDragOver] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   // Check if embed code looks valid (contains iframe or common embed patterns)
   const embedCode = formData.embed || "";
@@ -120,12 +128,82 @@ export function EventFormDialog({
     }
   }, [onVideoFileChange]);
 
+  const validateImageFile = (file: File): string | null => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      return `File type ${file.type} is not supported. Please use JPEG, PNG, or WebP formats.`;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      return `File size must be less than ${Math.round(MAX_IMAGE_SIZE / 1024 / 1024)}MB`;
+    }
+    return null;
+  };
+
+  const handleThumbnailFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const error = validateImageFile(file);
+    if (error) {
+      alert(error);
+      return;
+    }
+
+    onThumbnailFileChange?.(file);
+    // Clear existing URL when new file is selected
+    onFormChange({ ...formData, thumbnail_image_portrait: undefined });
+  }, [formData, onFormChange, onThumbnailFileChange]);
+
+  const handleThumbnailDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setThumbnailDragOver(false);
+
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    const error = validateImageFile(file);
+    if (error) {
+      alert(error);
+      return;
+    }
+
+    onThumbnailFileChange?.(file);
+    onFormChange({ ...formData, thumbnail_image_portrait: undefined });
+  }, [formData, onFormChange, onThumbnailFileChange]);
+
+  const handleThumbnailDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setThumbnailDragOver(true);
+  }, []);
+
+  const handleThumbnailDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setThumbnailDragOver(false);
+  }, []);
+
+  const removeThumbnailFile = useCallback(() => {
+    onThumbnailFileChange?.(null);
+    onFormChange({ ...formData, thumbnail_image_portrait: undefined });
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = "";
+    }
+  }, [formData, onFormChange, onThumbnailFileChange]);
+
   const getVideoPreview = () => {
     if (videoFile) {
       return URL.createObjectURL(videoFile);
     }
     if (formData.embed && formData.embed.startsWith("http")) {
       return formData.embed;
+    }
+    return null;
+  };
+
+  const getThumbnailPreview = () => {
+    if (thumbnailFile) {
+      return URL.createObjectURL(thumbnailFile);
+    }
+    if (formData.thumbnail_image_portrait) {
+      return formData.thumbnail_image_portrait;
     }
     return null;
   };
@@ -221,6 +299,91 @@ export function EventFormDialog({
               onChange={(value) => onFormChange({ ...formData, description: value })}
               placeholder="Tell your audience what makes this event special..."
             />
+          </div>
+
+          {/* Thumbnail Image Upload */}
+          <div className="space-y-3">
+            <Label className="text-foreground/70 text-sm font-medium flex items-center gap-2">
+              <FileImage className="w-4 h-4" />
+              Thumbnail Image
+            </Label>
+            
+            {getThumbnailPreview() ? (
+              <div className="space-y-3 p-4 rounded-xl bg-secondary border border-border">
+                <div className="relative">
+                  <img
+                    className="w-32 h-48 object-cover rounded-lg mx-auto"
+                    src={getThumbnailPreview() || undefined}
+                    alt="Thumbnail preview"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8"
+                    onClick={removeThumbnailFile}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {thumbnailFile && (
+                  <div className="text-xs text-muted-foreground text-center">
+                    <p>{thumbnailFile.name}</p>
+                    <p>Size: {(thumbnailFile.size / 1024 / 1024).toFixed(2)}MB</p>
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => thumbnailInputRef.current?.click()}
+                  className="w-full bg-background border-border text-foreground hover:bg-muted"
+                >
+                  {thumbnailFile ? "Replace Thumbnail" : "Change Thumbnail"}
+                </Button>
+              </div>
+            ) : (
+              <div
+                className={`relative border-2 border-dashed rounded-xl p-6 text-center ${
+                  thumbnailDragOver
+                    ? "border-foreground bg-secondary"
+                    : "border-border hover:border-foreground/50 bg-secondary"
+                }`}
+                onDragOver={handleThumbnailDragOver}
+                onDragLeave={handleThumbnailDragLeave}
+                onDrop={handleThumbnailDrop}
+              >
+                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm font-medium text-foreground/70 mb-1">
+                  {thumbnailDragOver ? "Drop image here" : "Drag & drop or click to upload"}
+                </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Upload thumbnail image (JPEG, PNG, WebP up to 10MB)
+                  <br />
+                  <span className="text-muted-foreground/70">Portrait orientation (9:16) recommended</span>
+                </p>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => thumbnailInputRef.current?.click()}
+                  className="w-full bg-background border-border text-foreground hover:bg-muted"
+                >
+                  Choose Thumbnail Image
+                </Button>
+
+                <input
+                  ref={thumbnailInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleThumbnailFileChange}
+                  className="hidden"
+                />
+              </div>
+            )}
           </div>
 
           {/* Video Upload (VOD) or Embed Code (Live) */}
