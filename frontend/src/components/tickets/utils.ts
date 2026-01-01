@@ -12,15 +12,13 @@ export function formatPrice(price: number, currency: string = "INR"): string {
   }).format(price);
 }
 
+import { formatDateLocal } from "@/lib/datetime";
+
 /**
- * Format date to a readable string
+ * Format date to a readable string (converts UTC to local timezone)
  */
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatDateLocal(dateString);
 }
 
 /**

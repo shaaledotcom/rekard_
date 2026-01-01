@@ -1,7 +1,8 @@
-// Format date for display
+import { formatDateLocal, formatTimeLocal, utcToLocalInput } from "@/lib/datetime";
+
+// Format date for display (converts UTC to local timezone)
 export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
+  return formatDateLocal(dateString, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -9,19 +10,14 @@ export const formatDate = (dateString: string): string => {
   });
 };
 
-// Format time for display
+// Format time for display (converts UTC to local timezone)
 export const formatTime = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatTimeLocal(dateString);
 };
 
-// Format datetime-local input value
+// Format datetime-local input value (converts UTC to local for input field)
 export const formatDateTimeLocal = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toISOString().slice(0, 16);
+  return utcToLocalInput(dateString);
 };
 
 // Get background color based on event status

@@ -32,6 +32,7 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
+import { formatDateLocal, formatTimeLocal } from "@/lib/datetime";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
 type TransactionFilter = "all" | "credit" | "debit" | "invoice";
@@ -172,7 +173,7 @@ export function SalesTransactions() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-IN", {
+    return formatDateLocal(dateString, {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -180,7 +181,7 @@ export function SalesTransactions() {
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString("en-IN", {
+    return formatTimeLocal(dateString, {
       hour: "2-digit",
       minute: "2-digit",
     });

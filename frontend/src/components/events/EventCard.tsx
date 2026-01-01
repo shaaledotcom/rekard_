@@ -166,7 +166,7 @@ export function EventCard({
           {event.title}
         </h3>
         {event.description && (
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
+          <p className="text-sm text-foreground/80 mb-4 line-clamp-2">{event.description}</p>
         )}
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">

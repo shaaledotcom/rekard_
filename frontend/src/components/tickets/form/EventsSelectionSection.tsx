@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { Event } from "@/store/api";
 import type { TicketFormData } from "./types";
+import { formatDateTimeLocal } from "@/lib/datetime";
 
 interface EventsSelectionSectionProps {
   formData: TicketFormData;
@@ -75,7 +76,7 @@ export function EventsSelectionSection({
   };
 
   const formatEventDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    return formatDateTimeLocal(dateStr, {
       month: "short",
       day: "numeric",
       year: "numeric",

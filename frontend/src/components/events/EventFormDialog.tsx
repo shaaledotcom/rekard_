@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import type { CreateEventRequest } from "@/store/api";
 import { formatDateTimeLocal } from "./utils";
+import { localToUTC } from "@/lib/datetime";
 import { Textarea } from "@/components/ui/textarea";
 import { Film, Radio, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
@@ -217,7 +218,7 @@ export function EventFormDialog({
                     onChange={(e) =>
                       onFormChange({
                         ...formData,
-                        start_datetime: new Date(e.target.value).toISOString(),
+                        start_datetime: localToUTC(e.target.value),
                       })
                     }
                     className="h-12 bg-secondary border-border text-foreground rounded-xl focus:border-foreground/50"
@@ -231,7 +232,7 @@ export function EventFormDialog({
                     onChange={(e) =>
                       onFormChange({
                         ...formData,
-                        end_datetime: new Date(e.target.value).toISOString(),
+                        end_datetime: localToUTC(e.target.value),
                       })
                     }
                     className="h-12 bg-secondary border-border text-foreground rounded-xl focus:border-foreground/50"
@@ -288,7 +289,7 @@ export function EventFormDialog({
                   onChange={(e) =>
                     onFormChange({
                       ...formData,
-                      archive_after: e.target.value ? new Date(e.target.value).toISOString() : "",
+                      archive_after: e.target.value ? localToUTC(e.target.value) : "",
                     })
                   }
                   className="h-12 bg-background border-border text-foreground rounded-xl focus:border-foreground/50"

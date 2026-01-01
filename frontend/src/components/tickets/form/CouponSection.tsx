@@ -24,6 +24,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import type { TicketFormData, CouponFormData } from "./types";
+import { localToUTC, utcToLocalInput, formatDateTimeLocal } from "@/lib/datetime";
 
 interface CouponSectionProps {
   formData: TicketFormData;
@@ -58,7 +59,13 @@ export function CouponSection({
   };
 
   const handleEdit = (index: number) => {
-    setCouponForm(coupons[index]);
+    const coupon = coupons[index];
+    // Convert UTC times to local for editing
+    setCouponForm({
+      ...coupon,
+      activation_time: coupon.activation_time ? utcToLocalInput(coupon.activation_time) : "",
+      expiry_time: coupon.expiry_time ? utcToLocalInput(coupon.expiry_time) : "",
+    });
     setEditIndex(index);
     setDialogOpen(true);
   };
@@ -72,12 +79,19 @@ export function CouponSection({
       return;
     }
 
+    // Convert local times to UTC before saving
+    const couponToSave: CouponFormData = {
+      ...couponForm,
+      activation_time: couponForm.activation_time ? localToUTC(couponForm.activation_time) : "",
+      expiry_time: couponForm.expiry_time ? localToUTC(couponForm.expiry_time) : "",
+    };
+
     if (editIndex !== null) {
       const newCoupons = [...coupons];
-      newCoupons[editIndex] = couponForm;
+      newCoupons[editIndex] = couponToSave;
       onChange({ coupons: newCoupons });
     } else {
-      onChange({ coupons: [...coupons, couponForm] });
+      onChange({ coupons: [...coupons, couponToSave] });
     }
 
     setDialogOpen(false);
@@ -88,9 +102,7 @@ export function CouponSection({
   const formatDate = (dateStr: string) => {
     if (!dateStr) return null;
     try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return null;
-      return date.toLocaleDateString("en-US", {
+      return formatDateTimeLocal(dateStr, {
         month: "short",
         day: "numeric",
         year: "numeric",

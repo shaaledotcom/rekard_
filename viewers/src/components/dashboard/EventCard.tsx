@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
 
 export interface EventCardProps {
   id: number;
@@ -27,11 +28,11 @@ export function EventCard({
 }: EventCardProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
+  const { formatDateTime } = useTimezoneFormat();
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+    return formatDateTime(dateString, {
       month: "short",
       day: "numeric",
       year: "numeric",

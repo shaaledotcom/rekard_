@@ -154,7 +154,7 @@ export function TicketCard({
           {ticket.title}
         </h3>
         {ticket.description && (
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{ticket.description}</p>
+          <p className="text-sm text-foreground/80 mb-4 line-clamp-2">{ticket.description}</p>
         )}
 
         {/* Price */}
