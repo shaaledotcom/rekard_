@@ -77,7 +77,7 @@ export function RichTextEditor({
     editable: !disabled,
     editorProps: {
       attributes: {
-        class: "prose prose-invert prose-sm focus:outline-none min-h-[120px] px-4 py-3 text-white",
+        class: "prose prose-sm dark:prose-invert focus:outline-none min-h-[120px] px-4 py-3 text-foreground",
       },
     },
   });
@@ -108,7 +108,7 @@ export function RichTextEditor({
 
   if (!editor) {
     return (
-      <div className={cn("rounded-xl bg-white/5 border border-white/10 min-h-[180px]", className)} />
+      <div className={cn("rounded-xl bg-secondary border border-border min-h-[180px]", className)} />
     );
   }
 
@@ -130,20 +130,20 @@ export function RichTextEditor({
       onClick={onClick}
       disabled={btnDisabled}
       className={cn(
-        "h-8 w-8 p-0 text-white/60 hover:text-white hover:bg-white/10",
-        isActive && "bg-white/20 text-white"
+        "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary",
+        isActive && "bg-secondary text-foreground"
       )}
     >
       {children}
     </Button>
   );
 
-  const Divider = () => <div className="w-px h-5 bg-white/10 mx-1" />;
+  const Divider = () => <div className="w-px h-5 bg-border mx-1" />;
 
   return (
-    <div className={cn("rounded-xl bg-white/5 border border-white/10 overflow-hidden", className)}>
+    <div className={cn("rounded-xl bg-secondary border border-border overflow-hidden", className)}>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 p-2 border-b border-white/10 bg-white/5">
+      <div className="flex flex-wrap items-center gap-0.5 p-2 border-b border-border bg-secondary/50">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           isActive={editor.isActive("bold")}
@@ -246,10 +246,10 @@ export function RichTextEditor({
           outline: none;
           min-height: 120px;
           padding: 12px 16px;
-          color: white;
+          color: hsl(var(--foreground));
         }
         .ProseMirror p.is-editor-empty:first-child::before {
-          color: rgba(255, 255, 255, 0.3);
+          color: hsl(var(--muted-foreground));
           content: attr(data-placeholder);
           float: left;
           height: 0;
@@ -285,9 +285,12 @@ export function RichTextEditor({
           list-style-type: decimal;
         }
         .ProseMirror a {
-          color: #60a5fa;
+          color: hsl(var(--primary));
           text-decoration: underline;
           cursor: pointer;
+        }
+        .dark .ProseMirror a {
+          color: #60a5fa;
         }
         .ProseMirror strong {
           font-weight: bold;
