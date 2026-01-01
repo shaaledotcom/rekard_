@@ -142,8 +142,11 @@ export const getTenantConfigForDomain = async (domain: string): Promise<TenantCo
       tenant.id,
       tenant.user_id
     );
-    if (paymentConfig?.settings?.key_id) {
-      razorpayKeyId = paymentConfig.settings.key_id as string;
+    // Check both 'key' and 'key_id' for compatibility
+    const key = (paymentConfig?.settings as Record<string, unknown>)?.key || 
+                (paymentConfig?.settings as Record<string, unknown>)?.key_id;
+    if (key) {
+      razorpayKeyId = key as string;
     }
   } catch {
     // Use default key if tenant doesn't have their own
@@ -199,8 +202,11 @@ export const getTenantConfigById = async (tenantId: string): Promise<TenantConfi
         tenant.id,
         tenant.user_id
       );
-      if (paymentConfig?.settings?.key_id) {
-        razorpayKeyId = paymentConfig.settings.key_id as string;
+      // Check both 'key' and 'key_id' for compatibility
+      const key = (paymentConfig?.settings as Record<string, unknown>)?.key || 
+                  (paymentConfig?.settings as Record<string, unknown>)?.key_id;
+      if (key) {
+        razorpayKeyId = key as string;
       }
     } catch {
       // Use default

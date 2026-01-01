@@ -126,6 +126,26 @@ export const getPayment = async (paymentId: string): Promise<RazorpayPayment> =>
   }
 };
 
+// Fetch payment details with custom credentials
+export const getPaymentWithCredentials = async (
+  paymentId: string,
+  keyId: string,
+  keySecret: string
+): Promise<RazorpayPayment> => {
+  const client = new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  });
+
+  try {
+    const payment = await client.payments.fetch(paymentId);
+    return payment as unknown as RazorpayPayment;
+  } catch (error) {
+    log.error('Failed to fetch payment with custom credentials', { error, payment_id: paymentId });
+    throw new Error(`Failed to fetch payment: ${(error as Error).message}`);
+  }
+};
+
 // Create refund
 export const createRefund = async (
   request: RefundRequest

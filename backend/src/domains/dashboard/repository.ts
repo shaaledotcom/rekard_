@@ -276,6 +276,26 @@ export const getTicketSponsors = async (ticketId: number): Promise<PublicTicketS
 };
 
 // Helper to map raw data to DashboardTicket
+// Get ticket by ID for payment config (includes app_id and tenant_id)
+// Used for getting platform-specific payment credentials
+export const getTicketByIdForPayment = async (ticketId: number): Promise<{ appId: string; tenantId: string } | null> => {
+  const [ticket] = await db
+    .select({
+      appId: tickets.appId,
+      tenantId: tickets.tenantId,
+    })
+    .from(tickets)
+    .where(eq(tickets.id, ticketId))
+    .limit(1);
+
+  if (!ticket) return null;
+
+  return {
+    appId: ticket.appId,
+    tenantId: ticket.tenantId,
+  };
+};
+
 const mapToDashboardTicket = (row: {
   id: number;
   title: string;

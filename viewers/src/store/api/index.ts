@@ -9,6 +9,7 @@ export {
   useGetOnDemandTicketsQuery,
   useGetTicketByUrlQuery,
   useGetTicketByIdQuery,
+  useGetTicketPaymentConfigQuery,
   useGetMyPurchasesQuery,
 } from "./dashboardApi";
 export {

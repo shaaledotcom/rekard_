@@ -1,5 +1,8 @@
 // Dashboard service - business logic
 import * as repo from './repository.js';
+import * as configurationService from '../configuration/service.js';
+import * as tenantService from '../tenant/service.js';
+import { env } from '../../config/env.js';
 import type {
   DashboardResponse,
   DashboardPaginationParams,
@@ -174,5 +177,77 @@ export const getTicketEvents = async (ticketId: number): Promise<PublicTicketDet
     throw notFound('Ticket');
   }
   return ticket.events || [];
+};
+
+// Get Razorpay payment config for a ticket (based on ticket owner's platform)
+export const getTicketPaymentConfig = async (ticketId: number): Promise<{ razorpay_key_id: string }> => {
+  // Get ticket with app_id and tenant_id
+  const ticket = await repo.getTicketByIdForPayment(ticketId);
+  if (!ticket) {
+    throw notFound('Ticket');
+  }
+
+  // Default to platform Razorpay key
+  let razorpayKeyId = env.razorpay.keyId;
+
+  // Try to get tenant's Razorpay key if configured
+  if (ticket.appId && ticket.tenantId) {
+    try {
+      const tenant = await tenantService.getTenantById(ticket.tenantId);
+      if (tenant && tenant.is_pro && tenant.user_id) {
+        const paymentConfig = await configurationService.getPaymentGateway(
+          ticket.appId,
+          ticket.tenantId,
+          tenant.user_id
+        );
+        // Check both 'key' and 'key_id' for compatibility
+        const key = (paymentConfig?.settings as Record<string, unknown>)?.key || 
+                    (paymentConfig?.settings as Record<string, unknown>)?.key_id;
+        if (key) {
+          razorpayKeyId = key as string;
+        }
+      }
+    } catch (error) {
+      // Use default key if tenant doesn't have their own
+    }
+  }
+
+  return { razorpay_key_id: razorpayKeyId };
+};
+
+// Get Razorpay secret for a ticket (based on ticket owner's platform)
+// Used for payment verification
+export const getTicketRazorpaySecret = async (ticketId: number): Promise<string> => {
+  // Get ticket with app_id and tenant_id
+  const ticket = await repo.getTicketByIdForPayment(ticketId);
+  if (!ticket) {
+    // Fall back to default secret if ticket not found
+    return env.razorpay.keySecret;
+  }
+
+  // Default to platform Razorpay secret
+  let razorpaySecret = env.razorpay.keySecret;
+
+  // Try to get tenant's Razorpay secret if configured
+  if (ticket.appId && ticket.tenantId) {
+    try {
+      const tenant = await tenantService.getTenantById(ticket.tenantId);
+      if (tenant && tenant.is_pro && tenant.user_id) {
+        const paymentConfig = await configurationService.getPaymentGateway(
+          ticket.appId,
+          ticket.tenantId,
+          tenant.user_id
+        );
+        const secret = (paymentConfig?.settings as Record<string, unknown>)?.secret;
+        if (secret) {
+          razorpaySecret = secret as string;
+        }
+      }
+    } catch (error) {
+      // Use default secret if tenant doesn't have their own
+    }
+  }
+
+  return razorpaySecret;
 };
 

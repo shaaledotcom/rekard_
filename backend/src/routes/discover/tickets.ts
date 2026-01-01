@@ -44,5 +44,17 @@ router.get('/:id/events', asyncHandler(async (req: AppRequest, res: Response) =>
   ok(res, { events });
 }));
 
+// Get payment config for a ticket (Razorpay key based on ticket owner's platform)
+router.get('/:id/payment-config', asyncHandler(async (req: AppRequest, res: Response) => {
+  const ticketId = parseInt(req.params.id, 10);
+
+  if (isNaN(ticketId)) {
+    return badRequest(res, 'Invalid ticket ID');
+  }
+
+  const config = await dashboardService.getTicketPaymentConfig(ticketId);
+  ok(res, config);
+}));
+
 export const discoverTicketsRoutes: Router = router;
 

@@ -157,6 +157,13 @@ export const dashboardApi = api.injectEndpoints({
         response.data,
       providesTags: (_result, _error, id) => [{ type: "Tickets", id }],
     }),
+
+    // Get payment config for a ticket (Razorpay key)
+    getTicketPaymentConfig: builder.query<{ razorpay_key_id: string }, number>({
+      query: (ticketId) => `/v1/discover/tickets/${ticketId}/payment-config`,
+      transformResponse: (response: ApiResponse<{ razorpay_key_id: string }>) =>
+        response.data,
+    }),
   }),
 });
 
@@ -201,6 +208,7 @@ export const {
   useGetOnDemandTicketsQuery,
   useGetTicketByUrlQuery,
   useGetTicketByIdQuery,
+  useGetTicketPaymentConfigQuery,
 } = dashboardApi;
 
 export const { useGetMyPurchasesQuery } = viewerOrdersApi;

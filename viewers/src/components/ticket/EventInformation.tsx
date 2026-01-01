@@ -11,6 +11,7 @@ import {
   useGetPurchaseStatusQuery,
   useCreateOrderMutation,
   useCompleteOrderMutation,
+  useGetTicketPaymentConfigQuery,
 } from "@/store/api";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentSuccessPopup } from "./PaymentSuccessPopup";
@@ -85,6 +86,14 @@ export function EventInformation({
     isLoading: isPurchaseStatusLoading,
   } = useGetPurchaseStatusQuery(parseInt(ticketId || "0"), {
     skip: !isAuthenticated || !ticketId,
+  });
+
+  // Get payment config for this ticket (Razorpay key from ticket owner's platform)
+  const {
+    data: paymentConfig,
+    isLoading: isPaymentConfigLoading,
+  } = useGetTicketPaymentConfigQuery(parseInt(ticketId || "0"), {
+    skip: !ticketId,
   });
 
   const isEventExpired = useMemo(() => {
@@ -177,6 +186,24 @@ export function EventInformation({
       return;
     }
 
+    // Wait for payment config to load if still loading
+    if (isPaymentConfigLoading) {
+      toast({
+        title: "Loading",
+        description: "Please wait while we load payment configuration...",
+      });
+      return;
+    }
+
+    if (!paymentConfig?.razorpay_key_id) {
+      toast({
+        title: "Error",
+        description: "Payment gateway not configured. Please contact support.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setHasTriggeredPurchase(true);
 
     try {
@@ -206,12 +233,9 @@ export function EventInformation({
         throw new Error("Failed to load payment gateway");
       }
 
-      // Get Razorpay key from tenant config
-      const razorpayKey = config?.razorpay_key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-      
-      if (!razorpayKey) {
-        throw new Error("Payment gateway not configured");
-      }
+      // Get Razorpay key from ticket's payment config (based on ticket owner's platform)
+      // This ensures we use the correct Razorpay keys for the ticket owner
+      const razorpayKey = paymentConfig.razorpay_key_id;
 
       // Initialize Razorpay
       const options = {
@@ -282,6 +306,8 @@ export function EventInformation({
     convertedCurrency,
     createOrder,
     completeOrder,
+    paymentConfig,
+    isPaymentConfigLoading,
     config,
     eventInfo.title,
     ticketUrl,
@@ -340,7 +366,9 @@ export function EventInformation({
           isCreatingOrder ||
           isCompletingOrder ||
           !ticketId ||
-          hasTriggeredPurchase
+          hasTriggeredPurchase ||
+          isPaymentConfigLoading ||
+          !paymentConfig?.razorpay_key_id
         }
       >
         {isCreatingOrder || isCompletingOrder || hasTriggeredPurchase
