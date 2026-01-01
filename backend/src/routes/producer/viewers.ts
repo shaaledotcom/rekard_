@@ -84,15 +84,16 @@ router.post('/access/grant', asyncHandler(async (req: AuthenticatedRequest, res:
     return;
   }
 
-  const { emails, ticket_id, expires_at, notify } = req.body;
+  const { emails, ticket_id, ticket_ids, expires_at, notify } = req.body;
 
   if (!emails || !Array.isArray(emails) || emails.length === 0) {
     badRequest(res, 'At least one email is required');
     return;
   }
 
-  if (!ticket_id) {
-    badRequest(res, 'Ticket ID is required');
+  // Support both ticket_id (single) and ticket_ids (multiple) for backward compatibility
+  if (!ticket_id && (!ticket_ids || !Array.isArray(ticket_ids) || ticket_ids.length === 0)) {
+    badRequest(res, 'At least one ticket ID is required (use ticket_id or ticket_ids)');
     return;
   }
 
@@ -102,7 +103,8 @@ router.post('/access/grant', asyncHandler(async (req: AuthenticatedRequest, res:
     userId,
     {
       emails,
-      ticket_id,
+      ticket_id: ticket_id ? Number(ticket_id) : undefined,
+      ticket_ids: ticket_ids ? ticket_ids.map((id: string | number) => Number(id)) : undefined,
       expires_at: expires_at ? new Date(expires_at) : undefined,
       notify,
     }

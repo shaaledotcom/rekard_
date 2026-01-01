@@ -13,7 +13,7 @@ interface GrantAccessDialogProps {
   tickets: TicketType[];
   isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: (data: { emails: string[]; ticket_id: number; expires_at?: string; notify: boolean }) => void;
+  onSubmit: (data: { emails: string[]; ticket_ids: number[]; expires_at?: string; notify: boolean }) => void;
 }
 
 export function GrantAccessDialog({
@@ -24,7 +24,7 @@ export function GrantAccessDialog({
   onSubmit,
 }: GrantAccessDialogProps) {
   const [emails, setEmails] = useState<string[]>([""]);
-  const [ticketId, setTicketId] = useState<number | "">("");
+  const [ticketIds, setTicketIds] = useState<number[]>([]);
   const [expiresAt, setExpiresAt] = useState("");
   const [notify, setNotify] = useState(true);
 
@@ -49,19 +49,27 @@ export function GrantAccessDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const validEmails = emails.filter((email) => email.trim() !== "");
-    if (validEmails.length === 0 || ticketId === "") return;
+    if (validEmails.length === 0 || ticketIds.length === 0) return;
 
     onSubmit({
       emails: validEmails,
-      ticket_id: ticketId as number,
+      ticket_ids: ticketIds,
       expires_at: expiresAt || undefined,
       notify,
     });
   };
 
+  const toggleTicket = (ticketId: number) => {
+    setTicketIds(prev => 
+      prev.includes(ticketId) 
+        ? prev.filter(id => id !== ticketId)
+        : [...prev, ticketId]
+    );
+  };
+
   const handleClose = () => {
     setEmails([""]);
-    setTicketId("");
+    setTicketIds([]);
     setExpiresAt("");
     setNotify(true);
     onClose();
@@ -95,25 +103,35 @@ export function GrantAccessDialog({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Ticket Selection */}
+          {/* Ticket Selection - Multiple Selection */}
           <div className="space-y-2">
             <Label className="text-foreground flex items-center gap-2">
               <Ticket className="h-4 w-4 text-violet-500" />
-              Ticket
+              Tickets {ticketIds.length > 0 && `(${ticketIds.length} selected)`}
             </Label>
-            <Select
-              value={ticketId}
-              onChange={(e) => setTicketId(e.target.value ? Number(e.target.value) : "")}
-              className="h-11 bg-secondary/50 border-border rounded-xl"
-              required
-            >
-              <option value="">Select a ticket...</option>
-              {tickets.map((ticket) => (
-                <option key={ticket.id} value={ticket.id}>
-                  {ticket.title}
-                </option>
-              ))}
-            </Select>
+            <div className="max-h-48 overflow-y-auto border border-border rounded-xl bg-secondary/50 p-3 space-y-2">
+              {tickets.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No tickets available</p>
+              ) : (
+                tickets.map((ticket) => (
+                  <label
+                    key={ticket.id}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/70 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={ticketIds.includes(ticket.id)}
+                      onChange={() => toggleTicket(ticket.id)}
+                      className="h-4 w-4 rounded border-border text-violet-600 focus:ring-violet-500"
+                    />
+                    <span className="text-sm text-foreground flex-1">{ticket.title}</span>
+                  </label>
+                ))
+              )}
+            </div>
+            {ticketIds.length === 0 && (
+              <p className="text-xs text-muted-foreground">Select at least one ticket</p>
+            )}
           </div>
 
           {/* Emails */}
@@ -200,10 +218,10 @@ export function GrantAccessDialog({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || ticketId === "" || emails.every((e) => !e.trim())}
+              disabled={isSubmitting || ticketIds.length === 0 || emails.every((e) => !e.trim())}
               className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
             >
-              {isSubmitting ? "Granting..." : "Grant Access"}
+              {isSubmitting ? "Granting..." : `Grant Access${ticketIds.length > 1 ? ` to ${ticketIds.length} Tickets` : ""}`}
             </Button>
           </div>
         </form>

@@ -13,6 +13,10 @@ import type {
   ViewerMapping,
 } from './types.js';
 import { log } from '../../shared/middleware/logger.js';
+import { createUser } from '../auth/user.js';
+import { ROLE_VIEWER } from '../auth/constants.js';
+import * as ordersRepo from '../orders/repository.js';
+import * as dashboardRepo from '../dashboard/repository.js';
 
 // ===== CSV Parsing =====
 
@@ -62,7 +66,9 @@ export const parseCSV = (csvData: string): CSVParseResult => {
 // ===== Access Grant Operations =====
 
 /**
- * Grant access to a ticket for multiple emails
+ * Grant access to tickets for multiple emails
+ * Also creates a completed order so users appear as having purchased the ticket
+ * Supports both single ticket (ticket_id) and multiple tickets (ticket_ids)
  */
 export const grantAccess = async (
   appId: string,
@@ -75,6 +81,37 @@ export const grantAccess = async (
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+  // Determine which tickets to grant access to
+  const ticketIds: number[] = request.ticket_ids || (request.ticket_id ? [request.ticket_id] : []);
+  
+  if (ticketIds.length === 0) {
+    return {
+      success: [],
+      failed: request.emails.map(email => ({ email, reason: 'No tickets specified' })),
+      total_granted: 0,
+      total_failed: request.emails.length,
+    };
+  }
+
+  // Get ticket details for all tickets (for order creation)
+  const ticketDetailsMap = new Map<number, { price: number; currency: string; event_id?: number }>();
+  
+  for (const ticketId of ticketIds) {
+    try {
+      const ticket = await dashboardRepo.getPublicTicketById(ticketId);
+      if (ticket) {
+        ticketDetailsMap.set(ticketId, {
+          price: ticket.price || 0,
+          currency: ticket.currency || 'INR',
+          event_id: ticket.events && ticket.events.length > 0 ? ticket.events[0].id : undefined,
+        });
+      }
+    } catch (error) {
+      log.error(`Failed to get ticket details for ticket ${ticketId}:`, error);
+    }
+  }
+
+  // Process each email for each ticket
   for (const rawEmail of request.emails) {
     const email = rawEmail.toLowerCase().trim();
 
@@ -84,41 +121,101 @@ export const grantAccess = async (
       continue;
     }
 
+    // Process each ticket for this email
+    let emailSuccess = false;
+    const emailFailedReasons: string[] = [];
+
+    // Try to create or get user by email once (optional - for order creation)
+    // Access grants work with just email, so user creation is not required
+    let viewerUserId: string | null = null;
     try {
-      // Check if grant already exists
-      const existing = await repo.getAccessGrantByEmail(appId, tenantId, request.ticket_id, email);
-      if (existing) {
-        if (existing.status === 'revoked') {
-          // Re-activate revoked access
-          await repo.updateAccessGrant(appId, tenantId, existing.id, {
-            status: 'active',
-            expiresAt: request.expires_at || null,
-          });
-          success.push(email);
-        } else {
-          failed.push({ email, reason: 'Access already granted' });
-        }
-        continue;
-      }
-
-      // Create new grant
-      await repo.createAccessGrant(
-        appId,
-        tenantId,
-        userId,
-        request.ticket_id,
+      const userResult = await createUser({
         email,
-        request.expires_at
-      );
-      success.push(email);
-
-      // TODO: Send notification email if notify is true
-      if (request.notify) {
-        log.info(`Would send access notification email to ${email}`);
-      }
+        appId: 'public', // Use public appId for viewer orders
+        tenantId,
+        role: ROLE_VIEWER,
+      });
+      viewerUserId = userResult.userId;
     } catch (error) {
-      log.error(`Failed to grant access to ${email}:`, error);
-      failed.push({ email, reason: 'Database error' });
+      log.warn(`Failed to create/get user for ${email}, will create access grants without orders:`, error);
+      // Continue without user - access grants will still work
+    }
+
+    for (const ticketId of ticketIds) {
+      try {
+        // Check if grant already exists
+        const existing = await repo.getAccessGrantByEmail(appId, tenantId, ticketId, email);
+        if (existing) {
+          if (existing.status === 'revoked') {
+            // Re-activate revoked access
+            await repo.updateAccessGrant(appId, tenantId, existing.id, {
+              status: 'active',
+              expiresAt: request.expires_at || null,
+            });
+            emailSuccess = true;
+          } else {
+            emailFailedReasons.push(`Ticket ${ticketId}: Access already granted`);
+            continue;
+          }
+        } else {
+          // Create completed order if we have ticket details and successfully got a user
+          const ticketDetails = ticketDetailsMap.get(ticketId);
+          if (ticketDetails && viewerUserId) {
+            try {
+              // Check if user already has a completed order for this ticket
+              const existingOrders = await ordersRepo.getUserTicketOrders('public', tenantId, viewerUserId, ticketId);
+              const hasCompletedOrder = existingOrders.some(o => o.status === 'completed');
+
+              if (!hasCompletedOrder) {
+                await ordersRepo.createCompletedOrder('public', tenantId, viewerUserId, {
+                  ticket_id: ticketId,
+                  event_id: ticketDetails.event_id,
+                  quantity: 1,
+                  unit_price: 0, // Free grant
+                  currency: ticketDetails.currency,
+                  payment_method: 'free_grant',
+                  customer_email: email,
+                  metadata: { grant_type: 'free_access', granted_by: userId },
+                });
+                log.info(`Created completed order for granted access: ${email} -> ticket ${ticketId}`);
+              } else {
+                log.info(`User ${email} already has a completed order for ticket ${ticketId}, skipping order creation`);
+              }
+            } catch (error) {
+              log.error(`Failed to create order for ${email} ticket ${ticketId}:`, error);
+              // Continue anyway - we'll still create the access grant
+            }
+          } else if (!viewerUserId) {
+            log.info(`Skipping order creation for ${email} ticket ${ticketId} - user account could not be created (access grant will still work)`);
+          }
+
+          // Create new grant
+          await repo.createAccessGrant(
+            appId,
+            tenantId,
+            userId,
+            ticketId,
+            email,
+            request.expires_at
+          );
+          emailSuccess = true;
+        }
+      } catch (error) {
+        log.error(`Failed to grant access to ${email} for ticket ${ticketId}:`, error);
+        emailFailedReasons.push(`Ticket ${ticketId}: Database error`);
+      }
+    }
+
+    // TODO: Send notification email if notify is true
+    if (request.notify && emailSuccess) {
+      log.info(`Would send access notification email to ${email} for ${ticketIds.length} ticket(s)`);
+    }
+
+    // Track success/failure for this email
+    if (emailSuccess) {
+      success.push(email);
+    } else if (emailFailedReasons.length > 0) {
+      failed.push({ email, reason: emailFailedReasons.join('; ') });
     }
   }
 

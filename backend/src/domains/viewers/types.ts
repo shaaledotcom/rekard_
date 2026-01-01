@@ -51,7 +51,8 @@ export type Viewer = {
 // Request types
 export type GrantAccessRequest = {
   emails: string[];
-  ticket_id: number;
+  ticket_id?: number; // For backward compatibility
+  ticket_ids?: number[]; // New: support multiple tickets
   expires_at?: Date;
   notify?: boolean;
 };

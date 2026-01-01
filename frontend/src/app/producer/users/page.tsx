@@ -83,15 +83,20 @@ function UsersContent() {
 
   const handleGrantAccess = useCallback(async (data: {
     emails: string[];
-    ticket_id: number;
+    ticket_ids: number[];
     expires_at?: string;
     notify: boolean;
   }) => {
     try {
-      const result = await grantAccess(data).unwrap();
+      const result = await grantAccess({
+        emails: data.emails,
+        ticket_ids: data.ticket_ids,
+        expires_at: data.expires_at,
+        notify: data.notify,
+      }).unwrap();
       toast({
         title: "Access Granted",
-        description: `${result.total_granted} user(s) granted access${result.total_failed > 0 ? `, ${result.total_failed} failed` : ""}.`,
+        description: `${result.total_granted} user(s) granted access to ${data.ticket_ids.length} ticket(s)${result.total_failed > 0 ? `, ${result.total_failed} failed` : ""}.`,
       });
       setIsGrantDialogOpen(false);
     } catch {

@@ -5,6 +5,8 @@ import * as dashboardRepo from '../dashboard/repository.js';
 import * as dashboardService from '../dashboard/service.js';
 import * as razorpayService from '../payments/razorpay.js';
 import { createUser } from '../auth/user.js';
+import { db, emailAccessGrants, tickets } from '../../db/index.js';
+import { eq, and, or, isNull, gte } from 'drizzle-orm';
 import type {
   Order,
   CreateOrderRequest,
@@ -19,6 +21,8 @@ import type {
   CreateUserAndOrderResponse,
   UserPurchaseStatusResponse,
   CouponValidationResponse,
+  MyPurchasesListResponse,
+  PurchaseWithTicketDetails,
 } from './types.js';
 import * as ticketCouponsRepo from '../tickets/repository.js';
 import { ROLE_VIEWER } from '../auth/constants.js';
@@ -344,56 +348,226 @@ export const completeOrderFromPayment = async (
 };
 
 // Check if user has purchased a ticket
+// Also checks for email access grants
 export const checkUserPurchaseStatus = async (
   appId: string,
   tenantId: string,
   userId: string,
-  ticketId: number
+  ticketId: number,
+  userEmail?: string
 ): Promise<UserPurchaseStatusResponse> => {
+  // Check for completed orders
   const orders = await repo.getUserTicketOrders(appId, tenantId, userId, ticketId);
   const completedOrder = orders.find(o => o.status === 'completed');
 
+  // If user has a completed order, return that
+  if (completedOrder) {
+    return {
+      ticket_id: ticketId,
+      has_purchased: true,
+      order_id: completedOrder.id,
+      order_number: completedOrder.order_number,
+    };
+  }
+
+  // If no order, check for email access grant
+  // Need to use ticket owner's tenant_id, not viewer's tenant_id
+  if (userEmail) {
+    try {
+      // Get ticket owner's tenant_id
+      const ticketOwner = await dashboardRepo.getTicketByIdForPayment(ticketId);
+      if (ticketOwner) {
+        const { checkAccess } = await import('../viewers/service.js');
+        // Use ticket owner's tenant_id for access check
+        const accessCheck = await checkAccess(ticketOwner.tenantId, ticketId, userEmail);
+        
+        if (accessCheck.has_access) {
+          // User has access via email grant, return as purchased
+          return {
+            ticket_id: ticketId,
+            has_purchased: true,
+            // No order_id/order_number since it's a grant, not a purchase
+          };
+        }
+      }
+    } catch (error) {
+      log.warn(`Failed to check email access grant for ticket ${ticketId}:`, error);
+    }
+  }
+
   return {
     ticket_id: ticketId,
-    has_purchased: !!completedOrder,
-    order_id: completedOrder?.id,
-    order_number: completedOrder?.order_number,
+    has_purchased: false,
   };
 };
 
 // Get watch link for a purchased ticket
+// Also checks for email access grants
 export const getWatchLink = async (
   appId: string,
   tenantId: string,
   userId: string,
-  ticketId: number
+  ticketId: number,
+  userEmail?: string
 ): Promise<{ ticket_id: number; watch_link: string; order_id: number }> => {
   // Check if user has purchased the ticket
   const orders = await repo.getUserTicketOrders(appId, tenantId, userId, ticketId);
   const completedOrder = orders.find(o => o.status === 'completed');
 
-  if (!completedOrder) {
-    throw badRequest('Ticket not purchased or order not completed');
+  if (completedOrder) {
+    // Generate watch link (simplified - in production would include secure token)
+    const watchLink = `/watch?order=${completedOrder.id}&ticket=${ticketId}`;
+    return {
+      ticket_id: ticketId,
+      watch_link: watchLink,
+      order_id: completedOrder.id,
+    };
   }
 
-  // Generate watch link (simplified - in production would include secure token)
-  const watchLink = `/watch?order=${completedOrder.id}&ticket=${ticketId}`;
+  // Check for email access grant
+  if (userEmail) {
+    const { checkAccess } = await import('../viewers/service.js');
+    const accessCheck = await checkAccess(tenantId, ticketId, userEmail);
+    
+    if (accessCheck.has_access) {
+      // Generate watch link for grant (no order ID)
+      const watchLink = `/watch?ticket=${ticketId}`;
+      return {
+        ticket_id: ticketId,
+        watch_link: watchLink,
+        order_id: 0, // No order ID for grants
+      };
+    }
+  }
 
-  return {
-    ticket_id: ticketId,
-    watch_link: watchLink,
-    order_id: completedOrder.id,
-  };
+  throw badRequest('Ticket not purchased or order not completed');
 };
 
 // Get user's purchases (completed orders with ticket details)
+// Also includes tickets with email access grants
 export const getMyPurchases = async (
   appId: string,
   tenantId: string,
   userId: string,
-  pagination: PaginationParams = {}
-) => {
-  return repo.listUserPurchasesWithTicketDetails(appId, tenantId, userId, pagination);
+  pagination: PaginationParams = {},
+  userEmail?: string
+): Promise<MyPurchasesListResponse> => {
+  // Get purchases from orders
+  const orderPurchases = await repo.listUserPurchasesWithTicketDetails(appId, tenantId, userId, pagination);
+  
+  // If no email provided, return only order purchases
+  if (!userEmail) {
+    return orderPurchases;
+  }
+
+  // Get tickets with email access grants
+  // Query grants by email across ALL tenants (not filtered by viewer's tenant)
+  // We need to check grants stored with ticket owner's tenant_id
+  const normalizedEmail = userEmail.toLowerCase().trim();
+  const now = new Date();
+  
+  // Query grants by email, join with tickets to ensure ticket exists and is published
+  const grantRows = await db
+    .select({
+      grant: emailAccessGrants,
+      ticketId: tickets.id,
+    })
+    .from(emailAccessGrants)
+    .innerJoin(tickets, eq(emailAccessGrants.ticketId, tickets.id))
+    .where(
+      and(
+        eq(emailAccessGrants.email, normalizedEmail),
+        eq(emailAccessGrants.status, 'active'),
+        eq(tickets.status, 'published'),
+        or(
+          isNull(emailAccessGrants.expiresAt),
+          gte(emailAccessGrants.expiresAt, now)
+        )
+      )
+    );
+  
+  const accessGrants = grantRows.map(g => ({
+    id: g.grant.id,
+    app_id: g.grant.appId,
+    tenant_id: g.grant.tenantId,
+    user_id: g.grant.userId,
+    ticket_id: g.grant.ticketId,
+    email: g.grant.email,
+    status: 'active' as const,
+    granted_at: g.grant.grantedAt,
+    expires_at: g.grant.expiresAt ?? undefined,
+    used_at: g.grant.usedAt ?? undefined,
+    ticket_title: undefined,
+    viewer_user_id: undefined,
+    has_signed_up: false,
+  }));
+  
+  // Get ticket details for access grants
+  const { getPublicTicketById } = await import('../dashboard/repository.js');
+  
+  const grantPurchases = await Promise.all(
+    accessGrants
+      .filter(grant => grant.status === 'active' && (!grant.expires_at || new Date(grant.expires_at) > new Date()))
+      .map(async (grant): Promise<PurchaseWithTicketDetails | null> => {
+        const ticket = await getPublicTicketById(grant.ticket_id);
+        if (!ticket) return null;
+        
+        // Get earliest event start datetime
+        const eventStartDatetime = ticket.events && ticket.events.length > 0
+          ? ticket.events
+              .map(e => e.start_datetime)
+              .filter((dt): dt is Date => !!dt)
+              .sort((a, b) => a.getTime() - b.getTime())[0]?.toISOString()
+          : undefined;
+
+        return {
+          id: ticket.id,
+          title: ticket.title || '',
+          description: ticket.description || undefined,
+          thumbnail_image_portrait: ticket.thumbnail_image_portrait || undefined,
+          url: ticket.url || undefined,
+          start_datetime: eventStartDatetime,
+          ticket_id: ticket.id,
+          order_id: 0, // No order ID for grants
+          purchased_at: new Date(grant.granted_at),
+        };
+      })
+  );
+
+  // Filter out nulls and combine with order purchases
+  const validGrantPurchases = grantPurchases.filter((p): p is PurchaseWithTicketDetails => p !== null);
+  
+  // Combine and deduplicate by ticket_id (prefer order purchases over grants)
+  const purchaseMap = new Map<number, PurchaseWithTicketDetails>();
+  
+  // Add grant purchases first
+  for (const purchase of validGrantPurchases) {
+    purchaseMap.set(purchase.ticket_id, purchase);
+  }
+  
+  // Add order purchases (will overwrite grants if both exist)
+  for (const purchase of orderPurchases.data) {
+    purchaseMap.set(purchase.ticket_id, purchase);
+  }
+  
+  // Convert back to array and sort by purchased_at
+  const combinedPurchases = Array.from(purchaseMap.values()).sort(
+    (a, b) => b.purchased_at.getTime() - a.purchased_at.getTime()
+  );
+  
+  // Apply pagination
+  const page = pagination.page || 1;
+  const pageSize = pagination.page_size || 10;
+  const offset = (page - 1) * pageSize;
+  const paginatedPurchases = combinedPurchases.slice(offset, offset + pageSize);
+  
+  return {
+    data: paginatedPurchases,
+    total: combinedPurchases.length,
+    page,
+    page_size: pageSize,
+    total_pages: Math.ceil(combinedPurchases.length / pageSize),
+  };
 };
 
 // Validate coupon for a ticket

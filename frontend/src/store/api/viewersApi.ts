@@ -59,7 +59,8 @@ export interface ViewerAccessQueryParams {
 
 export interface GrantAccessRequest {
   emails: string[];
-  ticket_id: number;
+  ticket_id?: number; // For backward compatibility
+  ticket_ids?: number[]; // New: support multiple tickets
   expires_at?: string;
   notify?: boolean;
 }

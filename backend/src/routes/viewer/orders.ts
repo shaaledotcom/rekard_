@@ -103,11 +103,15 @@ router.get('/purchase-status/:ticketId', asyncHandler(async (req: AppRequest, re
     return badRequest(res, 'Invalid ticket ID');
   }
 
+  // Get user email from session if available
+  const userEmail = (req as any).user?.email;
+
   const status = await ordersService.checkUserPurchaseStatus(
     tenant.appId,
     tenant.tenantId,
     tenant.userId,
-    ticketId
+    ticketId,
+    userEmail
   );
   ok(res, status);
 }));
@@ -121,11 +125,15 @@ router.get('/watch-link/:ticketId', asyncHandler(async (req: AppRequest, res: Re
     return badRequest(res, 'Invalid ticket ID');
   }
 
+  // Get user email from session if available
+  const userEmail = (req as any).user?.email;
+
   const watchLink = await ordersService.getWatchLink(
     tenant.appId,
     tenant.tenantId,
     tenant.userId,
-    ticketId
+    ticketId,
+    userEmail
   );
   ok(res, watchLink);
 }));
@@ -139,11 +147,15 @@ router.get('/my-purchases', asyncHandler(async (req: AppRequest, res: Response) 
     page_size: parseInt(req.query.page_size as string, 10) || 10,
   };
 
+  // Get user email from session if available
+  const userEmail = (req as any).user?.email;
+
   const result = await ordersService.getMyPurchases(
     tenant.appId,
     tenant.tenantId,
     tenant.userId,
-    pagination
+    pagination,
+    userEmail
   );
   ok(res, result);
 })) ;

@@ -82,6 +82,43 @@ export const createOrder = async (
   return transformOrder(order);
 };
 
+// Create a completed order directly (for free access grants)
+// This bypasses the normal order flow and doesn't increment sold quantity
+export const createCompletedOrder = async (
+  appId: string,
+  tenantId: string,
+  userId: string,
+  data: CreateOrderRequest
+): Promise<Order> => {
+  const totalAmount = data.unit_price * data.quantity;
+  
+  const [order] = await db
+    .insert(orders)
+    .values({
+      appId,
+      tenantId,
+      userId,
+      ticketId: data.ticket_id,
+      eventId: data.event_id,
+      orderNumber: generateOrderNumber(),
+      status: 'completed',
+      quantity: data.quantity,
+      unitPrice: data.unit_price.toString(),
+      totalAmount: totalAmount.toString(),
+      currency: data.currency || 'INR',
+      paymentMethod: data.payment_method || 'free_grant',
+      externalPaymentId: data.external_payment_id,
+      customerEmail: data.customer_email,
+      customerName: data.customer_name,
+      customerPhone: data.customer_phone,
+      billingAddress: data.billing_address || {},
+      metadata: { ...(data.metadata || {}), grant_type: 'free_access' },
+    })
+    .returning();
+
+  return transformOrder(order);
+};
+
 export const getOrderById = async (
   appId: string,
   tenantId: string,
