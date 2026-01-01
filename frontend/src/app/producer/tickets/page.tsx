@@ -13,12 +13,16 @@ import {
   Ticket,
   TicketStatus,
 } from "@/store/api";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   TicketsBackground,
   TicketsFilters,
   TicketsGrid,
+  TicketsTable,
   TicketsPagination,
   DeleteTicketDialog,
+  type ViewMode,
 } from "@/components/tickets";
 
 function TicketsContent() {
@@ -29,6 +33,7 @@ function TicketsContent() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">("");
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   // Delete dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -50,6 +55,8 @@ function TicketsContent() {
 
   const tickets = ticketsData?.data || [];
   const totalPages = ticketsData?.total_pages || 1;
+  const totalItems = ticketsData?.total || 0;
+  const pageSize = ticketsData?.page_size || 9;
 
   // Navigation handlers
   const handleCreateClick = useCallback(() => {
@@ -134,21 +141,44 @@ function TicketsContent() {
           onSearchChange={setSearch}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
 
-        <TicketsGrid
-          tickets={tickets}
-          isLoading={isLoading}
-          onEdit={handleEditClick}
-          onDelete={handleDeleteClick}
-          onCreateClick={handleCreateClick}
-          onPublish={handlePublish}
-          onArchive={handleArchive}
-        />
+        {viewMode === "grid" ? (
+          <TicketsGrid
+            tickets={tickets}
+            isLoading={isLoading}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+            onCreateClick={handleCreateClick}
+            onPublish={handlePublish}
+            onArchive={handleArchive}
+          />
+        ) : (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={handleCreateClick} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create New Ticket
+              </Button>
+            </div>
+            <TicketsTable
+              tickets={tickets}
+              isLoading={isLoading}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteClick}
+              onPublish={handlePublish}
+              onArchive={handleArchive}
+            />
+          </div>
+        )}
 
         <TicketsPagination
           currentPage={page}
           totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
           onPageChange={setPage}
         />
       </main>

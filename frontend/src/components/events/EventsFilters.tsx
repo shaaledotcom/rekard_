@@ -1,15 +1,20 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, Grid3x3, Table } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import type { EventStatus } from "@/store/api";
+
+export type ViewMode = "grid" | "table";
 
 interface EventsFiltersProps {
   search: string;
   onSearchChange: (value: string) => void;
   statusFilter: EventStatus | "";
   onStatusFilterChange: (value: EventStatus | "") => void;
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
 }
 
 export function EventsFilters({
@@ -17,6 +22,8 @@ export function EventsFilters({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  viewMode = "grid",
+  onViewModeChange,
 }: EventsFiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -42,6 +49,25 @@ export function EventsFilters({
         <option value="cancelled">❌ Cancelled</option>
         <option value="archived">📦 Archived</option>
       </Select>
+      {onViewModeChange && (
+        <Button
+          variant="outline"
+          onClick={() => onViewModeChange(viewMode === "grid" ? "table" : "grid")}
+          className="h-12 px-4 border-border bg-secondary/50 hover:bg-secondary rounded-xl gap-2"
+        >
+          {viewMode === "grid" ? (
+            <>
+              <Table className="h-4 w-4" />
+              <span className="hidden sm:inline">Table</span>
+            </>
+          ) : (
+            <>
+              <Grid3x3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Grid</span>
+            </>
+          )}
+        </Button>
+      )}
     </div>
   );
 }

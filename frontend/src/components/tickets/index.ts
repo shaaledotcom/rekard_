@@ -3,8 +3,10 @@ export { TicketsBackground } from "./TicketsBackground";
 export { TicketsFilters } from "./TicketsFilters";
 export { TicketCard } from "./TicketCard";
 export { TicketsGrid } from "./TicketsGrid";
+export { TicketsTable } from "./TicketsTable";
 export { TicketsPagination } from "./TicketsPagination";
 export { DeleteTicketDialog } from "./DeleteTicketDialog";
+export type { ViewMode } from "./TicketsFilters";
 
 // Types and constants
 export {

@@ -61,6 +61,8 @@ export function useEventsPage() {
 
   const events = eventsData?.data || [];
   const totalPages = eventsData?.total_pages || 1;
+  const totalItems = eventsData?.total || 0;
+  const pageSize = eventsData?.page_size || 9;
 
   // Event handlers
   const handleCreateEvent = useCallback(async () => {
@@ -277,6 +279,8 @@ export function useEventsPage() {
     // Data
     events,
     totalPages,
+    totalItems,
+    pageSize,
     isLoading,
     isCreating,
     isUpdating,
