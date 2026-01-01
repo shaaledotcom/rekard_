@@ -16,8 +16,8 @@ import type { CreateEventRequest } from "@/store/api";
 import { formatDateTimeLocal } from "./utils";
 import { localToUTC } from "@/lib/datetime";
 import { Textarea } from "@/components/ui/textarea";
-import { Film, Radio, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useState } from "react";
+import { Film, Radio, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2, Upload, X, Video } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
 
 interface EventFormDialogProps {
   isOpen: boolean;
@@ -27,7 +27,12 @@ interface EventFormDialogProps {
   onClose: () => void;
   onSubmit: () => void;
   onFormChange: (data: CreateEventRequest) => void;
+  videoFile?: File | null;
+  onVideoFileChange?: (file: File | null) => void;
 }
+
+const MAX_VIDEO_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
 
 export function EventFormDialog({
   isOpen,
@@ -37,9 +42,13 @@ export function EventFormDialog({
   onClose,
   onSubmit,
   onFormChange,
+  videoFile,
+  onVideoFileChange,
 }: EventFormDialogProps) {
   const isVOD = formData.is_vod;
   const [showEmbedPreview, setShowEmbedPreview] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // Check if embed code looks valid (contains iframe or common embed patterns)
   const embedCode = formData.embed || "";
@@ -49,6 +58,77 @@ export function EventFormDialog({
     embedCode.includes("<video") ||
     embedCode.includes("<object")
   );
+
+  const validateVideoFile = (file: File): string | null => {
+    if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+      return `File type ${file.type} is not supported. Please use MP4, WebM, OGG, or QuickTime formats.`;
+    }
+    if (file.size > MAX_VIDEO_SIZE) {
+      const sizeInGB = MAX_VIDEO_SIZE / (1024 * 1024 * 1024);
+      return `File size must be less than ${sizeInGB}GB`;
+    }
+    return null;
+  };
+
+  const handleVideoFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const error = validateVideoFile(file);
+    if (error) {
+      alert(error);
+      return;
+    }
+
+    onVideoFileChange?.(file);
+    // Clear embed when video file is selected
+    onFormChange({ ...formData, embed: undefined });
+  }, [formData, onFormChange, onVideoFileChange]);
+
+  const handleVideoDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    const error = validateVideoFile(file);
+    if (error) {
+      alert(error);
+      return;
+    }
+
+    onVideoFileChange?.(file);
+    // Clear embed when video file is selected
+    onFormChange({ ...formData, embed: undefined });
+  }, [formData, onFormChange, onVideoFileChange]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
+
+  const removeVideoFile = useCallback(() => {
+    onVideoFileChange?.(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+    }
+  }, [onVideoFileChange]);
+
+  const getVideoPreview = () => {
+    if (videoFile) {
+      return URL.createObjectURL(videoFile);
+    }
+    if (formData.embed && formData.embed.startsWith("http")) {
+      return formData.embed;
+    }
+    return null;
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -85,7 +165,13 @@ export function EventFormDialog({
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => onFormChange({ ...formData, is_vod: false })}
+                onClick={() => {
+                  onFormChange({ ...formData, is_vod: false });
+                  // Clear video file when switching to Live event
+                  if (videoFile) {
+                    onVideoFileChange?.(null);
+                  }
+                }}
                 className={`flex items-center gap-3 p-4 rounded-xl border ${
                   !isVOD
                     ? "bg-foreground/10 border-foreground text-foreground"
@@ -137,73 +223,159 @@ export function EventFormDialog({
             />
           </div>
 
-          {/* Embed Code */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-foreground/70 text-sm font-medium">Embed Code</Label>
+          {/* Video Upload (VOD) or Embed Code (Live) */}
+          {isVOD ? (
+            <div className="space-y-3">
+              <Label className="text-foreground/70 text-sm font-medium flex items-center gap-2">
+                <Video className="w-4 h-4" />
+                Video File
+              </Label>
+              
+              {videoFile || (formData.embed && formData.embed.startsWith("http")) ? (
+                <div className="space-y-3 p-4 rounded-xl bg-secondary border border-border">
+                  <div className="relative">
+                    <video
+                      className="w-full h-48 object-cover rounded-lg"
+                      controls
+                      src={getVideoPreview() || undefined}
+                    />
+                    {videoFile && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-8 w-8"
+                        onClick={removeVideoFile}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {videoFile && (
+                    <div className="text-xs text-muted-foreground">
+                      <p>{videoFile.name}</p>
+                      <p>Size: {(videoFile.size / 1024 / 1024).toFixed(2)}MB</p>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => videoInputRef.current?.click()}
+                    className="w-full bg-background border-border text-foreground hover:bg-muted"
+                  >
+                    {videoFile ? "Replace Video" : "Change Video"}
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className={`relative border-2 border-dashed rounded-xl p-6 text-center ${
+                    dragOver
+                      ? "border-foreground bg-secondary"
+                      : "border-border hover:border-foreground/50 bg-secondary"
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleVideoDrop}
+                >
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm font-medium text-foreground/70 mb-1">
+                    {dragOver ? "Drop video file here" : "Drag & drop or click to upload"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Upload your video file (MP4, WebM, OGG, QuickTime up to 5GB)
+                  </p>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => videoInputRef.current?.click()}
+                    className="w-full bg-background border-border text-foreground hover:bg-muted"
+                  >
+                    Choose Video File
+                  </Button>
+
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoFileChange}
+                    className="hidden"
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground/70 text-sm font-medium">Embed Code</Label>
+                {embedCode.trim() && (
+                  <div className="flex items-center gap-2">
+                    {isValidEmbed ? (
+                      <span className="flex items-center gap-1 text-xs text-green-500">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Valid embed detected
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-xs text-yellow-500">
+                        <AlertCircle className="w-3 h-3" />
+                        Check embed format
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <Textarea
+                value={formData.embed || ""}
+                onChange={(e) => onFormChange({ ...formData, embed: e.target.value })}
+                placeholder="Paste your embed code or iframe here...&#10;Example: <iframe src='https://player.example.com/...' width='100%' height='400'></iframe>"
+                className="min-h-[100px] bg-secondary border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:border-foreground/50 font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Add an embed code for your streaming player (e.g., YouTube, Vimeo, custom player)
+              </p>
+
+              {/* Embed Preview Toggle */}
               {embedCode.trim() && (
-                <div className="flex items-center gap-2">
-                  {isValidEmbed ? (
-                    <span className="flex items-center gap-1 text-xs text-green-500">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Valid embed detected
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-xs text-yellow-500">
-                      <AlertCircle className="w-3 h-3" />
-                      Check embed format
-                    </span>
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmbedPreview(!showEmbedPreview)}
+                    className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    {showEmbedPreview ? (
+                      <>
+                        <EyeOff className="w-4 h-4" />
+                        Hide Preview
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-4 h-4" />
+                        Show Preview
+                      </>
+                    )}
+                  </button>
+
+                  {/* Embed Preview */}
+                  {showEmbedPreview && (
+                    <div className="rounded-xl border border-border overflow-hidden bg-black/50">
+                      <div className="px-3 py-2 bg-secondary/50 border-b border-border flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground font-medium">Embed Preview</span>
+                      </div>
+                      <div 
+                        className="p-4 min-h-[200px] flex items-center justify-center [&>iframe]:max-w-full [&>iframe]:rounded-lg [&>video]:max-w-full [&>video]:rounded-lg"
+                        dangerouslySetInnerHTML={{ __html: embedCode }}
+                      />
+                    </div>
                   )}
                 </div>
               )}
             </div>
-            <Textarea
-              value={formData.embed || ""}
-              onChange={(e) => onFormChange({ ...formData, embed: e.target.value })}
-              placeholder="Paste your embed code or iframe here...&#10;Example: <iframe src='https://player.example.com/...' width='100%' height='400'></iframe>"
-              className="min-h-[100px] bg-secondary border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:border-foreground/50 font-mono text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              Add an embed code for your streaming player (e.g., YouTube, Vimeo, custom player)
-            </p>
-
-            {/* Embed Preview Toggle */}
-            {embedCode.trim() && (
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => setShowEmbedPreview(!showEmbedPreview)}
-                  className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
-                >
-                  {showEmbedPreview ? (
-                    <>
-                      <EyeOff className="w-4 h-4" />
-                      Hide Preview
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-4 h-4" />
-                      Show Preview
-                    </>
-                  )}
-                </button>
-
-                {/* Embed Preview */}
-                {showEmbedPreview && (
-                  <div className="rounded-xl border border-border overflow-hidden bg-black/50">
-                    <div className="px-3 py-2 bg-secondary/50 border-b border-border flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground font-medium">Embed Preview</span>
-                    </div>
-                    <div 
-                      className="p-4 min-h-[200px] flex items-center justify-center [&>iframe]:max-w-full [&>iframe]:rounded-lg [&>video]:max-w-full [&>video]:rounded-lg"
-                      dangerouslySetInnerHTML={{ __html: embedCode }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Live Event Fields - Only shown when NOT VOD */}
           {!isVOD && (

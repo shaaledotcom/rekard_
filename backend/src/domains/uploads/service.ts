@@ -116,8 +116,13 @@ export const uploadFile = async (
     const typeCategory = getFileTypeCategory(file.mimetype);
     const maxSize = FILE_SIZE_LIMITS[typeCategory];
     if (file.size > maxSize) {
+      const sizeInGB = maxSize / (1024 * 1024 * 1024);
+      const sizeInMB = maxSize / (1024 * 1024);
+      const sizeText = sizeInGB >= 1 
+        ? `${sizeInGB}GB` 
+        : `${Math.round(sizeInMB)}MB`;
       throw badRequest(
-        `File size exceeds limit. Max size for ${typeCategory}: ${Math.round(maxSize / 1024 / 1024)}MB`
+        `File size exceeds limit. Max size for ${typeCategory}: ${sizeText}`
       );
     }
 

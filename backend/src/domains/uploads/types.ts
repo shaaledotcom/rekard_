@@ -59,7 +59,7 @@ export const ALL_ALLOWED_TYPES: string[] = [
 // File size limits (in bytes)
 export const FILE_SIZE_LIMITS = {
   image: 10 * 1024 * 1024, // 10MB
-  video: 500 * 1024 * 1024, // 500MB
+  video: 5 * 1024 * 1024 * 1024, // 5GB
   document: 25 * 1024 * 1024, // 25MB
   audio: 50 * 1024 * 1024, // 50MB
   default: 10 * 1024 * 1024, // 10MB

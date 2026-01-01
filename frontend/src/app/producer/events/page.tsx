@@ -29,6 +29,8 @@ function EventsContent() {
     selectedEvent,
     formData,
     setFormData,
+    videoFile,
+    setVideoFile,
 
     // Data
     events,
@@ -96,6 +98,8 @@ function EventsContent() {
         onClose={closeFormDialog}
         onSubmit={isEditDialogOpen ? handleUpdateEvent : handleCreateEvent}
         onFormChange={setFormData}
+        videoFile={videoFile}
+        onVideoFileChange={setVideoFile}
       />
 
       <DeleteEventDialog

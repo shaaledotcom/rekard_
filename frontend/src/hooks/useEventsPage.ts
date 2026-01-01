@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useFileUpload } from "@/hooks/useFileUpload";
 import {
   useGetEventsQuery,
   useCreateEventMutation,
@@ -21,6 +23,8 @@ import { defaultFormValues } from "@/components/events";
 
 export function useEventsPage() {
   const { toast } = useToast();
+  const { getAccessToken } = useAuth();
+  const { uploadMedia } = useFileUpload({ category: "events" });
 
   // UI state
   const [search, setSearch] = useState("");
@@ -34,6 +38,7 @@ export function useEventsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [formData, setFormData] = useState<CreateEventRequest>(defaultFormValues);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
 
   // API hooks
   const { data: eventsData, isLoading } = useGetEventsQuery({
@@ -60,27 +65,77 @@ export function useEventsPage() {
   // Event handlers
   const handleCreateEvent = useCallback(async () => {
     try {
-      await createEvent(formData).unwrap();
+      let finalFormData = { ...formData };
+
+      // Upload video file if VOD and video file is selected
+      if (formData.is_vod && videoFile) {
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+          toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
+          return;
+        }
+
+        const uploadResult = await uploadMedia(videoFile, accessToken, "events");
+        if (uploadResult.success && uploadResult.file) {
+          finalFormData = { ...finalFormData, embed: uploadResult.file.url };
+        } else {
+          toast({ 
+            title: "Upload Failed", 
+            description: uploadResult.error || "Failed to upload video file.", 
+            variant: "destructive" 
+          });
+          return;
+        }
+      }
+
+      await createEvent(finalFormData).unwrap();
       toast({ title: "Event Created! 🎉", description: "Your new event is ready to go." });
       setIsCreateDialogOpen(false);
       setFormData(defaultFormValues);
-    } catch {
-      toast({ title: "Oops!", description: "Something went wrong. Please try again.", variant: "destructive" });
+      setVideoFile(null);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+      toast({ title: "Oops!", description: errorMessage, variant: "destructive" });
     }
-  }, [createEvent, formData, toast]);
+  }, [createEvent, formData, videoFile, getAccessToken, uploadMedia, toast]);
 
   const handleUpdateEvent = useCallback(async () => {
     if (!selectedEvent) return;
     try {
-      await updateEvent({ id: selectedEvent.id, data: formData as UpdateEventRequest }).unwrap();
+      let finalFormData = { ...formData };
+
+      // Upload video file if VOD and video file is selected
+      if (formData.is_vod && videoFile) {
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+          toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
+          return;
+        }
+
+        const uploadResult = await uploadMedia(videoFile, accessToken, "events");
+        if (uploadResult.success && uploadResult.file) {
+          finalFormData = { ...finalFormData, embed: uploadResult.file.url };
+        } else {
+          toast({ 
+            title: "Upload Failed", 
+            description: uploadResult.error || "Failed to upload video file.", 
+            variant: "destructive" 
+          });
+          return;
+        }
+      }
+
+      await updateEvent({ id: selectedEvent.id, data: finalFormData as UpdateEventRequest }).unwrap();
       toast({ title: "Event Updated! ✨", description: "Your changes have been saved." });
       setIsEditDialogOpen(false);
       setSelectedEvent(null);
       setFormData(defaultFormValues);
-    } catch {
-      toast({ title: "Oops!", description: "Couldn't update the event. Please try again.", variant: "destructive" });
+      setVideoFile(null);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Couldn't update the event. Please try again.";
+      toast({ title: "Oops!", description: errorMessage, variant: "destructive" });
     }
-  }, [updateEvent, selectedEvent, formData, toast]);
+  }, [updateEvent, selectedEvent, formData, videoFile, getAccessToken, uploadMedia, toast]);
 
   const handleDeleteEvent = useCallback(async () => {
     if (!selectedEvent) return;
@@ -163,6 +218,7 @@ export function useEventsPage() {
       watch_upto: event.watch_upto || "",
       archive_after: event.archive_after || "",
     });
+    setVideoFile(null); // Reset video file when opening edit dialog
     setIsEditDialogOpen(true);
     setActionMenuOpen(null);
   }, []);
@@ -175,6 +231,7 @@ export function useEventsPage() {
 
   const openCreateDialog = useCallback(() => {
     setFormData(defaultFormValues);
+    setVideoFile(null);
     setIsCreateDialogOpen(true);
   }, []);
 
@@ -183,6 +240,7 @@ export function useEventsPage() {
     setIsEditDialogOpen(false);
     setSelectedEvent(null);
     setFormData(defaultFormValues);
+    setVideoFile(null);
   }, []);
 
   const closeDeleteDialog = useCallback(() => {
@@ -213,6 +271,8 @@ export function useEventsPage() {
     selectedEvent,
     formData,
     setFormData,
+    videoFile,
+    setVideoFile,
 
     // Data
     events,

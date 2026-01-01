@@ -59,14 +59,14 @@ export const imageUpload = multer({
 // Create upload middleware for videos
 export const videoUpload = multer({
   storage: memoryStorage,
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
+  limits: { fileSize: 5 * 1024 * 1024 * 1024 }, // 5GB
   fileFilter: createFileFilter(ALLOWED_MIME_TYPES.video),
 });
 
 // Create upload middleware for mixed media
 export const mediaUpload = multer({
   storage: memoryStorage,
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
+  limits: { fileSize: 5 * 1024 * 1024 * 1024 }, // 5GB
   fileFilter: createFileFilter(ALL_ALLOWED),
 });
 
