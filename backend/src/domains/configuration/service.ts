@@ -105,6 +105,13 @@ export const getDomain = async (
   return repo.getDomain(appId, tenantId, domain);
 };
 
+export const getDomainByTenant = async (
+  appId: string,
+  tenantId: string
+): Promise<DomainSettings | null> => {
+  return repo.getFirstDomainByTenant(appId, tenantId);
+};
+
 export const upsertDomain = async (
   appId: string,
   tenantId: string,

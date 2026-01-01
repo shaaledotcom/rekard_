@@ -5,17 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select } from "@/components/ui/select";
 import {
   Plus,
   Trash2,
   ImageIcon,
-  Globe,
   Link as LinkIcon,
   Upload,
 } from "lucide-react";
 import type { PlatformFormData, FeaturedImageFormData } from "./types";
-import { LANGUAGE_OPTIONS } from "./types";
 
 interface HomeSectionProps {
   formData: PlatformFormData;
@@ -98,7 +95,7 @@ export function HomeSection({
       <div className="text-center space-y-2">
         <h3 className="text-xl font-semibold text-foreground">Home Page Settings</h3>
         <p className="text-sm text-muted-foreground">
-          Configure your platform home page banners and language settings
+          Configure your platform home page banners
         </p>
       </div>
 
@@ -229,34 +226,6 @@ export function HomeSection({
             ))}
           </div>
         )}
-      </div>
-
-      {/* Language Settings */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-          <Label className="text-foreground/70 text-sm font-medium">
-            Default Language
-          </Label>
-        </div>
-
-        <div className="space-y-2">
-          <Select
-            value={formData.default_language}
-            onChange={(e) => onChange({ default_language: e.target.value })}
-            disabled={isReadOnly}
-            className="w-full sm:w-64 h-10 bg-secondary border-border text-foreground rounded-lg"
-          >
-            {LANGUAGE_OPTIONS.map((lang) => (
-              <option key={lang.code} value={lang.code}>
-                {lang.name}
-              </option>
-            ))}
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            This will be the default language for your platform content
-          </p>
-        </div>
       </div>
     </div>
   );

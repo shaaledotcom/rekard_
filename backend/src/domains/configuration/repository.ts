@@ -180,6 +180,24 @@ export const getDomain = async (
   return settings ? transformDomain(settings) : null;
 };
 
+export const getFirstDomainByTenant = async (
+  appId: string,
+  tenantId: string
+): Promise<DomainSettings | null> => {
+  const [settings] = await db
+    .select()
+    .from(domainSettings)
+    .where(
+      and(
+        eq(domainSettings.appId, appId),
+        eq(domainSettings.tenantId, tenantId)
+      )
+    )
+    .limit(1);
+
+  return settings ? transformDomain(settings) : null;
+};
+
 export const createDomain = async (
   appId: string,
   tenantId: string,

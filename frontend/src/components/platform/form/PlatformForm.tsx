@@ -224,33 +224,37 @@ export function PlatformForm({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Save or Upgrade button */}
-          {isReadOnly ? (
-            <UpgradeButton tooltipText="Upgrade to Pro to save platform settings" />
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="bg-background border-border text-foreground hover:bg-muted disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
+          {/* Save or Upgrade button - hidden for configurations step */}
+          {currentStep !== "configurations" && (
+            <>
+              {isReadOnly ? (
+                <UpgradeButton tooltipText="Upgrade to Pro to save platform settings" />
               ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save
-                </>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="bg-background border-border text-foreground hover:bg-muted disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
+            </>
           )}
 
-          {/* Next button - only on non-final steps */}
-          {currentStepIndex < FORM_STEPS.length - 1 && (
+          {/* Next button - only on non-final steps, hidden for configurations step */}
+          {currentStepIndex < FORM_STEPS.length - 1 && currentStep !== "configurations" && (
             <Button
               type="button"
               onClick={handleNextStep}
