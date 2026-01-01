@@ -42,8 +42,6 @@ function LoadingSkeleton() {
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Title</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Date & Time</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Type</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Language</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Actions</th>
           </tr>
         </thead>
@@ -60,13 +58,7 @@ function LoadingSkeleton() {
                 <div className="h-4 bg-muted/50 rounded animate-pulse w-32" />
               </td>
               <td className="px-6 py-4">
-                <div className="h-4 bg-muted/50 rounded animate-pulse w-16" />
-              </td>
-              <td className="px-6 py-4">
                 <div className="h-4 bg-muted/50 rounded animate-pulse w-12" />
-              </td>
-              <td className="px-6 py-4">
-                <div className="h-8 bg-muted/50 rounded animate-pulse w-20" />
               </td>
             </tr>
           ))}
@@ -169,17 +161,12 @@ function EventTableRow({
               className="w-12 h-12 rounded-lg object-cover"
             />
           ) : (
-            <div className={`w-12 h-12 rounded-lg ${getStatusBackgroundColor(event.status)} flex items-center justify-center`}>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center`}>
               <Video className="h-6 w-6 text-foreground/40" />
             </div>
           )}
           <div>
             <div className="font-semibold text-foreground">{event.title}</div>
-            {event.description && (
-              <div className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-                {event.description}
-              </div>
-            )}
           </div>
         </div>
       </td>
@@ -200,26 +187,6 @@ function EventTableRow({
             {formatTime(event.start_datetime)}
           </div>
         </div>
-      </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-2">
-          {event.is_vod ? (
-            <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-foreground">
-              VOD
-            </span>
-          ) : (
-            <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-muted-foreground">
-              Live
-            </span>
-          )}
-          <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-muted-foreground flex items-center gap-1">
-            <Users className="h-3 w-3" />
-            {event.max_concurrent_viewers_per_link}
-          </span>
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <span className="text-sm text-foreground uppercase">{event.language}</span>
       </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
@@ -300,8 +267,6 @@ export function EventsTable({
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Title</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Date & Time</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Type</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Language</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Actions</th>
           </tr>
         </thead>

@@ -165,9 +165,6 @@ export function EventCard({
         <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-1">
           {event.title}
         </h3>
-        {event.description && (
-          <p className="text-sm text-foreground/80 mb-4 line-clamp-2">{event.description}</p>
-        )}
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1.5">
@@ -178,22 +175,6 @@ export function EventCard({
             <Clock className="h-4 w-4" />
             {formatTime(event.start_datetime)}
           </div>
-        </div>
-
-        {/* Quick Info Pills */}
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
-          {event.is_vod && (
-            <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-foreground">
-              VOD
-            </span>
-          )}
-          <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-muted-foreground flex items-center gap-1">
-            <Users className="h-3 w-3" />
-            {event.max_concurrent_viewers_per_link}
-          </span>
-          <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-muted-foreground uppercase">
-            {event.language}
-          </span>
         </div>
       </CardContent>
       

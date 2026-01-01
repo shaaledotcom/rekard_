@@ -153,29 +153,11 @@ export function TicketCard({
         <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-1">
           {ticket.title}
         </h3>
-        {ticket.description && (
-          <p className="text-sm text-foreground/80 mb-4 line-clamp-2">{ticket.description}</p>
-        )}
 
         {/* Price */}
         <div className="flex items-center gap-1.5 text-foreground font-semibold text-sm mb-4">
           <IndianRupee className="h-4 w-4" />
           {formatPrice(ticket.price, ticket.currency)}
-        </div>
-
-        {/* Quick Info Pills */}
-        <div className="flex items-center gap-2 pt-3 border-t border-border flex-wrap">
-          {ticket.geoblocking_enabled && (
-            <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-foreground flex items-center gap-1">
-              <Globe2 className="h-3 w-3" />
-              Geo-locked
-            </span>
-          )}
-          {ticket.events && ticket.events.length > 0 && (
-            <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-foreground">
-              {ticket.events.length} event{ticket.events.length > 1 ? "s" : ""}
-            </span>
-          )}
         </div>
       </CardContent>
     </Card>

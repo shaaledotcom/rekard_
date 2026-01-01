@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Ticket as TicketType } from "@/store/api";
 import { ticketStatusConfig } from "./types";
-import { formatPrice, getTicketStatusBackgroundColor } from "./utils";
+import { formatPrice } from "./utils";
 
 interface TicketsTableProps {
   tickets: TicketType[];
@@ -36,8 +36,6 @@ function LoadingSkeleton() {
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Title</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Price</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Quantity</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Events</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Actions</th>
           </tr>
         </thead>
@@ -52,12 +50,6 @@ function LoadingSkeleton() {
               </td>
               <td className="px-6 py-4">
                 <div className="h-4 bg-muted/50 rounded animate-pulse w-24" />
-              </td>
-              <td className="px-6 py-4">
-                <div className="h-4 bg-muted/50 rounded animate-pulse w-32" />
-              </td>
-              <td className="px-6 py-4">
-                <div className="h-4 bg-muted/50 rounded animate-pulse w-16" />
               </td>
               <td className="px-6 py-4">
                 <div className="h-8 bg-muted/50 rounded animate-pulse w-20" />
@@ -133,9 +125,6 @@ function TicketTableRow({
   };
 
   const availableActions = getAvailableActions();
-  const availabilityPercentage = ticket.total_quantity > 0 
-    ? ((ticket.total_quantity - ticket.sold_quantity) / ticket.total_quantity) * 100 
-    : 0;
 
   return (
     <tr 
@@ -151,17 +140,12 @@ function TicketTableRow({
               className="w-12 h-12 rounded-lg object-cover"
             />
           ) : (
-            <div className={`w-12 h-12 rounded-lg ${getTicketStatusBackgroundColor(ticket.status)} flex items-center justify-center`}>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center`}>
               <Ticket className="h-6 w-6 text-foreground/40" />
             </div>
           )}
           <div>
             <div className="font-semibold text-foreground">{ticket.title}</div>
-            {ticket.description && (
-              <div className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-                {ticket.description}
-              </div>
-            )}
           </div>
         </div>
       </td>
@@ -175,40 +159,6 @@ function TicketTableRow({
         <div className="flex items-center gap-1.5 text-foreground font-semibold">
           <IndianRupee className="h-4 w-4" />
           {formatPrice(ticket.price, ticket.currency)}
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <div className="flex flex-col gap-1">
-          <div className="text-sm text-foreground">
-            {ticket.sold_quantity} / {ticket.total_quantity} sold
-          </div>
-          <div className="w-32 h-2 bg-secondary rounded-full overflow-hidden">
-            <div 
-              className={`h-full ${
-                availabilityPercentage > 50 
-                  ? "bg-emerald-500" 
-                  : availabilityPercentage > 25 
-                  ? "bg-yellow-500" 
-                  : "bg-red-500"
-              }`}
-              style={{ width: `${availabilityPercentage}%` }}
-            />
-          </div>
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          {ticket.geoblocking_enabled && (
-            <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-foreground flex items-center gap-1">
-              <Globe2 className="h-3 w-3" />
-              Geo-locked
-            </span>
-          )}
-          {ticket.events && ticket.events.length > 0 && (
-            <span className="px-2 py-1 text-xs rounded-lg bg-secondary text-foreground">
-              {ticket.events.length} event{ticket.events.length > 1 ? "s" : ""}
-            </span>
-          )}
         </div>
       </td>
       <td className="px-6 py-4">
@@ -285,8 +235,6 @@ export function TicketsTable({
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Title</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Price</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Quantity</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Info</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Actions</th>
           </tr>
         </thead>

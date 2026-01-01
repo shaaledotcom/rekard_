@@ -5,7 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Link, Info, CheckCircle2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Globe, Link, Info, CheckCircle2, AlertCircle, Copy, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { usePlan } from "@/hooks/usePlan";
+import { useGetDomainSettingsQuery } from "@/store/api";
 import type { TicketFormData } from "./types";
 
 interface BasicInfoSectionProps {
@@ -19,10 +23,29 @@ export function BasicInfoSection({
   onChange,
   isReadOnly = false,
 }: BasicInfoSectionProps) {
+  const { toast } = useToast();
+  const { hasProFeatures } = usePlan();
+  const { data: domainSettingsData } = useGetDomainSettingsQuery(undefined, {
+    skip: !hasProFeatures, // Only fetch if user has pro features
+  });
+  
   // Track if user has manually edited the URL field
   // Start as true if there's already a URL (editing existing ticket)
   const [urlManuallyEdited, setUrlManuallyEdited] = useState(false);
   const initialUrlRef = useRef<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  
+  // Determine the base URL for the ticket
+  const getBaseUrl = (): string => {
+    // If pro plan is enabled and domain is present, use custom domain
+    if (hasProFeatures && domainSettingsData?.data?.domain) {
+      return domainSettingsData.data.domain;
+    }
+    // Default to watch.rekard.com
+    return "watch.rekard.com";
+  };
+  
+  const baseUrl = getBaseUrl();
   
   // On mount, if there's already a URL, consider it "manually edited" to preserve it
   useEffect(() => {
@@ -60,6 +83,25 @@ export function BasicInfoSection({
 
   const handleDescriptionChange = (value: string) => {
     onChange({ description: value });
+  };
+
+  const handleCopyUrl = async () => {
+    const fullUrl = `${baseUrl}/${formData.url}`;
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setCopied(true);
+      toast({
+        title: "URL Copied!",
+        description: "Ticket URL has been copied to clipboard.",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy URL to clipboard.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Validation helpers
@@ -178,15 +220,49 @@ export function BasicInfoSection({
               </div>
             )}
           </div>
-          <div className="flex items-start gap-2 text-xs text-muted-foreground">
-            <Link className="h-3 w-3 mt-0.5 flex-shrink-0" />
-            <p>
-              {isUrlValid 
-                ? `Your ticket will be available at: watch.rekard.com/${formData.url}`
-                : "URL should contain only lowercase letters, numbers, and hyphens."
-              }
-            </p>
-          </div>
+          {isUrlValid && formData.url ? (
+            <div className="flex items-center gap-2 p-3 bg-secondary rounded-lg border border-border">
+              <div className="flex items-start gap-2 flex-1 min-w-0">
+                <Link className="h-3 w-3 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground mb-1">Your ticket will be available at:</p>
+                  <p 
+                    className="text-sm font-mono text-foreground select-all break-all cursor-text"
+                    onClick={(e) => {
+                      const selection = window.getSelection();
+                      const range = document.createRange();
+                      range.selectNodeContents(e.currentTarget);
+                      selection?.removeAllRanges();
+                      selection?.addRange(range);
+                    }}
+                  >
+                    {baseUrl}/{formData.url}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyUrl}
+                className="h-8 w-8 p-0 flex-shrink-0"
+                title="Copy URL"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Link className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <p>
+                URL should contain only lowercase letters, numbers, and hyphens.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Description Field */}
