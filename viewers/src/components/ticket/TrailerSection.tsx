@@ -61,13 +61,7 @@ export function TrailerSection({ media }: TrailerSectionProps) {
   const currentMedia = media[currentIndex];
 
   if (!media.length || !currentMedia) {
-    return (
-      <section className="rounded-lg">
-        <div className="w-full h-96 bg-muted rounded-lg flex items-center justify-center">
-          <p className="text-muted-foreground">No trailer available</p>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (

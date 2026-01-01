@@ -6,7 +6,7 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import type { ViewerAccessStatus } from "@/store/api";
 
-interface ViewersFiltersProps {
+interface UsersFiltersProps {
   search: string;
   onSearchChange: (value: string) => void;
   statusFilter: ViewerAccessStatus | "";
@@ -15,21 +15,21 @@ interface ViewersFiltersProps {
   onBulkImport: () => void;
 }
 
-export function ViewersFilters({
+export function UsersFilters({
   search,
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
   onGrantAccess,
   onBulkImport,
-}: ViewersFiltersProps) {
+}: UsersFiltersProps) {
   return (
     <div className="flex flex-col gap-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* Title and actions row */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground tracking-tight">
-            Viewer Access
+            User Access
           </h1>
           <p className="text-muted-foreground mt-1">
             Manage who can access your tickets

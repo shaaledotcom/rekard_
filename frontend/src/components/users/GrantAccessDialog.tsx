@@ -85,7 +85,7 @@ export function GrantAccessDialog({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground">Grant Access</h2>
-              <p className="text-sm text-muted-foreground">Add viewers by email</p>
+              <p className="text-sm text-muted-foreground">Add users by email</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0">
@@ -124,7 +124,7 @@ export function GrantAccessDialog({
                 <div key={index} className="flex gap-2">
                   <Input
                     type="email"
-                    placeholder="viewer@example.com"
+                    placeholder="user@example.com"
                     value={email}
                     onChange={(e) => updateEmail(index, e.target.value)}
                     className="h-11 bg-secondary/50 border-border rounded-xl flex-1"
@@ -183,7 +183,7 @@ export function GrantAccessDialog({
               className="h-4 w-4 rounded border-border text-violet-600 focus:ring-violet-500"
             />
             <Label htmlFor="notify" className="text-sm text-muted-foreground cursor-pointer">
-              Send notification email to viewers
+              Send notification email to users
             </Label>
           </div>
 

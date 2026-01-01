@@ -164,12 +164,14 @@ export function SalesTransactions() {
   }, [filteredByTime]);
 
   const formatCurrency = (amount: number, currency: string = "INR") => {
-    return new Intl.NumberFormat("en-IN", {
+    const formatted = new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+    // Remove "US" prefix from dollar displays
+    return formatted.replace(/US\$/g, "$");
   };
 
   const formatDate = (dateString: string) => {
@@ -207,7 +209,7 @@ export function SalesTransactions() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Total Credits
+                  Total Tickets
                 </p>
                 <p className="text-2xl font-bold text-foreground mt-1">
                   {formatCurrency(stats.totalCredits)}

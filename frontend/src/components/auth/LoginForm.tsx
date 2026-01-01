@@ -93,9 +93,6 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md border-border bg-card">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center">
-          <span className="text-3xl font-bold text-foreground">R</span>
-        </div>
         <CardTitle className="text-2xl font-bold">Welcome to Rekard</CardTitle>
         <CardDescription>
           {step === "input" && "Enter your email to continue"}
@@ -107,7 +104,6 @@ export function LoginForm() {
         {step === "input" && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input

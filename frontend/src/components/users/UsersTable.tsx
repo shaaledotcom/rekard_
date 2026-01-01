@@ -4,9 +4,9 @@ import { Mail, Ticket, Calendar, MoreVertical, Ban, Trash2, CheckCircle, Clock, 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ViewerAccess, ViewerAccessStatus } from "@/store/api";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
-interface ViewersTableProps {
+interface UsersTableProps {
   accessGrants: ViewerAccess[];
   isLoading: boolean;
   onRevoke: (grant: ViewerAccess) => void;
@@ -23,14 +23,28 @@ const statusConfig: Record<ViewerAccessStatus, { label: string; icon: React.Reac
 function AccessGrantRow({ 
   grant, 
   onRevoke, 
-  onDelete 
+  onDelete,
 }: { 
   grant: ViewerAccess; 
   onRevoke: (grant: ViewerAccess) => void;
   onDelete: (grant: ViewerAccess) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const status = statusConfig[grant.status];
+
+  const handleMenuToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!showMenu && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+    setShowMenu(!showMenu);
+  };
 
   return (
     <tr className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
@@ -79,25 +93,34 @@ function AccessGrantRow({
         )}
       </td>
       <td className="px-4 py-4">
-        <div className="relative">
+        <>
           <Button
+            ref={buttonRef}
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0"
-            onClick={() => setShowMenu(!showMenu)}
+            onClick={handleMenuToggle}
           >
             <MoreVertical className="h-4 w-4" />
           </Button>
+          
+          {/* Dropdown Menu - positioned outside table */}
           {showMenu && (
             <>
               <div 
-                className="fixed inset-0 z-10" 
-                onClick={() => setShowMenu(false)} 
-              />
-              <div className="absolute right-0 top-full mt-1 z-20 w-40 bg-popover border border-border rounded-lg shadow-lg py-1">
+                className="fixed z-50 w-40 bg-popover border border-border rounded-lg shadow-lg py-1"
+                style={{
+                  top: `${dropdownPosition.top}px`,
+                  right: `${dropdownPosition.right}px`,
+                }}
+              >
                 {grant.status === "active" && (
                   <button
-                    onClick={() => { onRevoke(grant); setShowMenu(false); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRevoke(grant);
+                      setShowMenu(false);
+                    }}
                     className="w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center gap-2 text-orange-500"
                   >
                     <Ban className="h-4 w-4" />
@@ -105,22 +128,33 @@ function AccessGrantRow({
                   </button>
                 )}
                 <button
-                  onClick={() => { onDelete(grant); setShowMenu(false); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(grant);
+                    setShowMenu(false);
+                  }}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center gap-2 text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
                   Delete
                 </button>
               </div>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(false);
+                }}
+              />
             </>
           )}
-        </div>
+        </>
       </td>
     </tr>
   );
 }
 
-export function ViewersTable({ accessGrants, isLoading, onRevoke, onDelete }: ViewersTableProps) {
+export function UsersTable({ accessGrants, isLoading, onRevoke, onDelete }: UsersTableProps) {
   if (isLoading) {
     return (
       <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden">
@@ -147,7 +181,7 @@ export function ViewersTable({ accessGrants, isLoading, onRevoke, onDelete }: Vi
         </div>
         <h3 className="text-lg font-medium text-foreground mb-2">No access grants yet</h3>
         <p className="text-muted-foreground mb-4">
-          Grant access to viewers by email so they can access your tickets without purchasing.
+          Grant access to users by email so they can access your tickets without purchasing.
         </p>
       </div>
     );

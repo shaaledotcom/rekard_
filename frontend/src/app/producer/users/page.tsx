@@ -18,17 +18,17 @@ import {
   ValidateCSVResult,
 } from "@/store/api";
 import {
-  ViewersBackground,
-  ViewersFilters,
-  ViewersTable,
-  ViewersPagination,
-  ViewersStats,
+  UsersBackground,
+  UsersFilters,
+  UsersTable,
+  UsersPagination,
+  UsersStats,
   GrantAccessDialog,
   BulkImportDialog,
   ConfirmDialog,
-} from "@/components/viewers";
+} from "@/components/users";
 
-function ViewersContent() {
+function UsersContent() {
   const { toast } = useToast();
 
   // UI state
@@ -91,7 +91,7 @@ function ViewersContent() {
       const result = await grantAccess(data).unwrap();
       toast({
         title: "Access Granted",
-        description: `${result.total_granted} viewer(s) granted access${result.total_failed > 0 ? `, ${result.total_failed} failed` : ""}.`,
+        description: `${result.total_granted} user(s) granted access${result.total_failed > 0 ? `, ${result.total_failed} failed` : ""}.`,
       });
       setIsGrantDialogOpen(false);
     } catch {
@@ -137,14 +137,14 @@ function ViewersContent() {
       const result = await bulkImport(data).unwrap();
       toast({
         title: "Import Complete",
-        description: `${result.grant_result.total_granted} viewer(s) imported${result.grant_result.total_failed > 0 ? `, ${result.grant_result.total_failed} failed` : ""}.`,
+        description: `${result.grant_result.total_granted} user(s) imported${result.grant_result.total_failed > 0 ? `, ${result.grant_result.total_failed} failed` : ""}.`,
       });
       setIsBulkImportOpen(false);
       setValidationResult(null);
     } catch {
       toast({
         title: "Import Error",
-        description: "Failed to import viewers. Please try again.",
+        description: "Failed to import users. Please try again.",
         variant: "destructive",
       });
     }
@@ -212,12 +212,12 @@ function ViewersContent() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <ViewersBackground />
+      <UsersBackground />
 
       <Navbar />
 
       <main className="container mx-auto px-4 lg:px-6 py-8 relative z-10">
-        <ViewersFilters
+        <UsersFilters
           search={search}
           onSearchChange={setSearch}
           statusFilter={statusFilter}
@@ -226,16 +226,16 @@ function ViewersContent() {
           onBulkImport={handleOpenBulkImport}
         />
 
-        <ViewersStats stats={stats} isLoading={statsLoading} />
+        <UsersStats stats={stats} isLoading={statsLoading} />
 
-        <ViewersTable
+        <UsersTable
           accessGrants={accessGrants}
           isLoading={isLoading}
           onRevoke={handleOpenRevokeDialog}
           onDelete={handleOpenDeleteDialog}
         />
 
-        <ViewersPagination
+        <UsersPagination
           currentPage={page}
           totalPages={totalPages}
           onPageChange={setPage}
@@ -287,10 +287,10 @@ function ViewersContent() {
   );
 }
 
-export default function ProducerViewersPage() {
+export default function ProducerUsersPage() {
   return (
     <ProtectedRoute>
-      <ViewersContent />
+      <UsersContent />
     </ProtectedRoute>
   );
 }

@@ -15,14 +15,16 @@ import {
   CreditCard,
   Globe,
   Users,
+  LayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "./ThemeToggle";
 
 const navItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/producer/events", label: "Events", icon: Calendar },
   { href: "/producer/tickets", label: "Tickets", icon: Ticket },
-  { href: "/producer/viewers", label: "Viewers", icon: Users },
+  { href: "/producer/users", label: "Users", icon: Users },
   { href: "/producer/platform", label: "Platform", icon: Globe },
   { href: "/producer/billing", label: "Billing", icon: CreditCard },
 ];
@@ -46,13 +48,6 @@ export function Navbar() {
         
         <nav className="relative container mx-auto px-4 lg:px-6">
           <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
-            <Link href="/dashboard" className="flex items-center gap-3 group">
-              <span className="text-3xl font-bold text-red-400">
-                Rekard
-              </span>
-            </Link>
-
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {

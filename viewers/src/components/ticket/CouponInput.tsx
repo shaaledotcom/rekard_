@@ -49,7 +49,7 @@ export function CouponInput({
         order_amount: orderAmount,
       }).unwrap();
 
-      if (result.valid && result.discount_amount !== undefined && result.final_amount !== undefined) {
+      if (result.is_valid && result.discount_amount !== undefined && result.final_amount !== undefined) {
         setAppliedCoupon({
           code: couponCode.trim().toUpperCase(),
           discountAmount: result.discount_amount,

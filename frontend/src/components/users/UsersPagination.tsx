@@ -3,17 +3,17 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface ViewersPaginationProps {
+interface UsersPaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 }
 
-export function ViewersPagination({
+export function UsersPagination({
   currentPage,
   totalPages,
   onPageChange,
-}: ViewersPaginationProps) {
+}: UsersPaginationProps) {
   if (totalPages <= 1) return null;
 
   return (

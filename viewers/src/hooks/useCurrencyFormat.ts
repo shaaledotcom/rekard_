@@ -143,12 +143,14 @@ export function useCurrencyFormat() {
     const locale = getLocale();
 
     try {
-      return new Intl.NumberFormat(locale, {
+      const formatted = new Intl.NumberFormat(locale, {
         style: "currency",
         currency: currency,
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       }).format(price);
+      // Remove "US" prefix from dollar displays
+      return formatted.replace(/US\$/g, "$");
     } catch (error) {
       // Fallback for unsupported currencies
       return `${currency} ${price.toFixed(2)}`;

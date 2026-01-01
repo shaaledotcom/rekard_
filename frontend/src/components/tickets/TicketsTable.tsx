@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Ticket,
   Globe2,
@@ -91,6 +91,8 @@ function TicketTableRow({
   onArchive?: () => void;
 }) {
   const [showActions, setShowActions] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const status = ticketStatusConfig[ticket.status];
   const StatusIcon = status.icon;
 
@@ -98,6 +100,16 @@ function TicketTableRow({
     e.stopPropagation();
     onDelete();
   };
+
+  useEffect(() => {
+    if (showActions && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [showActions]);
 
   const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -164,8 +176,9 @@ function TicketTableRow({
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
           {availableActions.length > 0 && (
-            <div className="relative">
+            <>
               <Button
+                ref={buttonRef}
                 variant="ghost"
                 size="icon"
                 onClick={handleActionClick}
@@ -174,10 +187,16 @@ function TicketTableRow({
                 <MoreVertical className="h-4 w-4" />
               </Button>
               
-              {/* Dropdown Menu */}
+              {/* Dropdown Menu - positioned outside table */}
               {showActions && (
                 <>
-                  <div className="absolute top-full right-0 mt-1 py-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[120px]">
+                  <div 
+                    className="fixed py-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[120px]"
+                    style={{
+                      top: `${dropdownPosition.top}px`,
+                      right: `${dropdownPosition.right}px`,
+                    }}
+                  >
                     {availableActions.map((action, i) => (
                       <button
                         key={i}
@@ -195,7 +214,7 @@ function TicketTableRow({
                   />
                 </>
               )}
-            </div>
+            </>
           )}
           <Button
             variant="ghost"

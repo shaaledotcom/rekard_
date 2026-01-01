@@ -72,7 +72,7 @@ export interface CurrencyOption {
 
 export const CURRENCY_OPTIONS: CurrencyOption[] = [
   { value: "INR", label: "INR - Indian Rupee", symbol: "₹" },
-  { value: "USD", label: "USD - US Dollar", symbol: "$" },
+  { value: "USD", label: "USD - Dollar", symbol: "$" },
 ];
 
 // Status options

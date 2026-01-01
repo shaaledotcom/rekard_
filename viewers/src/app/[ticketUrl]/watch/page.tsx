@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 import { VideoPageLayout } from "@/components/watch";
 import { useAuth } from "@/hooks/useAuth";
 import { useGetTicketByUrlQuery, useGetPurchaseStatusQuery } from "@/store/api";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 export default function WatchPage() {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const ticketUrl = params.ticketUrl as string;
 
@@ -36,9 +37,11 @@ export default function WatchPage() {
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
-      router.push("/auth");
+      const returnUrl = pathname ? encodeURIComponent(pathname) : undefined;
+      const authUrl = returnUrl ? `/auth?returnUrl=${returnUrl}` : "/auth";
+      router.push(authUrl);
     }
-  }, [isAuthLoading, isAuthenticated, router]);
+  }, [isAuthLoading, isAuthenticated, router, pathname]);
 
   // Redirect to ticket page if not purchased
   useEffect(() => {

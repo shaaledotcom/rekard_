@@ -103,7 +103,7 @@ viewer@test.com,`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "sample_viewers.csv";
+    a.download = "sample_users.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -126,7 +126,7 @@ viewer@test.com,`;
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground">Bulk Import</h2>
-              <p className="text-sm text-muted-foreground">Import viewers from CSV</p>
+              <p className="text-sm text-muted-foreground">Import users from CSV</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0">
@@ -283,7 +283,7 @@ viewer@test.com,`;
               className="h-4 w-4 rounded border-border text-violet-600 focus:ring-violet-500"
             />
             <Label htmlFor="notify-bulk" className="text-sm text-muted-foreground cursor-pointer">
-              Send notification emails to viewers
+              Send notification emails to users
             </Label>
           </div>
 
@@ -303,7 +303,7 @@ viewer@test.com,`;
               disabled={isSubmitting || isValidating || ticketId === "" || !csvData.trim() || (validationResult?.valid_count || 0) === 0}
               className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
             >
-              {isSubmitting ? "Importing..." : `Import ${validationResult?.valid_count || 0} Viewers`}
+              {isSubmitting ? "Importing..." : `Import ${validationResult?.valid_count || 0} Users`}
             </Button>
           </div>
         </form>

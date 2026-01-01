@@ -4,12 +4,14 @@ import type { TicketStatus } from "@/store/api";
  * Format price with currency symbol
  */
 export function formatPrice(price: number, currency: string = "INR"): string {
-  return new Intl.NumberFormat("en-IN", {
+  const formatted = new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(price);
+  // Remove "US" prefix from dollar displays
+  return formatted.replace(/US\$/g, "$");
 }
 
 import { formatDateLocal } from "@/lib/datetime";

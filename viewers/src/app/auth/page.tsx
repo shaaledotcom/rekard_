@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Loader2, Mail, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OtpInput } from "@/components/auth/OtpInput";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
 
 export default function AuthPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading, sendEmailOtp, verifyEmailOtp } = useAuth();
   const { config, isLoading: tenantLoading } = useTenant();
 
@@ -22,12 +24,15 @@ export default function AuthPage() {
   const [success, setSuccess] = useState("");
   const [otpSent, setOtpSent] = useState(false);
 
+  // Get return URL from query params
+  const returnUrl = searchParams?.get("returnUrl") || "/";
+
   // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.push("/");
+      router.push(returnUrl);
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router, returnUrl]);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +64,7 @@ export default function AuthPage() {
     try {
       await verifyEmailOtp(email, otpCode);
       setSuccess("Login successful! Redirecting...");
-      setTimeout(() => router.push("/"), 1500);
+      setTimeout(() => router.push(returnUrl), 1500);
     } catch (err: any) {
       setError(err.message || "Invalid OTP. Please try again.");
     } finally {
@@ -100,7 +105,7 @@ export default function AuthPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">
-            {otpSent ? "Enter OTP" : "Login / Sign Up"}
+            {otpSent ? "Enter OTP" : "Login With OTP"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -134,7 +139,7 @@ export default function AuthPage() {
                     Sending...
                   </>
                 ) : (
-                  "Continue with Email"
+                  "GET OTP"
                 )}
               </Button>
             </form>
@@ -146,15 +151,10 @@ export default function AuthPage() {
               </div>
 
               <div className="space-y-2">
-                <Input
-                  type="text"
-                  placeholder="Enter 6-digit OTP"
+                <OtpInput
                   value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="text-center text-xl tracking-[0.5em] font-mono"
-                  maxLength={6}
-                  required
-                  autoComplete="one-time-code"
+                  onChange={setOtpCode}
+                  disabled={loading}
                 />
               </div>
 
@@ -222,7 +222,7 @@ export default function AuthPage() {
         onClick={() => router.push("/")}
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Home
+        Back
       </Button>
     </div>
   );

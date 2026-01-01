@@ -155,9 +155,9 @@ export default function TicketDetailPage() {
 
   return (
     <MainLayout>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-8 w-full">
         {/* Main content */}
-        <div className="lg:col-span-3 order-2 lg:order-1">
+        <div className="lg:col-span-3 order-2 lg:order-1 w-full overflow-visible">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 capitalize">
@@ -187,10 +187,10 @@ export default function TicketDetailPage() {
             </>
           )}
 
-          {ticket.events && ticket.events.length > 1 && (
+          {ticket.events && ticket.events.length > 0 && (
             <>
               <div className="mt-4 sm:mt-8"></div>
-              <EventsList events={ticket.events} title="Included Events" />
+              <EventsList events={ticket.events} title="Events" />
             </>
           )}
         </div>

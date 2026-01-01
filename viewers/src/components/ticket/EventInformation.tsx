@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Calendar, Clock, Hourglass } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrencyFormat, TicketPricing } from "@/hooks/useCurrencyFormat";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
@@ -56,6 +56,7 @@ export function EventInformation({
   ticketPricing,
 }: EventInformationProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const { config } = useTenant();
@@ -182,7 +183,9 @@ export function EventInformation({
         title: "Login required",
         description: "Please login to purchase tickets",
       });
-      router.push("/auth");
+      const returnUrl = pathname ? encodeURIComponent(pathname) : undefined;
+      const authUrl = returnUrl ? `/auth?returnUrl=${returnUrl}` : "/auth";
+      router.push(authUrl);
       return;
     }
 

@@ -545,8 +545,12 @@ export const getCouponByCode = async (
   ticketId: number,
   code: string
 ): Promise<TicketCoupon | null> => {
-  // First verify the ticket belongs to this app/tenant
-  const [ticket] = await db
+  // Normalize the code to match how it's stored (uppercase, trimmed)
+  const normalizedCode = code.trim().toUpperCase();
+
+  // First get the ticket by ID (for viewer routes, we need to resolve tenant from ticket)
+  // Try with provided tenant first, then fall back to ticket's actual tenant
+  let [ticket] = await db
     .select()
     .from(tickets)
     .where(
@@ -558,20 +562,42 @@ export const getCouponByCode = async (
     )
     .limit(1);
 
-  if (!ticket) return null;
+  // If not found with provided tenant (e.g., viewer route with system tenant),
+  // try to get ticket by ID only and use its actual tenant
+  if (!ticket) {
+    [ticket] = await db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.id, ticketId))
+      .limit(1);
 
+    if (ticket) {
+      // Use the ticket's actual tenant for coupon lookup
+      appId = ticket.appId;
+      tenantId = ticket.tenantId;
+    }
+  }
+
+  if (!ticket) {
+    return null;
+  }
+
+  // Query coupon - use SQL with TRIM and UPPER for exact matching
+  // This handles any edge cases with whitespace or casing
   const [coupon] = await db
     .select()
     .from(ticketCoupons)
     .where(
       and(
         eq(ticketCoupons.ticketId, ticketId),
-        eq(ticketCoupons.code, code)
+        sql`TRIM(UPPER(${ticketCoupons.code})) = TRIM(UPPER(${sql.raw(`'${normalizedCode.replace(/'/g, "''")}'`)}))`
       )
     )
     .limit(1);
 
-  if (!coupon) return null;
+  if (!coupon) {
+    return null;
+  }
 
   return {
     id: coupon.id,

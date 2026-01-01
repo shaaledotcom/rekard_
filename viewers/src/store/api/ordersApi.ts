@@ -42,7 +42,7 @@ export interface ValidateCouponRequest {
 }
 
 export interface ValidateCouponResponse {
-  valid: boolean;
+  is_valid: boolean;
   discount_type?: "percentage" | "fixed";
   discount_value?: number;
   discount_amount?: number;

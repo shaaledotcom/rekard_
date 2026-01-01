@@ -26,8 +26,8 @@ export function IndividualEventCard({ event }: IndividualEventCardProps) {
     "/placeholder-event.jpg";
 
   return (
-    <div className="w-[200px] h-[300px] p-0 m-0 shadow-none rounded-lg">
-      <div className="p-0 m-0 h-full flex flex-col shadow-none border-none">
+    <div className="w-full h-auto p-0 m-0 shadow-none rounded-lg">
+      <div className="p-0 m-0 w-full aspect-[2/3] flex flex-col shadow-none border-none">
         <Image
           src={imageUrl}
           alt={event.title}

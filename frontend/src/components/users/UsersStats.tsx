@@ -3,12 +3,12 @@
 import { Users, CheckCircle, Clock, XCircle, UserCheck } from "lucide-react";
 import type { AccessStats } from "@/store/api";
 
-interface ViewersStatsProps {
+interface UsersStatsProps {
   stats: AccessStats | undefined;
   isLoading: boolean;
 }
 
-export function ViewersStats({ stats, isLoading }: ViewersStatsProps) {
+export function UsersStats({ stats, isLoading }: UsersStatsProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8 animate-pulse">

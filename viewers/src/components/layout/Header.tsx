@@ -3,7 +3,7 @@
 import { LogIn, LogOut, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,12 +11,20 @@ import { useTenant } from "@/hooks/useTenant";
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const { config, isLoading: tenantLoading } = useTenant();
 
   const handleLogout = async () => {
     await signOut();
     router.push("/");
+  };
+
+  const handleLogin = () => {
+    // Include current path as return URL, but exclude auth page itself
+    const returnUrl = pathname && pathname !== "/auth" ? encodeURIComponent(pathname) : undefined;
+    const authUrl = returnUrl ? `/auth?returnUrl=${returnUrl}` : "/auth";
+    router.push(authUrl);
   };
 
   const isLoading = authLoading || tenantLoading;
@@ -64,7 +72,7 @@ export function Header() {
             ) : (
               <Button
                 size="sm"
-                onClick={() => router.push("/auth")}
+                onClick={handleLogin}
               >
                 <LogIn className="h-4 w-4 mr-2" />
                 <span>Login</span>

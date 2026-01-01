@@ -25,9 +25,9 @@ export function EventsList({ events, title = "Events" }: EventsListProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       {title && <h2 className="text-xl font-semibold">{title}</h2>}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
         {events.map((event) => (
           <IndividualEventCard key={event.id} event={event} />
         ))}

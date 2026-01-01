@@ -18,7 +18,7 @@ import {
 } from "@/components/events";
 
 function EventsContent() {
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
 
   const {
     // UI state
