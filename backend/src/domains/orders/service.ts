@@ -348,14 +348,19 @@ export const completeOrderFromPayment = async (
     // The payment was already processed by Razorpay
   }
 
-  // Update order using ticket owner's appId/tenantId
-  const updated = await repo.updateOrder(ticketOwnerAppId, ticketOwnerTenantId, orderId, {
+  // Update order using order's original appId/tenantId (not ticket owner's)
+  // The ticket owner's credentials are only needed for payment verification
+  const updated = await repo.updateOrder(order.app_id, order.tenant_id, orderId, {
     status: 'completed',
     external_payment_id: paymentId,
   });
 
-  log.info(`Completed order ${order.order_number} with payment ${paymentId} (ticket owner: ${ticketOwnerAppId}/${ticketOwnerTenantId})`);
-  return updated!;
+  if (!updated) {
+    throw notFound('Order could not be updated');
+  }
+
+  log.info(`Completed order ${order.order_number} with payment ${paymentId} (order: ${order.app_id}/${order.tenant_id}, ticket owner: ${ticketOwnerAppId}/${ticketOwnerTenantId})`);
+  return updated;
 };
 
 // Check if user has purchased a ticket
