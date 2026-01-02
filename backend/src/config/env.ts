@@ -96,6 +96,9 @@ export const env = {
     smtpPassword: getEnv('SMTP_PASSWORD', ''),
     supportEmail: getEnv('SUPPORT_EMAIL', 'live@rekard.com'),
     supportPhone: getEnv('SUPPORT_PHONE', ''),
+    resendApiKey: getEnv('RESEND_API_KEY', ''),
+    fromEmail: getEnv('EMAIL_FROM', 'noreply@rekard.com'),
+    fromName: getEnv('EMAIL_FROM_NAME', 'Rekard'),
   },
 
   // Default platform settings for shared domain (watch.rekard.com)

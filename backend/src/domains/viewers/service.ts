@@ -17,6 +17,7 @@ import { createUser } from '../auth/user.js';
 import { ROLE_VIEWER } from '../auth/constants.js';
 import * as ordersRepo from '../orders/repository.js';
 import * as dashboardRepo from '../dashboard/repository.js';
+import { sendAccessGrantEmail } from '../../shared/utils/email.js';
 
 // ===== CSV Parsing =====
 
@@ -124,6 +125,7 @@ export const grantAccess = async (
     // Process each ticket for this email
     let emailSuccess = false;
     const emailFailedReasons: string[] = [];
+    const successfullyGrantedTicketIds: number[] = [];
 
     // Try to create or get user by email once (optional - for order creation)
     // Access grants work with just email, so user creation is not required
@@ -153,6 +155,7 @@ export const grantAccess = async (
               expiresAt: request.expires_at || null,
             });
             emailSuccess = true;
+            successfullyGrantedTicketIds.push(ticketId);
           } else {
             emailFailedReasons.push(`Ticket ${ticketId}: Access already granted`);
             continue;
@@ -199,6 +202,7 @@ export const grantAccess = async (
             request.expires_at
           );
           emailSuccess = true;
+          successfullyGrantedTicketIds.push(ticketId);
         }
       } catch (error) {
         log.error(`Failed to grant access to ${email} for ticket ${ticketId}:`, error);
@@ -206,9 +210,58 @@ export const grantAccess = async (
       }
     }
 
-    // TODO: Send notification email if notify is true
-    if (request.notify && emailSuccess) {
-      log.info(`Would send access notification email to ${email} for ${ticketIds.length} ticket(s)`);
+    // Send notification email when access is granted
+    if (emailSuccess && successfullyGrantedTicketIds.length > 0) {
+      log.info(`[EMAIL] Preparing to send access grant emails to ${email} for ${successfullyGrantedTicketIds.length} ticket(s)`);
+      try {
+        // Send email for each ticket that was successfully granted
+        for (const ticketId of successfullyGrantedTicketIds) {
+          log.info(`[EMAIL] Processing access grant email for ticket ${ticketId} to ${email}`);
+          const ticketDetails = await dashboardRepo.getPublicTicketById(ticketId);
+          if (ticketDetails) {
+            log.info(`[EMAIL] Retrieved ticket details for ticket ${ticketId} - Title: ${ticketDetails.title || 'Unknown'}`);
+            // Get the earliest event start datetime if available
+            const eventStartDatetime = ticketDetails.events && ticketDetails.events.length > 0
+              ? ticketDetails.events
+                  .map(e => e.start_datetime)
+                  .filter((dt): dt is Date => !!dt)
+                  .sort((a, b) => a.getTime() - b.getTime())[0]
+              : undefined;
+
+            // Construct watch link - use ticket URL if available, otherwise use ticket ID
+            let watchLink: string | undefined;
+            if (ticketDetails.url) {
+              // Remove leading slash if present
+              const cleanUrl = ticketDetails.url.replace(/^\//, '');
+              watchLink = `/${cleanUrl}/watch`;
+            } else {
+              watchLink = `/watch?ticket=${ticketId}`;
+            }
+
+            // Get the grant to check expiration
+            const grant = await repo.getAccessGrantByEmail(appId, tenantId, ticketId, email);
+            const expiresAt = grant?.expires_at ? new Date(grant.expires_at) : request.expires_at;
+
+            await sendAccessGrantEmail({
+              recipientEmail: email,
+              ticketTitle: ticketDetails.title || 'Ticket',
+              ticketDescription: ticketDetails.description,
+              eventTitle: ticketDetails.events && ticketDetails.events.length > 0 ? ticketDetails.events[0].title : undefined,
+              eventStartDatetime,
+              watchLink,
+              expiresAt,
+            });
+          } else {
+            log.warn(`[EMAIL] Ticket details not found for ticket ${ticketId}, skipping email to ${email}`);
+          }
+        }
+        log.info(`[EMAIL] Completed sending access grant emails to ${email} for ${successfullyGrantedTicketIds.length} ticket(s)`);
+      } catch (error) {
+        // Log error but don't fail the access grant
+        log.error(`[EMAIL] Failed to send access grant email to ${email}:`, error);
+      }
+    } else if (emailSuccess && successfullyGrantedTicketIds.length === 0) {
+      log.warn(`[EMAIL] Access granted to ${email} but no tickets were successfully granted, skipping email`);
     }
 
     // Track success/failure for this email

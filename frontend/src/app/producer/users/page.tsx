@@ -231,7 +231,7 @@ function UsersContent() {
           onBulkImport={handleOpenBulkImport}
         />
 
-        <UsersStats stats={stats} isLoading={statsLoading} />
+        {/* <UsersStats stats={stats} isLoading={statsLoading} /> */}
 
         <UsersTable
           accessGrants={accessGrants}

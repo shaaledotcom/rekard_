@@ -28,6 +28,7 @@ import * as ticketCouponsRepo from '../tickets/repository.js';
 import { ROLE_VIEWER } from '../auth/constants.js';
 import { log } from '../../shared/middleware/logger.js';
 import { badRequest, notFound } from '../../shared/errors/app-error.js';
+import { sendPurchaseConfirmationEmail } from '../../shared/utils/email.js';
 
 // Create order with validation
 export const createOrder = async (
@@ -360,6 +361,58 @@ export const completeOrderFromPayment = async (
   }
 
   log.info(`Completed order ${order.order_number} with payment ${paymentId} (order: ${order.app_id}/${order.tenant_id}, ticket owner: ${ticketOwnerAppId}/${ticketOwnerTenantId})`);
+
+  // Send purchase confirmation email (non-blocking)
+  if (updated.customer_email) {
+    log.info(`[EMAIL] Preparing to send purchase confirmation email for order ${updated.order_number} to ${updated.customer_email}`);
+    try {
+      // Get ticket details for email
+      const ticketDetails = await dashboardRepo.getPublicTicketById(updated.ticket_id);
+      if (ticketDetails) {
+        log.info(`[EMAIL] Retrieved ticket details for order ${updated.order_number} - Ticket: ${ticketDetails.title || 'Unknown'}`);
+        // Get the earliest event start datetime if available
+        const eventStartDatetime = ticketDetails.events && ticketDetails.events.length > 0
+          ? ticketDetails.events
+              .map(e => e.start_datetime)
+              .filter((dt): dt is Date => !!dt)
+              .sort((a, b) => a.getTime() - b.getTime())[0]
+          : undefined;
+
+        // Construct watch link - use ticket URL if available, otherwise use ticket ID
+        let watchLink: string | undefined;
+        if (ticketDetails.url) {
+          // Remove leading slash if present
+          const cleanUrl = ticketDetails.url.replace(/^\//, '');
+          watchLink = `/${cleanUrl}/watch`;
+        } else {
+          watchLink = `/watch?order=${updated.id}&ticket=${updated.ticket_id}`;
+        }
+
+        await sendPurchaseConfirmationEmail({
+          recipientEmail: updated.customer_email,
+          recipientName: updated.customer_name,
+          orderNumber: updated.order_number,
+          ticketTitle: ticketDetails.title || 'Ticket',
+          ticketDescription: ticketDetails.description,
+          quantity: updated.quantity,
+          unitPrice: updated.unit_price,
+          totalAmount: updated.total_amount,
+          currency: updated.currency,
+          eventTitle: ticketDetails.events && ticketDetails.events.length > 0 ? ticketDetails.events[0].title : undefined,
+          eventStartDatetime,
+          watchLink,
+        });
+      } else {
+        log.warn(`[EMAIL] Ticket details not found for ticket ${updated.ticket_id}, skipping email for order ${updated.order_number}`);
+      }
+    } catch (error) {
+      // Log error but don't fail the order completion
+      log.error(`[EMAIL] Failed to send purchase confirmation email for order ${updated.order_number}:`, error);
+    }
+  } else {
+    log.warn(`[EMAIL] No customer email found for order ${updated.order_number}, skipping purchase confirmation email`);
+  }
+
   return updated;
 };
 

@@ -134,7 +134,7 @@ export function HeaderSection({
               className="hidden"
             />
             <p className="text-sm text-muted-foreground">
-              Upload a square transparent PNG logo for best results. Recommended size: 200x200px
+              Upload a square transparent PNG logo <br /> for best results. Recommended size: 250x70px
             </p>
             {!isReadOnly && (
               <Button

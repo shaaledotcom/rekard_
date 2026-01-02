@@ -6,7 +6,7 @@ import type {
   CreateUserAndOrderRequest,
   PaginationParams,
 } from '../../domains/orders/types.js';
-import { requireSession } from '../../domains/auth/session.js';
+import { requireSession, type AuthenticatedRequest } from '../../domains/auth/session.js';
 import { viewerTenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
 import { ok, created, badRequest } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
@@ -209,6 +209,16 @@ router.post('/', asyncHandler(async (req: AppRequest, res: Response) => {
   }
   if (data.unit_price === undefined || data.unit_price < 0) {
     return badRequest(res, 'Unit price is required');
+  }
+
+  // Get user email from session if available (for logged-in users)
+  const authReq = req as AuthenticatedRequest;
+  if (authReq.user?.email && !data.customer_email) {
+    data.customer_email = authReq.user.email;
+  }
+  // Also capture user name and phone if available
+  if (authReq.user?.phone && !data.customer_phone) {
+    data.customer_phone = authReq.user.phone;
   }
 
   const order = await ordersService.createOrder(
