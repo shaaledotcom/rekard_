@@ -1,5 +1,5 @@
 // Dashboard repository - public access database operations using Drizzle ORM
-import { eq, and, gte, lte, gt, desc, asc, inArray, isNull } from 'drizzle-orm';
+import { eq, and, gte, lte, gt, desc, asc, inArray, isNull, or } from 'drizzle-orm';
 import { db, tickets, ticketEvents, ticketPricing, ticketSponsors, events, tenants } from '../../db/index';
 import type {
   DashboardTicket,
@@ -15,8 +15,11 @@ import type {
 
 /**
  * List all tickets for dashboard (global - shared domain)
- * Only shows tickets from PRO/premium users WITHOUT custom domains
- * (Producers with custom domains should only show tickets on their own domain)
+ * Shows tickets from:
+ * - Free users (non-Pro)
+ * - Pro users WITHOUT custom domains
+ * 
+ * Excludes Pro users WITH custom domains (they should only show on their own domain)
  */
 export const listAllTicketsForDashboard = async (
   filter: DashboardTicketFilter = {},
@@ -28,13 +31,20 @@ export const listAllTicketsForDashboard = async (
   const offset = (page - 1) * pageSize;
   const now = filter.now || new Date();
 
-  // Build conditions - only show published tickets from PRO users
-  // Exclude tenants with custom domains (they should only show on their own domain)
+  // Build conditions - show all tickets EXCEPT Pro users with custom domains
+  // Logic: Show if (NOT Pro) OR (Pro AND no custom domain)
+  // Which is: (isPro = false) OR (isPro = true AND primaryDomain IS NULL)
   const conditions = [
     eq(tickets.status, 'published'),
-    eq(tenants.isPro, true), // Only premium/pro users
     eq(tenants.status, 'active'), // Only active tenants
-    isNull(tenants.primaryDomain), // Exclude tenants with custom domains
+    // Exclude Pro users with custom domains - they should only show on their own domain
+    or(
+      eq(tenants.isPro, false), // Free users
+      and(
+        eq(tenants.isPro, true),
+        isNull(tenants.primaryDomain) // Pro users without custom domains
+      )!
+    )!,
   ];
 
   if (filter.live_only) {

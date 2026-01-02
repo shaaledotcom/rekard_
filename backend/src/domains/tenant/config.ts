@@ -4,6 +4,7 @@ import * as platformService from '../platform/service.js';
 import * as configurationService from '../configuration/service.js';
 import * as tenantService from './service.js';
 import type { PlatformSettings } from '../platform/types.js';
+import { WATCH_REKARD_DOMAIN } from '../auth/constants.js';
 
 /**
  * Tenant configuration for viewer frontend
@@ -90,7 +91,7 @@ export const isSharedDomain = (domain: string): boolean => {
  */
 export const getTenantConfigForDomain = async (domain: string): Promise<TenantConfig> => {
   // Check if this is a shared domain
-  if (isSharedDomain(domain)) {
+  if (isSharedDomain(domain) || domain === WATCH_REKARD_DOMAIN) {
     const defaults = getDefaultPlatformSettings();
     return {
       tenant_id: null,

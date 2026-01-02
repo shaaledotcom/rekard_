@@ -30,11 +30,34 @@ export const extractTenantContext = async (req: AppRequest): Promise<TenantConte
   const authReq = req as RequestWithAuth;
   const userId = authReq.userId || '';
   
-  // Check if resolved from domain (viewer pages)
+  // Priority 1: Domain-based resolution (viewer pages)
+  // Check X-Host header first (most common for viewer requests)
+  const host = (req.headers['x-host'] as string) || req.headers.host || '';
+  if (host) {
+    try {
+      const tenantInfo = await tenantService.resolveTenantFromDomain(host);
+      if (tenantInfo) {
+        const tenant = await tenantService.getTenantById(tenantInfo.tenantId);
+        if (tenant) {
+          return {
+            userId,
+            tenantId: tenant.id,
+            tenantUserId: tenant.user_id,
+            appId: tenant.app_id,
+            isPro: tenant.is_pro,
+            fromDomain: true,
+            resolvedFrom: 'domain',
+          };
+        }
+      }
+    } catch (error) {
+      log.warn(`Failed to resolve tenant from domain: ${host}`, error);
+    }
+  }
+  
+  // Legacy: Check if resolved from domain via headers (for backwards compatibility)
   const fromDomain = req.headers['x-from-domain'] === 'true';
   const domainTenantId = req.headers['x-domain-tenant-id'] as string;
-  
-  // Priority 1: Domain-based resolution (viewer pages)
   if (fromDomain && domainTenantId) {
     try {
       const context = await tenantService.getTenantContext(domainTenantId);
