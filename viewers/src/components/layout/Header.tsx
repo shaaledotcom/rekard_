@@ -13,7 +13,7 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
-  const { config, isLoading: tenantLoading } = useTenant();
+  const { config, isLoading: tenantLoading, isCustomDomain } = useTenant();
 
   const handleLogout = async () => {
     await signOut();
@@ -29,21 +29,24 @@ export function Header() {
 
   const isLoading = authLoading || tenantLoading;
 
+  const logoHeight = isCustomDomain ? "h-14" : "h-10";
+  const headerHeight = isCustomDomain ? "h-20" : "h-16";
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+        <div className={`flex ${headerHeight} items-center justify-between`}>
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             {tenantLoading || !config?.logo_url ? (
-              <Skeleton className="h-10 w-10 rounded-md" />
+              <Skeleton className={`${logoHeight} w-auto rounded-md`} />
             ) : (
               <Image
                 src={config.logo_url}
                 alt={config.legal_name || "Logo"}
-                width={120}
-                height={40}
-                className="h-10 w-auto object-contain"
+                width={isCustomDomain ? 180 : 120}
+                height={isCustomDomain ? 56 : 40}
+                className={`${logoHeight} w-auto object-contain`}
               />
             )}
           </Link>

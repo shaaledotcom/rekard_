@@ -5,7 +5,6 @@ import {
   Ticket,
   Globe2,
   Trash2,
-  IndianRupee,
   MoreVertical,
   Globe,
   Archive,
@@ -168,8 +167,7 @@ function TicketTableRow({
         </Badge>
       </td>
       <td className="px-6 py-4">
-        <div className="flex items-center gap-1.5 text-foreground font-semibold">
-          <IndianRupee className="h-4 w-4" />
+        <div className="text-foreground font-semibold">
           {formatPrice(ticket.price, ticket.currency)}
         </div>
       </td>

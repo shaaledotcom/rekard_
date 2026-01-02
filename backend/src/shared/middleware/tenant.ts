@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import type { AppRequest, TenantContext, TenantResolvedFrom } from '../types/index.js';
 import * as tenantService from '../../domains/tenant/service.js';
+import * as tenantConfig from '../../domains/tenant/config.js';
 import { log } from './logger.js';
 
 // System tenant UUID - used for unauthenticated/public requests
@@ -34,25 +35,30 @@ export const extractTenantContext = async (req: AppRequest): Promise<TenantConte
   // Check X-Host header first (most common for viewer requests)
   const host = (req.headers['x-host'] as string) || req.headers.host || '';
   if (host) {
-    try {
-      const tenantInfo = await tenantService.resolveTenantFromDomain(host);
-      if (tenantInfo) {
-        const tenant = await tenantService.getTenantById(tenantInfo.tenantId);
-        if (tenant) {
-          return {
-            userId,
-            tenantId: tenant.id,
-            tenantUserId: tenant.user_id,
-            appId: tenant.app_id,
-            isPro: tenant.is_pro,
-            fromDomain: true,
-            resolvedFrom: 'domain',
-          };
+    // Skip domain resolution for shared domains (watch.rekard.com, localhost, etc.)
+    // Shared domains should use the default/system tenant (shared pool)
+    if (!tenantConfig.isSharedDomain(host)) {
+      try {
+        const tenantInfo = await tenantService.resolveTenantFromDomain(host);
+        if (tenantInfo) {
+          const tenant = await tenantService.getTenantById(tenantInfo.tenantId);
+          if (tenant) {
+            return {
+              userId,
+              tenantId: tenant.id,
+              tenantUserId: tenant.user_id,
+              appId: tenant.app_id,
+              isPro: tenant.is_pro,
+              fromDomain: true,
+              resolvedFrom: 'domain',
+            };
+          }
         }
+      } catch (error) {
+        log.warn(`Failed to resolve tenant from domain: ${host}`, error);
       }
-    } catch (error) {
-      log.warn(`Failed to resolve tenant from domain: ${host}`, error);
     }
+    // If it's a shared domain, fall through to default/system tenant below
   }
   
   // Legacy: Check if resolved from domain via headers (for backwards compatibility)
@@ -230,7 +236,21 @@ export const extractViewerTenantContext = async (req: AppRequest): Promise<Tenan
   // Get host from X-Host header
   const host = (req.headers['x-host'] as string) || req.headers.host || '';
   
-  // Try to resolve tenant from domain
+  // Check if it's a shared domain first (watch.rekard.com, localhost, etc.)
+  // Shared domains should use system tenant (shared pool)
+  if (host && tenantConfig.isSharedDomain(host)) {
+    return {
+      userId,
+      tenantId: SYSTEM_TENANT_ID,
+      tenantUserId: '',
+      appId: DEFAULT_APP_ID,
+      isPro: false,
+      fromDomain: false,
+      resolvedFrom: 'default',
+    };
+  }
+  
+  // Try to resolve tenant from custom domain
   if (host) {
     try {
       const tenant = await tenantService.resolveTenantFromDomain(host);

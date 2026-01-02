@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTenant } from "@/hooks/useTenant";
 
 export function Footer() {
-  const { config, isLoading } = useTenant();
+  const { config, isLoading, isCustomDomain } = useTenant();
 
   if (isLoading) {
     return (
@@ -176,9 +176,9 @@ export function Footer() {
               <Image
                 src={config.logo_url}
                 alt={config.legal_name || "Logo"}
-                width={120}
-                height={40}
-                className="h-8 w-auto object-contain"
+                width={isCustomDomain ? 150 : 120}
+                height={isCustomDomain ? 50 : 40}
+                className={isCustomDomain ? "h-12 w-auto object-contain" : "h-8 w-auto object-contain"}
               />
             )}
 

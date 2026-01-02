@@ -288,10 +288,22 @@ export const completeOrderFromPayment = async (
   paymentId: string,
   userId?: string
 ): Promise<Order> => {
-  const order = await repo.getOrderById(appId, tenantId, orderId);
+  // First, get the order by ID only (to find it regardless of current domain's appId/tenantId)
+  // The order belongs to the ticket owner, not necessarily the current domain
+  let order = await repo.getOrderByIdOnly(orderId);
   if (!order) {
     throw notFound('Order');
   }
+
+  // Get the ticket owner's appId/tenantId to ensure we're using the correct context
+  const ticketInfo = await dashboardRepo.getTicketByIdForPayment(order.ticket_id);
+  if (!ticketInfo) {
+    throw notFound('Ticket');
+  }
+
+  // Use ticket owner's appId/tenantId for the order operations
+  const ticketOwnerAppId = ticketInfo.appId;
+  const ticketOwnerTenantId = ticketInfo.tenantId;
 
   // If userId provided, verify it matches
   if (userId && order.user_id !== userId) {
@@ -304,10 +316,8 @@ export const completeOrderFromPayment = async (
 
   // Verify payment with Razorpay using ticket owner's credentials
   try {
-    // Get ticket to find its owner's platform
-    const ticket = await dashboardRepo.getTicketByIdForPayment(order.ticket_id);
-    if (ticket) {
-      // Get Razorpay key and secret for the ticket owner's platform
+    // Get Razorpay key and secret for the ticket owner's platform
+    if (ticketInfo) {
       const paymentConfig = await dashboardService.getTicketPaymentConfig(order.ticket_id);
       const razorpaySecret = await dashboardService.getTicketRazorpaySecret(order.ticket_id);
       
@@ -338,12 +348,13 @@ export const completeOrderFromPayment = async (
     // The payment was already processed by Razorpay
   }
 
-  const updated = await repo.updateOrder(appId, tenantId, orderId, {
+  // Update order using ticket owner's appId/tenantId
+  const updated = await repo.updateOrder(ticketOwnerAppId, ticketOwnerTenantId, orderId, {
     status: 'completed',
     external_payment_id: paymentId,
   });
 
-  log.info(`Completed order ${order.order_number} with payment ${paymentId}`);
+  log.info(`Completed order ${order.order_number} with payment ${paymentId} (ticket owner: ${ticketOwnerAppId}/${ticketOwnerTenantId})`);
   return updated!;
 };
 

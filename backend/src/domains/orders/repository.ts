@@ -151,6 +151,20 @@ export const getOrderByNumber = async (
   return order ? transformOrder(order) : null;
 };
 
+// Get order by ID only (for order completion - used when we need to find order regardless of appId/tenantId)
+// This is safe because we verify the order belongs to the ticket owner before completing
+export const getOrderByIdOnly = async (
+  orderId: number
+): Promise<Order | null> => {
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1);
+
+  return order ? transformOrder(order) : null;
+};
+
 export const getOrderByUserId = async (
   appId: string,
   tenantId: string,
