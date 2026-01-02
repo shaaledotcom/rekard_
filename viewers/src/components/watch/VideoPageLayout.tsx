@@ -244,11 +244,12 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
                 </div>
               )}
 
+              <EventDetailsSection event={selectedEvent} />
+
               <div className="mt-8 space-y-8">
                 {ticket?.sponsors && ticket.sponsors.length > 0 && (
                   <SponsorsSection sponsors={ticket.sponsors} />
                 )}
-                <EventDetailsSection event={selectedEvent} />
               </div>
             </div>
 
