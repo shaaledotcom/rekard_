@@ -282,8 +282,8 @@ export const createUserAndOrder = async (
 
 // Complete order from payment (with user_id for purchase without login)
 export const completeOrderFromPayment = async (
-  appId: string,
-  tenantId: string,
+  _appId: string,
+  _tenantId: string,
   orderId: number,
   paymentId: string,
   userId?: string
