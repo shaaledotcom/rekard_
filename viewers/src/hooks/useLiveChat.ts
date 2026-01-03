@@ -93,41 +93,103 @@ export function useLiveChat(ticketId: string, userId?: string) {
 
   // Sync messages from API query
   useEffect(() => {
-    if (latestMessages.length > 0) {
+    if (latestMessages && latestMessages.length > 0) {
       setMessages(latestMessages);
       setCursor(latestMessages[latestMessages.length - 1]?.created_at);
       setHasMore(latestMessages.length === PAGE_SIZE);
+    } else if (!isLoading && latestMessages && latestMessages.length === 0) {
+      setMessages([]);
+      setHasMore(false);
     }
-  }, [latestMessages]);
+  }, [latestMessages, isLoading]);
 
   // WebSocket connection for real-time updates
   useEffect(() => {
-    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsHost =
-      process.env.NODE_ENV === "development"
-        ? "localhost:9999"
-        : window.location.host;
-    const wsUrl = `${wsProtocol}://${wsHost}/api/v1/chat/ws?ticket_id=${ticketId}`;
+    if (!ticketId) return;
 
-    console.log("[Chat] Connecting to websocket:", wsUrl);
-    const ws = new WebSocket(wsUrl);
+    // Build WebSocket URL from API config
+    const getWebSocketUrl = (): string => {
+      // Use NEXT_PUBLIC_WS_URL if explicitly set, otherwise derive from API URL
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+      if (wsUrl) {
+        return `${wsUrl}?ticket_id=${ticketId}`;
+      }
 
-    ws.onopen = () => console.log("[Chat] WebSocket open");
-    ws.onmessage = (event) => {
-      console.log("[Chat] WebSocket message:", event.data);
+      // Derive WebSocket URL from API URL
+      const apiUrl = config.apiUrl;
       try {
-        const msg = JSON.parse(event.data);
-        // Prevent duplicate messages
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === msg.id)) return prev;
-          return [msg, ...prev];
-        });
-      } catch (e) {
-        console.error("[Chat] Failed to parse message:", e);
+        const url = new URL(apiUrl);
+        // Use wss:// for https://, ws:// for http://
+        const wsProtocol = url.protocol === "https:" ? "wss" : "ws";
+        const wsHost = url.host;
+        return `${wsProtocol}://${wsHost}/api/v1/chat/ws?ticket_id=${ticketId}`;
+      } catch {
+        // Fallback: use current window location
+        const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsHost = window.location.host;
+        return `${wsProtocol}://${wsHost}/api/v1/chat/ws?ticket_id=${ticketId}`;
       }
     };
-    ws.onerror = (e) => console.error("[Chat] WebSocket error", e);
-    ws.onclose = (e) => console.log("[Chat] WebSocket closed", e);
+
+    const wsUrl = getWebSocketUrl();
+
+    let ws: WebSocket;
+    
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (error) {
+      return;
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const wsMsg = JSON.parse(event.data);
+        
+        // Handle connection confirmation
+        if (wsMsg.type === 'connected') {
+          return;
+        }
+        
+        // Handle pong response
+        if (wsMsg.type === 'pong') {
+          return;
+        }
+        
+        // Handle chat messages (new_message, update_message, delete_message, pin_message)
+        if (wsMsg.data && wsMsg.data.id) {
+          const msg = wsMsg.data;
+          
+          setMessages((prev) => {
+            // Prevent duplicate messages
+            if (prev.some((m) => m.id === msg.id)) {
+              // Update existing message if it's an update/pin
+              if (wsMsg.type === 'update_message' || wsMsg.type === 'pin_message') {
+                return prev.map((m) => (m.id === msg.id ? msg : m));
+              }
+              return prev;
+            }
+            
+            // Handle different message types
+            if (wsMsg.type === 'delete_message') {
+              return prev.filter((m) => m.id !== msg.id);
+            } else if (wsMsg.type === 'update_message' || wsMsg.type === 'pin_message') {
+              return prev.map((m) => (m.id === msg.id ? msg : m));
+            } else if (wsMsg.type === 'new_message') {
+              return [...prev, msg];
+            }
+            
+            return prev;
+          });
+          
+          // Auto-scroll to bottom when new message arrives
+          if (wsMsg.type === 'new_message') {
+            setAutoScroll(true);
+          }
+        }
+      } catch (e) {
+        // Silently handle parse errors
+      }
+    };
 
     // Ping to keep connection alive (every 20 seconds)
     const pingInterval = setInterval(() => {
@@ -167,7 +229,7 @@ export function useLiveChat(ticketId: string, userId?: string) {
       setCursor(older[older.length - 1]?.created_at);
       setHasMore(older.length === PAGE_SIZE);
     } catch (e) {
-      console.error("[Chat] Failed to load older messages:", e);
+      // Silently handle errors
     }
     setLoadingMore(false);
   }, [ticketId, cursor, hasMore, loadingMore]);
@@ -208,15 +270,24 @@ export function useLiveChat(ticketId: string, userId?: string) {
     }
     
     try {
-      await postMessage({
+      const sentMessage = await postMessage({
         ticket_id: ticketId,
         content: newMessage,
         username: username.trim() || undefined,
+      }).unwrap();
+      
+      // The message should come via WebSocket, but add it optimistically if needed
+      setMessages((prev) => {
+        // Check if message already exists (from WebSocket)
+        if (prev.some((m) => m.id === sentMessage.id)) return prev;
+        // Add to end (will be reversed for display)
+        return [...prev, sentMessage];
       });
+      
       setNewMessage("");
       setAutoScroll(true);
     } catch (e) {
-      console.error("[Chat] Failed to send message:", e);
+      // Silently handle errors
     }
   }, [newMessage, username, ticketId, postMessage]);
 
@@ -263,7 +334,7 @@ export function useLiveChat(ticketId: string, userId?: string) {
         setEditingId(null);
         setEditingContent("");
       } catch (e) {
-        console.error("[Chat] Failed to update message:", e);
+        // Silently handle errors
       }
     },
     [editingContent, ticketId, updateMessage]
@@ -281,7 +352,7 @@ export function useLiveChat(ticketId: string, userId?: string) {
       try {
         await deleteMessage({ id, ticket_id: ticketId });
       } catch (e) {
-        console.error("[Chat] Failed to delete message:", e);
+        // Silently handle errors
       }
     },
     [ticketId, deleteMessage]
@@ -293,7 +364,7 @@ export function useLiveChat(ticketId: string, userId?: string) {
       try {
         await pinMessage({ id, is_pinned: !isPinned, ticket_id: ticketId });
       } catch (e) {
-        console.error("[Chat] Failed to pin message:", e);
+        // Silently handle errors
       }
     },
     [ticketId, pinMessage]

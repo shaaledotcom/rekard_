@@ -16,7 +16,9 @@ const DEFAULT_LIMIT = 20;
 export const createMessage = async (
   userId: string | undefined,
   username: string | undefined,
-  data: CreateMessageRequest
+  data: CreateMessageRequest,
+  tenantId: string,
+  appId: string
 ): Promise<Message> => {
   if (!data.ticket_id) {
     throw badRequest('Ticket ID is required');
@@ -27,7 +29,7 @@ export const createMessage = async (
 
   const finalUsername = username || data.username || DEFAULT_USERNAME;
 
-  const message = await repo.createMessage(userId, finalUsername, data);
+  const message = await repo.createMessage(userId, finalUsername, data, tenantId, appId);
   log.info(`Created chat message ${message.id} for ticket ${data.ticket_id}`);
   return message;
 };

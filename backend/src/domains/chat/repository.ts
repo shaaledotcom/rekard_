@@ -23,13 +23,15 @@ const transformMessage = (row: typeof chatMessages.$inferSelect): Message => ({
 export const createMessage = async (
   userId: string | undefined,
   username: string,
-  data: CreateMessageRequest
+  data: CreateMessageRequest,
+  tenantId: string,
+  appId: string
 ): Promise<Message> => {
   const [message] = await db
     .insert(chatMessages)
     .values({
-      appId: 'default',
-      tenantId: 'default',
+      appId: appId,
+      tenantId: tenantId,
       eventId: parseInt(data.ticket_id, 10) || null,
       userId: userId || '',
       userName: username || data.username || 'Anonymous',

@@ -46,7 +46,7 @@ export const getDefaultPlatformSettings = (): Omit<TenantConfig, 'tenant_id' | '
     enable_cart: false, // No cart on shared domain for now
     featured_images: [],
     default_language: 'en',
-    enable_live_chat: false,
+    enable_live_chat: true,
     footer_policies: {
       terms_of_service: {
         title: 'Terms of Service',

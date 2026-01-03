@@ -43,8 +43,10 @@ export const chatApi = api.injectEndpoints({
         url: "/v1/viewer/chat/messages",
         params: { ticket_id, limit, cursor },
       }),
-      transformResponse: (response: ApiResponse<ChatMessage[]>) =>
-        response.data,
+      transformResponse: (response: ApiResponse<{ messages: ChatMessage[]; has_more: boolean; next_cursor?: string }>) => {
+        // Backend returns { success: true, data: { messages: [...], has_more: ..., next_cursor: ... } }
+        return response.data?.messages || [];
+      },
       providesTags: (_result, _error, { ticket_id }) => [
         { type: "Chat", id: ticket_id },
       ],

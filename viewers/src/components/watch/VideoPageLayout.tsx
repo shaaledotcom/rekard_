@@ -225,7 +225,7 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
                 />
               ) : null}
 
-              {!isSettingsLoading && enableLiveChat && (
+              {enableLiveChat && (
                 <div className="lg:hidden mt-8">
                   <LiveChatSection ticketId={ticketId || ""} />
                 </div>
@@ -240,7 +240,7 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
               </div>
             </div>
 
-            {!isSettingsLoading && enableLiveChat && (
+            {enableLiveChat && (
               <div className="hidden lg:block lg:col-span-1">
                 <LiveChatSection ticketId={ticketId || ""} />
               </div>

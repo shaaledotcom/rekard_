@@ -27,7 +27,7 @@ const transformSettings = (row: typeof platformSettings.$inferSelect): PlatformS
     support_channels: (value.support_channels as PlatformSettings['support_channels']) || [],
     social_links: (value.social_links as PlatformSettings['social_links']) || [],
     coupon_codes: (value.coupon_codes as PlatformSettings['coupon_codes']) || [],
-    enable_live_chat: (value.enable_live_chat as boolean) ?? false,
+    enable_live_chat: (value.enable_live_chat as boolean) ?? true,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };
@@ -107,7 +107,7 @@ export const upsert = async (
         support_channels: data.support_channels || [],
         social_links: data.social_links || [],
         coupon_codes: data.coupon_codes || [],
-        enable_live_chat: data.enable_live_chat ?? false,
+        enable_live_chat: data.enable_live_chat ?? true,
       },
     })
     .returning();

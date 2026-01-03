@@ -21,6 +21,21 @@ interface LiveChatSectionProps {
   userId?: string;
 }
 
+// Helper function to check if a string is a UUID and shorten it
+const formatUsername = (username: string): string => {
+  if (!username) return "Anonymous";
+  
+  // UUID pattern: 8-4-4-4-12 hexadecimal characters
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  if (uuidPattern.test(username)) {
+    // Return first 8 characters + "..."
+    return `${username.substring(0, 8)}...`;
+  }
+  
+  return username;
+};
+
 const LiveChatSection: React.FC<LiveChatSectionProps> = ({
   ticketId,
   userId,
@@ -79,7 +94,7 @@ const LiveChatSection: React.FC<LiveChatSectionProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm">
-                    {msg.username || "Anonymous"}
+                    {formatUsername(msg.username)}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {formatTimestamp(msg.created_at)}

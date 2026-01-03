@@ -4,6 +4,7 @@ import { log } from '../../shared/middleware/logger.js';
 import { initSupabase, setupDefaultRoles } from '../../domains/auth/index.js';
 import { razorpay } from '../../domains/payments/index.js';
 import { seedDefaultPlans } from '../../db/seed.js';
+import { setupChatWebSocket } from '../../routes/viewer/chat-ws.js';
 
 // Graceful shutdown handler
 const gracefulShutdown = async (signal: string): Promise<void> => {
@@ -59,6 +60,9 @@ const main = async (): Promise<void> => {
       log.info(`Server started on http://${host}:${port}`);
       log.info(`Environment: ${env.nodeEnv}`);
     });
+
+    // Setup WebSocket for chat
+    setupChatWebSocket(server);
 
     // Handle server errors
     server.on('error', (error: NodeJS.ErrnoException) => {

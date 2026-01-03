@@ -60,8 +60,10 @@ router.post('/messages', async (req: AppRequest, res: Response) => {
   }
 
   const username = getUsername(req, data.username);
+  const tenantId = req.tenant?.tenantId || '00000000-0000-0000-0000-000000000000';
+  const appId = req.tenant?.appId || 'public';
 
-  const message = await chatService.createMessage(userId, username, data);
+  const message = await chatService.createMessage(userId, username, data, tenantId, appId);
 
   // Broadcast to WebSocket clients
   chatWebSocket.broadcastNewMessage(message);
