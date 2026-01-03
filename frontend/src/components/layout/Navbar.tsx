@@ -16,9 +16,13 @@ import {
   Globe,
   Users,
   LayoutDashboard,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { ThemeToggle } from "./ThemeToggle";
+import { useTheme } from "@/providers/ThemeProvider";
+import { useGetUserWalletQuery } from "@/store/api";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -29,13 +33,26 @@ const navItems = [
   { href: "/producer/billing", label: "Billing", icon: CreditCard },
 ];
 
+const themes = [
+  { value: "light" as const, label: "Light", icon: Sun },
+  { value: "dark" as const, label: "Dark", icon: Moon },
+  { value: "system" as const, label: "System", icon: Monitor },
+];
+
 export function Navbar() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+
+  const { data: walletData } = useGetUserWalletQuery();
+  const ticketBalance = walletData?.data?.ticket_balance || 0;
 
   const isActive = (href: string) => pathname?.startsWith(href);
+  
+  const currentTheme = themes.find((t) => t.value === theme) || themes[2];
 
   return (
     <>
@@ -71,8 +88,16 @@ export function Navbar() {
 
             {/* Desktop Profile & Actions */}
             <div className="hidden md:flex items-center gap-3">
-              {/* Theme Toggle */}
-              <ThemeToggle />
+              {/* Ticket Balance */}
+              <Link
+                href="/producer/billing"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary hover:bg-muted border border-border transition-colors"
+              >
+                <Ticket className="h-4 w-4 text-foreground" />
+                <span className="text-sm font-medium text-foreground">
+                  {ticketBalance.toLocaleString()}
+                </span>
+              </Link>
 
               {/* Profile Dropdown */}
               <div className="relative">
@@ -94,7 +119,10 @@ export function Navbar() {
                     {/* Backdrop */}
                     <div
                       className="fixed inset-0 z-40"
-                      onClick={() => setProfileMenuOpen(false)}
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        setThemeMenuOpen(false);
+                      }}
                     />
                     
                     {/* Dropdown */}
@@ -105,6 +133,58 @@ export function Navbar() {
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">Producer Account</p>
                       </div>
+                      
+                      {/* Theme Selection */}
+                      <div className="py-1 border-b border-border">
+                        <div className="px-4 py-2">
+                          <p className="text-xs text-muted-foreground mb-2">Theme</p>
+                          <div className="relative">
+                            <button
+                              onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+                              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-secondary hover:bg-muted text-sm text-foreground"
+                            >
+                              <div className="flex items-center gap-2">
+                                {(() => {
+                                  const Icon = currentTheme.icon;
+                                  return <Icon className="h-4 w-4" />;
+                                })()}
+                                <span>{currentTheme.label}</span>
+                              </div>
+                              <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${themeMenuOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            
+                            {themeMenuOpen && (
+                              <div className="absolute left-0 right-0 mt-1 py-1 bg-card rounded-lg border border-border shadow-lg z-10">
+                                {themes.map((t) => {
+                                  const Icon = t.icon;
+                                  const isActive = theme === t.value;
+                                  return (
+                                    <button
+                                      key={t.value}
+                                      onClick={() => {
+                                        setTheme(t.value);
+                                        setThemeMenuOpen(false);
+                                      }}
+                                      className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
+                                        isActive 
+                                          ? "bg-secondary text-foreground" 
+                                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                      }`}
+                                    >
+                                      <Icon className="h-4 w-4" />
+                                      {t.label}
+                                      {isActive && (
+                                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-foreground" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
                       <div className="py-1">
                         <button
                           onClick={() => {
@@ -161,11 +241,45 @@ export function Navbar() {
               );
             })}
 
-            {/* Mobile Theme Toggle */}
+            {/* Mobile Ticket Balance */}
+            <Link
+              href="/producer/billing"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-secondary border border-border"
+            >
+              <Ticket className="h-5 w-5" />
+              <span>Tickets: {ticketBalance.toLocaleString()}</span>
+            </Link>
+
+            {/* Mobile Theme Selection */}
             <div className="pt-4 mt-4 border-t border-border">
               <div className="px-4 py-2">
                 <p className="text-xs text-muted-foreground mb-2">Theme</p>
-                <ThemeToggle />
+                <div className="space-y-1">
+                  {themes.map((t) => {
+                    const Icon = t.icon;
+                    const isActive = theme === t.value;
+                    return (
+                      <button
+                        key={t.value}
+                        onClick={() => {
+                          setTheme(t.value);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors ${
+                          isActive 
+                            ? "bg-secondary text-foreground" 
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {t.label}
+                        {isActive && (
+                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-foreground" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
