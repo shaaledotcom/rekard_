@@ -82,6 +82,7 @@ export {
   usePurchasePlanMutation,
   useCancelSubscriptionMutation,
   useGetInvoicesQuery,
+  useGetSalesReportQuery,
 } from "./billingApi";
 export type {
   BillingPlan,
@@ -107,6 +108,9 @@ export type {
   InvoiceListResponse,
   InvoiceQueryParams,
   PurchasePlanResponse,
+  SalesReportEntry,
+  SalesReportListResponse,
+  SalesReportQueryParams,
 } from "./billingApi";
 
 // Platform API

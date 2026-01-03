@@ -39,6 +39,7 @@ export {
   usePurchasePlanMutation,
   useCancelSubscriptionMutation,
   useGetInvoicesQuery,
+  useGetSalesReportQuery,
   // Platform hooks
   useGetPlatformSettingsQuery,
   useUpdatePlatformSettingsMutation,
@@ -102,6 +103,9 @@ export type {
   InvoiceListResponse,
   InvoiceQueryParams,
   PurchasePlanResponse,
+  SalesReportEntry,
+  SalesReportListResponse,
+  SalesReportQueryParams,
   // Platform types
   PlatformSettings,
   PlatformSettingsResponse,

@@ -149,6 +149,9 @@ export default function AuthPage() {
               <div className="text-center text-sm text-muted-foreground mb-4">
                 OTP sent to: <span className="font-medium text-foreground">{email}</span>
               </div>
+              <div className="text-center text-xs text-muted-foreground/70 mb-2">
+               You would have received an email from live@rekard.com with OTP. Check spam folder.
+              </div>
 
               <div className="space-y-2">
                 <OtpInput

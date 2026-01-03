@@ -43,7 +43,7 @@ export default function WatchPage() {
     }
   }, [isAuthLoading, isAuthenticated, router, pathname]);
 
-  // Redirect to ticket page if not purchased
+  // Redirect to ticket page if not purchased (but not if archived - archived check happens in render)
   useEffect(() => {
     if (
       !isAuthLoading &&
@@ -107,6 +107,7 @@ export default function WatchPage() {
   }
 
   // Not purchased
+  // Note: Archive checking is done per-event in VideoPageLayout, not per-ticket
   if (purchaseStatus && !purchaseStatus.has_purchased) {
     return (
       <MainLayout>

@@ -134,6 +134,8 @@ export type UserPurchaseStatusResponse = {
   has_purchased: boolean;
   order_id?: number;
   order_number?: string;
+  is_archived?: boolean;
+  archive_date?: string;
 };
 
 // Watch link response

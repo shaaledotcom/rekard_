@@ -6,139 +6,69 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  useGetWalletTransactionsQuery,
-  type WalletTransaction,
+  useGetSalesReportQuery,
+  type SalesReportEntry,
 } from "@/store/api";
 import {
-  ArrowUpRight,
-  ArrowDownLeft,
-  Receipt,
-  Ticket,
   Calendar,
   Search,
   ChevronLeft,
   ChevronRight,
-  Wallet,
-  TrendingUp,
-  FileText,
+  ShoppingCart,
+  Gift,
   Filter,
-  Download,
-  IndianRupee,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
   Loader2,
+  FileText,
 } from "lucide-react";
 import { formatDateLocal, formatTimeLocal } from "@/lib/datetime";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
-type TransactionFilter = "all" | "credit" | "debit";
+type SalesTypeFilter = "all" | "purchased" | "granted";
 
-// Unified ledger entry type
-interface LedgerEntry {
-  id: string;
-  date: string;
-  type: "credit" | "debit";
-  description: string;
-  reference?: string;
-  amount: number;
-  balance?: number;
-  currency: string;
-  metadata?: Record<string, unknown>;
-  user_email?: string;
-}
-
-export function SalesTransactions() {
+export function SalesReport() {
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
-  const [filter, setFilter] = useState<TransactionFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<SalesTypeFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 20;
 
-  const { data: transactionsData, isLoading: transactionsLoading } = useGetWalletTransactionsQuery();
-
-  const isLoading = transactionsLoading;
-
-  // Convert transactions to unified ledger entries
-  const ledgerEntries = useMemo((): LedgerEntry[] => {
-    const entries: LedgerEntry[] = [];
-
-    // Add wallet transactions
-    if (transactionsData?.data) {
-      transactionsData.data.forEach((tx: WalletTransaction) => {
-        const isCredit = tx.amount > 0 || tx.transaction_type === "ticket_sale" || tx.transaction_type === "credit";
-        entries.push({
-          id: `tx-${tx.id}`,
-          date: tx.created_at,
-          type: isCredit ? "credit" : "debit",
-          description: tx.description || getTransactionLabel(tx.transaction_type),
-          reference: tx.reference_id || undefined,
-          amount: Math.abs(tx.amount),
-          balance: tx.balance_after,
-          currency: tx.currency || "INR",
-          metadata: tx.metadata,
-          user_email: tx.user_email,
-        });
-      });
-    }
-
-    // Sort by date (newest first)
-    return entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactionsData]);
-
-  // Filter by time range
-  const filteredByTime = useMemo(() => {
-    if (timeRange === "all") return ledgerEntries;
+  // Calculate date range
+  const dateRange = useMemo(() => {
+    if (timeRange === "all") return { start_date: undefined, end_date: undefined };
 
     const now = new Date();
     const daysMap: Record<TimeRange, number> = { "7d": 7, "30d": 30, "90d": 90, "all": 0 };
     const startDate = new Date(now.getTime() - daysMap[timeRange] * 24 * 60 * 60 * 1000);
-
-    return ledgerEntries.filter((entry) => new Date(entry.date) >= startDate);
-  }, [ledgerEntries, timeRange]);
-
-  // Filter by type and search
-  const filteredEntries = useMemo(() => {
-    let entries = filteredByTime;
-
-    // Filter by type
-    if (filter !== "all") {
-      entries = entries.filter((entry) => entry.type === filter);
-    }
-
-    // Filter by search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      entries = entries.filter(
-        (entry) =>
-          entry.user_email?.toLowerCase().includes(query) ||
-          entry.description.toLowerCase().includes(query)
-      );
-    }
-
-    return entries;
-  }, [filteredByTime, filter, searchQuery]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
-  const paginatedEntries = filteredEntries.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  // Summary stats
-  const stats = useMemo(() => {
-    const credits = filteredByTime.filter((e) => e.type === "credit");
-    const debits = filteredByTime.filter((e) => e.type === "debit");
-
     return {
-      totalCredits: credits.reduce((sum, e) => sum + e.amount, 0),
-      totalDebits: debits.reduce((sum, e) => sum + e.amount, 0),
-      creditCount: credits.length,
-      debitCount: debits.length,
+      start_date: startDate.toISOString().split("T")[0],
+      end_date: undefined,
     };
-  }, [filteredByTime]);
+  }, [timeRange]);
+
+  const { data: salesData, isLoading } = useGetSalesReportQuery({
+    type: typeFilter === "all" ? undefined : typeFilter,
+    ...dateRange,
+    page: currentPage,
+    page_size: itemsPerPage,
+    sort_by: "date",
+    sort_order: "desc",
+  });
+
+  // Filter by search query (client-side)
+  const filteredEntries = useMemo(() => {
+    if (!salesData?.data) return [];
+    if (!searchQuery) return salesData.data;
+
+    const query = searchQuery.toLowerCase();
+    return salesData.data.filter(
+      (entry: SalesReportEntry) =>
+        entry.user_email.toLowerCase().includes(query) ||
+        entry.ticket_title.toLowerCase().includes(query) ||
+        entry.order_number?.toLowerCase().includes(query)
+    );
+  }, [salesData?.data, searchQuery]);
+
+  const totalPages = salesData?.total_pages || 1;
 
   const formatCurrency = (amount: number, currency: string = "INR") => {
     const formatted = new Intl.NumberFormat("en-IN", {
@@ -147,7 +77,6 @@ export function SalesTransactions() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-    // Remove "US" prefix from dollar displays
     return formatted.replace(/US\$/g, "$");
   };
 
@@ -166,12 +95,36 @@ export function SalesTransactions() {
     });
   };
 
+  // Summary stats
+  const stats = useMemo(() => {
+    if (!salesData?.data) {
+      return {
+        totalPurchased: 0,
+        totalGranted: 0,
+        totalRevenue: 0,
+        purchasedCount: 0,
+        grantedCount: 0,
+      };
+    }
+
+    const purchased = salesData.data.filter((e: SalesReportEntry) => e.type === "purchased");
+    const granted = salesData.data.filter((e: SalesReportEntry) => e.type === "granted");
+
+    return {
+      totalPurchased: purchased.reduce((sum: number, e: SalesReportEntry) => sum + e.quantity, 0),
+      totalGranted: granted.reduce((sum: number, e: SalesReportEntry) => sum + e.quantity, 0),
+      totalRevenue: purchased.reduce((sum: number, e: SalesReportEntry) => sum + (e.amount || 0), 0),
+      purchasedCount: purchased.length,
+      grantedCount: granted.length,
+    };
+  }, [salesData?.data]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 text-primary mx-auto animate-spin" />
-          <p className="text-muted-foreground">Loading transactions...</p>
+          <p className="text-muted-foreground">Loading sales report...</p>
         </div>
       </div>
     );
@@ -180,23 +133,65 @@ export function SalesTransactions() {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-card border-border">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Total Credits
+                  Purchased Orders
                 </p>
                 <p className="text-2xl font-bold text-foreground mt-1">
-                  {formatCurrency(stats.totalCredits)}
+                  {stats.purchasedCount}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats.creditCount} transactions
+                  {stats.totalPurchased} tickets
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-blue-500/10">
+                <ShoppingCart className="h-5 w-5 text-blue-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                  Complimentary Access
+                </p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  {stats.grantedCount}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.totalGranted} tickets
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-purple-500/10">
+                <Gift className="h-5 w-5 text-purple-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                  Total Revenue
+                </p>
+                <p className="text-2xl font-bold text-emerald-500 mt-1">
+                  {formatCurrency(stats.totalRevenue)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  From purchases
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-emerald-500/10">
-                <ArrowUpRight className="h-5 w-5 text-emerald-500" />
+                <FileText className="h-5 w-5 text-emerald-500" />
               </div>
             </div>
           </CardContent>
@@ -207,42 +202,17 @@ export function SalesTransactions() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Total Debits
+                  Total Sales
                 </p>
                 <p className="text-2xl font-bold text-foreground mt-1">
-                  {formatCurrency(stats.totalDebits)}
+                  {stats.purchasedCount + stats.grantedCount}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats.debitCount} transactions
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-rose-500/10">
-                <ArrowDownLeft className="h-5 w-5 text-rose-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Net Balance
-                </p>
-                <p className={`text-2xl font-bold mt-1 ${
-                  stats.totalCredits - stats.totalDebits >= 0 
-                    ? "text-emerald-500" 
-                    : "text-rose-500"
-                }`}>
-                  {formatCurrency(stats.totalCredits - stats.totalDebits)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  For selected period
+                  All entries
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-primary/10">
-                <TrendingUp className="h-5 w-5 text-primary" />
+                <FileText className="h-5 w-5 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -282,17 +252,17 @@ export function SalesTransactions() {
               <div className="flex gap-1 p-1 bg-secondary rounded-lg">
                 {([
                   { value: "all", label: "All" },
-                  { value: "credit", label: "Credits" },
-                  { value: "debit", label: "Debits" },
+                  { value: "purchased", label: "Purchased" },
+                  { value: "granted", label: "Complimentary" },
                 ] as const).map((option) => (
                   <button
                     key={option.value}
                     onClick={() => {
-                      setFilter(option.value);
+                      setTypeFilter(option.value);
                       setCurrentPage(1);
                     }}
                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      filter === option.value
+                      typeFilter === option.value
                         ? "bg-foreground text-background"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
@@ -312,7 +282,7 @@ export function SalesTransactions() {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder="Search by email..."
+                placeholder="Search by email, ticket..."
                 className="pl-10 h-9 bg-secondary border-border text-sm"
               />
             </div>
@@ -320,93 +290,110 @@ export function SalesTransactions() {
         </CardContent>
       </Card>
 
-      {/* Ledger Table */}
+      {/* Sales Report Table */}
       <Card className="bg-card border-border overflow-hidden">
         <CardHeader className="border-b border-border bg-secondary/50 py-3 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Receipt className="h-4 w-4" />
-              Transaction Ledger
+              <FileText className="h-4 w-4" />
+              Sales Report
             </CardTitle>
             <Badge variant="secondary" className="text-xs">
-              {filteredEntries.length} entries
+              {salesData?.total || 0} entries
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {/* Table Header */}
           <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-secondary/30 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            <div className="col-span-3">Date</div>
-            <div className="col-span-4">User Email</div>
+            <div className="col-span-2">Date</div>
+            <div className="col-span-3">User Email</div>
+            <div className="col-span-3">Ticket</div>
+            <div className="col-span-1 text-center">Type</div>
+            <div className="col-span-1 text-right">Qty</div>
             <div className="col-span-2 text-right">Amount</div>
-            <div className="col-span-3 text-right">Balance</div>
           </div>
 
           {/* Table Body */}
           <div className="divide-y divide-border">
-            {paginatedEntries.length === 0 ? (
+            {filteredEntries.length === 0 ? (
               <div className="py-12 text-center">
-                <Receipt className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground text-sm">No transactions found</p>
+                <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground text-sm">No sales found</p>
                 <p className="text-muted-foreground text-xs mt-1">
                   Try adjusting your filters or time range
                 </p>
               </div>
             ) : (
-              paginatedEntries.map((entry) => (
+              filteredEntries.map((entry) => (
                 <div
                   key={entry.id}
                   className="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-secondary/30 transition-colors items-center"
                 >
                   {/* Date */}
-                  <div className="col-span-3 flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${
-                      entry.type === "credit"
-                        ? "bg-emerald-500/10"
-                        : "bg-rose-500/10"
-                    }`}>
-                      {entry.type === "credit" ? (
-                        <ArrowUpRight className={`h-4 w-4 text-emerald-500`} />
-                      ) : (
-                        <ArrowDownLeft className={`h-4 w-4 text-rose-500`} />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm text-foreground font-medium">
-                        {formatDate(entry.date)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatTime(entry.date)}
-                      </p>
-                    </div>
+                  <div className="col-span-2">
+                    <p className="text-sm text-foreground font-medium">
+                      {formatDate(entry.date)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatTime(entry.date)}
+                    </p>
                   </div>
 
                   {/* User Email */}
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <p className="text-sm text-foreground truncate">
-                      {entry.user_email || "—"}
+                      {entry.user_email}
+                    </p>
+                  </div>
+
+                  {/* Ticket */}
+                  <div className="col-span-3">
+                    <p className="text-sm text-foreground font-medium truncate">
+                      {entry.ticket_title}
+                    </p>
+                    {entry.order_number && (
+                      <p className="text-xs text-muted-foreground font-mono truncate">
+                        {entry.order_number}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Type */}
+                  <div className="col-span-1 text-center">
+                    <Badge
+                      variant="secondary"
+                      className={`text-[10px] px-1.5 py-0 ${
+                        entry.type === "purchased"
+                          ? "bg-blue-500/10 text-blue-500"
+                          : "bg-purple-500/10 text-purple-500"
+                      }`}
+                    >
+                      {entry.type === "purchased" ? (
+                        <ShoppingCart className="h-3 w-3 inline mr-1" />
+                      ) : (
+                        <Gift className="h-3 w-3 inline mr-1" />
+                      )}
+                      {entry.type === "purchased" ? "Sold" : "Complimentary"}
+                    </Badge>
+                  </div>
+
+                  {/* Quantity */}
+                  <div className="col-span-1 text-right">
+                    <p className="text-sm text-foreground font-medium">
+                      {entry.quantity}
                     </p>
                   </div>
 
                   {/* Amount */}
                   <div className="col-span-2 text-right">
-                    <p className={`text-sm font-semibold ${
-                      entry.type === "credit"
-                        ? "text-emerald-500"
-                        : "text-rose-500"
-                    }`}>
-                      {entry.type === "credit" ? "+" : "-"}
-                      {formatCurrency(entry.amount, entry.currency)}
-                    </p>
-                  </div>
-
-                  {/* Balance */}
-                  <div className="col-span-3 text-right">
-                    <p className="text-sm text-muted-foreground">
-                      {entry.balance !== undefined
-                        ? formatCurrency(entry.balance, entry.currency)
-                        : "—"}
-                    </p>
+                    {entry.amount !== undefined ? (
+                      <p className="text-sm font-semibold text-emerald-500">
+                        {formatCurrency(entry.amount, entry.currency)}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">—</p>
+                    )}
                   </div>
                 </div>
               ))
@@ -418,8 +405,8 @@ export function SalesTransactions() {
             <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-secondary/30">
               <p className="text-xs text-muted-foreground">
                 Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                {Math.min(currentPage * itemsPerPage, filteredEntries.length)} of{" "}
-                {filteredEntries.length} entries
+                {Math.min(currentPage * itemsPerPage, salesData?.total || 0)} of{" "}
+                {salesData?.total || 0} entries
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -474,20 +461,5 @@ export function SalesTransactions() {
       </Card>
     </div>
   );
-}
-
-// Helper function to get readable transaction labels
-function getTransactionLabel(type: string): string {
-  const labels: Record<string, string> = {
-    ticket_sale: "Ticket Sale Revenue",
-    credit: "Credit",
-    debit: "Debit",
-    ticket_purchase: "Ticket Purchase",
-    subscription_payment: "Subscription Payment",
-    refund: "Refund",
-    adjustment: "Balance Adjustment",
-    payout: "Payout",
-  };
-  return labels[type] || type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 

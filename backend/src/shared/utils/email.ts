@@ -2,6 +2,7 @@
 import { Resend } from 'resend';
 import { env } from '../../config/env.js';
 import { log } from '../middleware/logger.js';
+import * as tenantService from '../../domains/tenant/service.js';
 
 let resend: Resend | null = null;
 
@@ -32,7 +33,11 @@ export interface PurchaseConfirmationEmailData {
   currency: string;
   eventTitle?: string;
   eventStartDatetime?: Date;
+  eventEndDatetime?: Date;
+  eventThumbnailUrl?: string;
   watchLink?: string;
+  tenantId?: string;
+  appId?: string;
 }
 
 export interface AccessGrantEmailData {
@@ -42,110 +47,339 @@ export interface AccessGrantEmailData {
   ticketDescription?: string;
   eventTitle?: string;
   eventStartDatetime?: Date;
+  eventEndDatetime?: Date;
+  eventThumbnailUrl?: string;
   watchLink?: string;
   expiresAt?: Date;
+  tenantId?: string;
+  appId?: string;
 }
 
+// Helper function to format datetime
+const formatDateTime = (date: Date): string => {
+  return new Date(date).toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+// Helper function to make watch link absolute based on tenant platform settings
+const makeAbsoluteWatchLink = async (
+  watchLink: string | undefined,
+  tenantId?: string
+): Promise<string> => {
+  if (!watchLink) return '';
+  
+  // If already absolute, return as is
+  if (watchLink.startsWith('http://') || watchLink.startsWith('https://')) {
+    return watchLink;
+  }
+  
+  // Try to get tenant's primary domain if tenantId is provided
+  let domain: string | undefined;
+  if (tenantId) {
+    try {
+      const tenant = await tenantService.getTenantById(tenantId);
+      if (tenant?.primary_domain) {
+        domain = tenant.primary_domain;
+      }
+    } catch (error) {
+      log.warn(`[EMAIL] Failed to fetch tenant ${tenantId} for domain resolution:`, error);
+    }
+  }
+  
+  // Fall back to shared domains if no tenant domain found
+  if (!domain) {
+    domain = env.platform.sharedDomains[0] || 'watch.rekard.com';
+  }
+  
+  const protocol = domain.includes('localhost') ? 'http' : 'https';
+  
+  // Ensure watchLink starts with /
+  const cleanLink = watchLink.startsWith('/') ? watchLink : `/${watchLink}`;
+  
+  return `${protocol}://${domain}${cleanLink}`;
+};
+
 // Generate HTML email template for purchase confirmation
-const generatePurchaseConfirmationHTML = (data: PurchaseConfirmationEmailData): string => {
-  const formattedPrice = `${data.currency} ${data.totalAmount.toFixed(2)}`;
-  const eventInfo = data.eventTitle
-    ? `<p><strong>Event:</strong> ${data.eventTitle}</p>`
-    : '';
-  const eventDate = data.eventStartDatetime
-    ? `<p><strong>Date:</strong> ${new Date(data.eventStartDatetime).toLocaleString()}</p>`
-    : '';
-  const watchLinkSection = data.watchLink
-    ? `<div style="margin: 30px 0; text-align: center;">
-        <a href="${data.watchLink}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Watch Now</a>
+const generatePurchaseConfirmationHTML = async (data: PurchaseConfirmationEmailData): Promise<string> => {
+  const eventName = data.eventTitle || data.ticketTitle;
+  const eventStartDateTime = data.eventStartDatetime ? formatDateTime(data.eventStartDatetime) : 'TBD';
+  const eventEndDateTime = data.eventEndDatetime ? formatDateTime(data.eventEndDatetime) : '';
+  const eventDateTimeRange = eventEndDateTime 
+    ? `${eventStartDateTime} - ${eventEndDateTime}`
+    : eventStartDateTime;
+  const amountPaid = `${data.currency} ${data.totalAmount.toFixed(2)}`;
+  const absoluteWatchLink = await makeAbsoluteWatchLink(data.watchLink, data.tenantId);
+  
+  // Get domain for display (same logic as makeAbsoluteWatchLink)
+  let domain: string;
+  if (data.tenantId) {
+    try {
+      const tenant = await tenantService.getTenantById(data.tenantId);
+      if (tenant?.primary_domain) {
+        domain = tenant.primary_domain;
+      } else {
+        domain = env.platform.sharedDomains[0] || 'watch.rekard.com';
+      }
+    } catch {
+      domain = env.platform.sharedDomains[0] || 'watch.rekard.com';
+    }
+  } else {
+    domain = env.platform.sharedDomains[0] || 'watch.rekard.com';
+  }
+  
+  // Event thumbnail - use provided thumbnail or hide the section
+  const eventThumbnailSection = data.eventThumbnailUrl
+    ? `<div style="text-align: center; margin-bottom: 28px;">
+        <img src="${data.eventThumbnailUrl}" alt="${eventName}" style="max-width: 200px; height: auto; border-radius: 8px;">
       </div>`
     : '';
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Purchase Confirmation</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${eventName} - Ticket confirmation</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
-    <h1 style="color: #007bff; margin-top: 0;">Purchase Confirmed!</h1>
-    <p>Thank you for your purchase. Your order has been confirmed.</p>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; line-height: 1.6;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 30px 40px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+              <h1 style="margin: 0; font-size: 28px; color: #111827; font-weight: 600;">Your ticket is confirmed.</h1>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px;">
+              
+              ${eventThumbnailSection}
+              
+              <!-- Event Details Highlight -->
+              <div style="text-align: center; margin-bottom: 28px;">
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Event</p>
+                <p style="margin: 0 0 4px 0; font-size: 24px; color: #111827; font-weight: 700; line-height: 1.3;">${eventName}</p>
+                <p style="margin: 0 0 12px 0; font-size: 16px; color: #374151;">${eventDateTimeRange}</p>
+                <p style="margin: 0; font-size: 16px; color: #2563eb; font-weight: 600;">Amount Paid: ${amountPaid}</p>
   </div>
 
-  <div style="background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; margin-bottom: 20px;">
-    <h2 style="color: #333; margin-top: 0;">Order Details</h2>
-    <p><strong>Order Number:</strong> ${data.orderNumber}</p>
-    <p><strong>Ticket:</strong> ${data.ticketTitle}</p>
-    ${data.ticketDescription ? `<p><strong>Description:</strong> ${data.ticketDescription}</p>` : ''}
-    ${eventInfo}
-    ${eventDate}
-    <p><strong>Quantity:</strong> ${data.quantity}</p>
-    <p><strong>Unit Price:</strong> ${data.currency} ${data.unitPrice.toFixed(2)}</p>
-    <p style="font-size: 18px; font-weight: bold; color: #007bff; margin-top: 20px;">
-      <strong>Total Amount:</strong> ${formattedPrice}
-    </p>
+              ${absoluteWatchLink ? `<!-- CTA Button -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 24px;">
+                <tr>
+                  <td style="text-align: center;">
+                    <a href="${absoluteWatchLink}" style="display: inline-block; padding: 16px 48px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: 600; min-width: 200px;">Watch</a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #6b7280;">Or copy this link:</p>
+              <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px 16px; word-break: break-all; font-size: 14px; color: #374151; margin-bottom: 40px;">
+                ${absoluteWatchLink}
+              </div>` : ''}
+              
+              <!-- Steps to Access -->
+              ${absoluteWatchLink ? `<div style="background-color: #f9fafb; border-radius: 8px; padding: 24px; margin-bottom: 32px;">
+                <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827; font-weight: 600;">Steps to Access</h2>
+                <ol style="margin: 0; padding-left: 20px; color: #374151; font-size: 15px;">
+                  <li style="margin-bottom: 12px;">Go to <strong>${absoluteWatchLink}</strong> on your browser (Chrome / Safari / Firefox / Opera).</li>
+                  <li style="margin-bottom: 12px;">Login with OTP with <strong>${data.recipientEmail}</strong></li>
+                </ol>
+                <p style="margin: 16px 0 0 0; font-size: 14px; color: #6b7280;">You can verify if you have access with the account under "My Purchases" on <strong>${domain}</strong></p>
+              </div>` : ''}
+              
+              <!-- Please Note (adapted for livestream/VOD) -->
+              <div style="border-left: 4px solid #fbbf24; background-color: #fffbeb; border-radius: 6px; padding: 20px; margin-bottom: 32px;">
+                <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #111827; font-weight: 600;">Please Note</h2>
+                <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.7;">
+                  <li style="margin-bottom: 8px;">This event is available for <strong>web-only viewing</strong> on any modern browser.</li>
+                  <li style="margin-bottom: 8px;">All content is copyrighted and protected.</li>
+                  <li style="margin-bottom: 0;">Sharing, recording, or distributing this content is strictly prohibited.</li>
+                </ul>
   </div>
 
-  ${watchLinkSection}
-
-  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; font-size: 14px;">
-    <p>If you have any questions, please contact us at ${env.email.supportEmail}</p>
-    <p style="margin-top: 10px;">© ${new Date().getFullYear()} ${env.email.fromName}. All rights reserved.</p>
-  </div>
+              <!-- Troubleshooting -->
+              <div style="margin-bottom: 32px;">
+                <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827; font-weight: 600;">Troubleshooting</h2>
+                <p style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280;">If you're having trouble accessing the event:</p>
+                <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.8;">
+                  ${absoluteWatchLink ? `<li style="margin-bottom: 8px;">Please make sure you are on the link - <span style="color: #2563eb;">${absoluteWatchLink}</span></li>` : ''}
+                  <li style="margin-bottom: 8px;">Make sure you have logged in with the same email address with which you made the purchase with or you have been given access to.</li>
+                  <li style="margin-bottom: 8px;">For uninterrupted access / viewing experience, you will need at-least 3 MBPS download speed on your device. Kindly check your speeds at <a href="http://speedtest.net/" style="color: #2563eb;">speedtest.net</a> or <a href="http://testmy.net/" style="color: #2563eb;">testmy.net</a></li>
+                  <li style="margin-bottom: 8px;">If you are facing any issues logging in or accessing the video, kindly clear the cookies / cache / history on your browser or try accessing on a different browser / device / network</li>
+                  <li style="margin-bottom: 8px;">Based on your internet speed / connectivity you could choose to higher / lower the quality of the stream using the Gear icon on the video player. We suggest you reduce the quality of the stream if the internet is inconsistent or the video is buffering for you to have a continuous playback</li>
+                  <li style="margin-bottom: 0;">For any help, reachout to support. Contact information available in the footer.</li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 30px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.6;">
+                You received this email because you purchased or were granted access to an event.<br>
+                This is an automated message, please do not reply to this email.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `.trim();
 };
 
 // Generate HTML email template for access grant
-const generateAccessGrantHTML = (data: AccessGrantEmailData): string => {
-  const eventInfo = data.eventTitle
-    ? `<p><strong>Event:</strong> ${data.eventTitle}</p>`
-    : '';
-  const eventDate = data.eventStartDatetime
-    ? `<p><strong>Date:</strong> ${new Date(data.eventStartDatetime).toLocaleString()}</p>`
-    : '';
-  const expiresInfo = data.expiresAt
-    ? `<p><strong>Access Expires:</strong> ${new Date(data.expiresAt).toLocaleString()}</p>`
-    : '';
-  const watchLinkSection = data.watchLink
-    ? `<div style="margin: 30px 0; text-align: center;">
-        <a href="${data.watchLink}" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Access Content</a>
+const generateAccessGrantHTML = async (data: AccessGrantEmailData): Promise<string> => {
+  const eventName = data.eventTitle || data.ticketTitle;
+  const eventStartDateTime = data.eventStartDatetime ? formatDateTime(data.eventStartDatetime) : 'TBD';
+  const eventEndDateTime = data.eventEndDatetime ? formatDateTime(data.eventEndDatetime) : '';
+  const eventDateTimeRange = eventEndDateTime 
+    ? `${eventStartDateTime} - ${eventEndDateTime}`
+    : eventStartDateTime;
+  const absoluteWatchLink = await makeAbsoluteWatchLink(data.watchLink, data.tenantId);
+  
+  // Get domain for display (same logic as makeAbsoluteWatchLink)
+  let domain: string;
+  if (data.tenantId) {
+    try {
+      const tenant = await tenantService.getTenantById(data.tenantId);
+      if (tenant?.primary_domain) {
+        domain = tenant.primary_domain;
+      } else {
+        domain = env.platform.sharedDomains[0] || 'watch.rekard.com';
+      }
+    } catch {
+      domain = env.platform.sharedDomains[0] || 'watch.rekard.com';
+    }
+  } else {
+    domain = env.platform.sharedDomains[0] || 'watch.rekard.com';
+  }
+  
+  // Event thumbnail - use provided thumbnail or hide the section
+  const eventThumbnailSection = data.eventThumbnailUrl
+    ? `<div style="text-align: center; margin-bottom: 28px;">
+        <img src="${data.eventThumbnailUrl}" alt="${eventName}" style="max-width: 200px; height: auto; border-radius: 8px;">
       </div>`
     : '';
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Access Granted</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${eventName} - Ticket confirmation</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background-color: #d4edda; padding: 20px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #c3e6cb;">
-    <h1 style="color: #155724; margin-top: 0;">Access Granted!</h1>
-    <p>You have been granted access to the following content.</p>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; line-height: 1.6;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 30px 40px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+              <h1 style="margin: 0; font-size: 28px; color: #111827; font-weight: 600;">Your ticket is confirmed.</h1>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px;">
+              
+              ${eventThumbnailSection}
+              
+              <!-- Event Details Highlight -->
+              <div style="text-align: center; margin-bottom: 28px;">
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Event</p>
+                <p style="margin: 0 0 4px 0; font-size: 24px; color: #111827; font-weight: 700; line-height: 1.3;">${eventName}</p>
+                <p style="margin: 0 0 12px 0; font-size: 16px; color: #374151;">${eventDateTimeRange}</p>
+                ${data.expiresAt ? `<p style="margin: 0; font-size: 14px; color: #6b7280;">Access expires: ${formatDateTime(data.expiresAt)}</p>` : ''}
   </div>
 
-  <div style="background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; margin-bottom: 20px;">
-    <h2 style="color: #333; margin-top: 0;">Content Details</h2>
-    <p><strong>Ticket:</strong> ${data.ticketTitle}</p>
-    ${data.ticketDescription ? `<p><strong>Description:</strong> ${data.ticketDescription}</p>` : ''}
-    ${eventInfo}
-    ${eventDate}
-    ${expiresInfo}
+              ${absoluteWatchLink ? `<!-- CTA Button -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 24px;">
+                <tr>
+                  <td style="text-align: center;">
+                    <a href="${absoluteWatchLink}" style="display: inline-block; padding: 16px 48px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: 600; min-width: 200px;">Watch</a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #6b7280;">Or copy this link:</p>
+              <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px 16px; word-break: break-all; font-size: 14px; color: #374151; margin-bottom: 40px;">
+                ${absoluteWatchLink}
+              </div>` : ''}
+              
+              <!-- Steps to Access -->
+              ${absoluteWatchLink ? `<div style="background-color: #f9fafb; border-radius: 8px; padding: 24px; margin-bottom: 32px;">
+                <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827; font-weight: 600;">Steps to Access</h2>
+                <ol style="margin: 0; padding-left: 20px; color: #374151; font-size: 15px;">
+                  <li style="margin-bottom: 12px;">Go to <strong>${absoluteWatchLink}</strong> on your browser (Chrome / Safari / Firefox / Opera).</li>
+                  <li style="margin-bottom: 12px;">Login with OTP with <strong>${data.recipientEmail}</strong></li>
+                </ol>
+                <p style="margin: 16px 0 0 0; font-size: 14px; color: #6b7280;">You can verify if you have access with the account under "My Purchases" on <strong>${domain}</strong></p>
+              </div>` : ''}
+              
+              <!-- Please Note (adapted for livestream/VOD) -->
+              <div style="border-left: 4px solid #fbbf24; background-color: #fffbeb; border-radius: 6px; padding: 20px; margin-bottom: 32px;">
+                <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #111827; font-weight: 600;">Please Note</h2>
+                <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.7;">
+                  <li style="margin-bottom: 8px;">This event is available for <strong>web-only viewing</strong> on any modern browser.</li>
+                  <li style="margin-bottom: 8px;">All content is copyrighted and protected.</li>
+                  <li style="margin-bottom: 0;">Sharing, recording, or distributing this content is strictly prohibited.</li>
+                </ul>
   </div>
 
-  ${watchLinkSection}
-
-  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; font-size: 14px;">
-    <p>If you have any questions, please contact us at ${env.email.supportEmail}</p>
-    <p style="margin-top: 10px;">© ${new Date().getFullYear()} ${env.email.fromName}. All rights reserved.</p>
-  </div>
+              <!-- Troubleshooting -->
+              <div style="margin-bottom: 32px;">
+                <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827; font-weight: 600;">Troubleshooting</h2>
+                <p style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280;">If you're having trouble accessing the event:</p>
+                <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.8;">
+                  ${absoluteWatchLink ? `<li style="margin-bottom: 8px;">Please make sure you are on the link - <span style="color: #2563eb;">${absoluteWatchLink}</span></li>` : ''}
+                  <li style="margin-bottom: 8px;">Make sure you have logged in with the same email address with which you made the purchase with or you have been given access to.</li>
+                  <li style="margin-bottom: 8px;">For uninterrupted access / viewing experience, you will need at-least 3 MBPS download speed on your device. Kindly check your speeds at <a href="http://speedtest.net/" style="color: #2563eb;">speedtest.net</a> or <a href="http://testmy.net/" style="color: #2563eb;">testmy.net</a></li>
+                  <li style="margin-bottom: 8px;">If you are facing any issues logging in or accessing the video, kindly clear the cookies / cache / history on your browser or try accessing on a different browser / device / network</li>
+                  <li style="margin-bottom: 8px;">Based on your internet speed / connectivity you could choose to higher / lower the quality of the stream using the Gear icon on the video player. We suggest you reduce the quality of the stream if the internet is inconsistent or the video is buffering for you to have a continuous playback</li>
+                  <li style="margin-bottom: 0;">For any help, reachout to support. Contact information available in the footer.</li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 30px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.6;">
+                You received this email because you purchased or were granted access to an event.<br>
+                This is an automated message, please do not reply to this email.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `.trim();
@@ -171,7 +405,7 @@ export const sendPurchaseConfirmationEmail = async (
       from: `${env.email.fromName} <${env.email.fromEmail}>`,
       to: [data.recipientEmail],
       subject: emailSubject,
-      html: generatePurchaseConfirmationHTML(data),
+      html: await generatePurchaseConfirmationHTML(data),
     });
 
     if (result.error) {
@@ -200,14 +434,14 @@ export const sendAccessGrantEmail = async (
   }
 
   try {
-    const emailSubject = `Access Granted - ${data.ticketTitle}`;
+    const emailSubject = `${data.ticketTitle} - Ticket confirmation`;
     log.info(`[EMAIL] Sending access grant email - To: ${data.recipientEmail}, Subject: ${emailSubject}, Ticket: ${data.ticketTitle}`);
     
     const result = await client.emails.send({
       from: `${env.email.fromName} <${env.email.fromEmail}>`,
       to: [data.recipientEmail],
       subject: emailSubject,
-      html: generateAccessGrantHTML(data),
+      html: await generateAccessGrantHTML(data),
     });
 
     if (result.error) {
@@ -222,4 +456,3 @@ export const sendAccessGrantEmail = async (
     return false;
   }
 };
-

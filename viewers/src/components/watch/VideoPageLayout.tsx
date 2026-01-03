@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Calendar, Loader2 } from "lucide-react";
+import { Calendar, Loader2, Archive } from "lucide-react";
 import { MainLayout } from "../layout";
 import DaySelector from "./DaySelector";
 import VideoPlayerSection from "./VideoPlayerSection";
@@ -174,6 +174,47 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
           eventTitle={ticket?.title || "This content"}
           userLocation={null}
         />
+      </MainLayout>
+    );
+  }
+
+  // Check if selected event is archived (VOD only)
+  const isEventArchived = useMemo(() => {
+    if (!selectedEvent || !selectedEvent.is_vod || !selectedEvent.archive_after) {
+      return false;
+    }
+    const now = new Date();
+    const archiveDate = new Date(selectedEvent.archive_after);
+    return archiveDate <= now;
+  }, [selectedEvent]);
+
+  if (isEventArchived) {
+    return (
+      <MainLayout>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center py-12">
+              <Archive className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Content Archived
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                This content has been archived and is no longer available for viewing.
+                {selectedEvent?.archive_after && (
+                  <>
+                    {" "}It was archived on{" "}
+                    {formatDate(selectedEvent.archive_after, {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                    .
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
       </MainLayout>
     );
   }

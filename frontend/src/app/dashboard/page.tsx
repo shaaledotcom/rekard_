@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Navbar } from "@/components/layout";
 import { SalesTransactions } from "@/components/billing/SalesTransactions";
+import { SalesReport } from "@/components/billing/SalesReport";
 import { useGetMeQuery } from "@/store";
 
 function DashboardContent() {
@@ -69,6 +70,9 @@ function DashboardContent() {
               </CardContent>
             </Card>
           )}
+
+          {/* Sales Report */}
+          <SalesReport />
 
           {/* Sales Transactions Ledger */}
           <SalesTransactions />

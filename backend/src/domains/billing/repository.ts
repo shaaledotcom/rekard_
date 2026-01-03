@@ -1,6 +1,6 @@
 // Billing repository - tenant-aware database operations using Drizzle ORM
 import { eq, and, or, ilike, gte, lte, desc, asc, count, sql } from 'drizzle-orm';
-import { db, billingPlans, userWallets, walletTransactions, invoices, userSubscriptions, billingAuditLogs, ticketWalletAllocations, emailAccessGrants, tickets, orders } from '../../db/index';
+import { db, billingPlans, userWallets, walletTransactions, invoices, userSubscriptions, billingAuditLogs, ticketWalletAllocations, emailAccessGrants, tickets, orders, ticketBuyers } from '../../db/index';
 import { SYSTEM_TENANT_ID, DEFAULT_APP_ID } from '../../domains/auth/constants.js';
 import type {
   BillingPlan,
@@ -23,6 +23,8 @@ import type {
   PaginationParams,
   SortParams,
   ListResponse,
+  SalesReportEntry,
+  SalesReportFilter,
 } from './types';
 
 // Type converters
@@ -62,7 +64,7 @@ const transformUserWallet = (row: typeof userWallets.$inferSelect): UserWallet =
   updated_at: row.updatedAt,
 });
 
-const transformWalletTransaction = (row: typeof walletTransactions.$inferSelect): WalletTransaction => ({
+const transformWalletTransaction = (row: typeof walletTransactions.$inferSelect, userEmail?: string): WalletTransaction => ({
   id: row.id,
   app_id: row.appId,
   tenant_id: row.tenantId,
@@ -77,6 +79,7 @@ const transformWalletTransaction = (row: typeof walletTransactions.$inferSelect)
   description: row.description || undefined,
   metadata: (row.metadata as Record<string, unknown>) || {},
   created_at: row.createdAt,
+  user_email: userEmail,
 });
 
 const transformInvoice = (row: typeof invoices.$inferSelect): Invoice => ({
@@ -422,16 +425,49 @@ export const getWalletTransactions = async (
 
   const total = countResult?.count || 0;
 
+  // Join with orders and ticketBuyers to get customer email
+  // For debits (ticket purchases): get email from orders where ticketId matches referenceId
+  // For credits (ticket sales): get email from ticketBuyers or orders
   const rows = await db
-    .select()
+    .select({
+      transaction: walletTransactions,
+      orderEmail: orders.customerEmail,
+      buyerEmail: ticketBuyers.buyerEmail,
+    })
     .from(walletTransactions)
+    .leftJoin(
+      orders,
+      and(
+        sql`${walletTransactions.referenceId} IS NOT NULL`,
+        // Try to match ticketId when referenceId is numeric (using safe cast)
+        sql`${orders.ticketId} = CASE WHEN ${walletTransactions.referenceId} ~ '^[0-9]+$' THEN CAST(${walletTransactions.referenceId} AS INTEGER) ELSE NULL END`,
+        eq(orders.appId, walletTransactions.appId),
+        eq(orders.tenantId, walletTransactions.tenantId),
+        // Prefer completed orders for accurate email
+        eq(orders.status, 'completed')
+      )
+    )
+    .leftJoin(
+      ticketBuyers,
+      and(
+        sql`${walletTransactions.referenceId} IS NOT NULL`,
+        // Try to match ticketId when referenceId is numeric (using safe cast)
+        sql`${ticketBuyers.ticketId} = CASE WHEN ${walletTransactions.referenceId} ~ '^[0-9]+$' THEN CAST(${walletTransactions.referenceId} AS INTEGER) ELSE NULL END`,
+        eq(ticketBuyers.appId, walletTransactions.appId),
+        eq(ticketBuyers.tenantId, walletTransactions.tenantId)
+      )
+    )
     .where(and(...conditions))
     .orderBy(desc(walletTransactions.createdAt))
     .limit(pageSize)
     .offset(offset);
 
   return {
-    data: rows.map(transformWalletTransaction),
+    data: rows.map((row) => {
+      // Prefer order email, fallback to buyer email
+      const userEmail = row.orderEmail || row.buyerEmail || undefined;
+      return transformWalletTransaction(row.transaction, userEmail);
+    }),
     total,
     page,
     page_size: pageSize,
@@ -1014,5 +1050,143 @@ export const getTicketBuyers = async (
       order_number: r.orderNumber,
     })) as TicketBuyer[],
     next_pagination_token: nextToken,
+  };
+};
+
+// Sales Report - combines completed orders and email access grants
+export const getSalesReport = async (
+  appId: string,
+  tenantId: string,
+  filter: SalesReportFilter = {},
+  pagination: PaginationParams = {},
+  sort: SortParams = {}
+): Promise<ListResponse<SalesReportEntry>> => {
+  const page = Math.max(1, pagination.page || 1);
+  const pageSize = Math.max(1, Math.min(100, pagination.page_size || 20));
+  const offset = (page - 1) * pageSize;
+
+  const entries: SalesReportEntry[] = [];
+
+  // Get completed orders (purchased)
+  if (!filter.type || filter.type === 'purchased' || filter.type === 'all') {
+    const orderConditions = [
+      eq(orders.appId, appId),
+      eq(orders.tenantId, tenantId),
+      eq(orders.status, 'completed'),
+    ];
+
+    if (filter.ticket_id) {
+      orderConditions.push(eq(orders.ticketId, filter.ticket_id));
+    }
+    if (filter.user_email) {
+      orderConditions.push(ilike(orders.customerEmail, `%${filter.user_email}%`));
+    }
+    if (filter.start_date) {
+      orderConditions.push(gte(orders.createdAt, filter.start_date));
+    }
+    if (filter.end_date) {
+      orderConditions.push(lte(orders.createdAt, filter.end_date));
+    }
+
+    const orderRows = await db
+      .select({
+        order: orders,
+        ticketTitle: tickets.title,
+      })
+      .from(orders)
+      .leftJoin(tickets, eq(orders.ticketId, tickets.id))
+      .where(and(...orderConditions))
+      .orderBy(desc(orders.createdAt));
+
+    orderRows.forEach((row) => {
+      if (row.order.ticketId) {
+        entries.push({
+          id: `order-${row.order.id}`,
+          type: 'purchased',
+          date: row.order.createdAt,
+          user_email: row.order.customerEmail || '',
+          ticket_id: row.order.ticketId,
+          ticket_title: row.ticketTitle || '',
+          quantity: row.order.quantity,
+          amount: toNumber(row.order.totalAmount),
+          currency: row.order.currency || 'INR',
+          order_number: row.order.orderNumber,
+        });
+      }
+    });
+  }
+
+  // Get email access grants (granted)
+  if (!filter.type || filter.type === 'granted' || filter.type === 'all') {
+    const grantConditions = [
+      eq(emailAccessGrants.appId, appId),
+      eq(emailAccessGrants.tenantId, tenantId),
+      eq(emailAccessGrants.status, 'active'),
+    ];
+
+    if (filter.ticket_id) {
+      grantConditions.push(eq(emailAccessGrants.ticketId, filter.ticket_id));
+    }
+    if (filter.user_email) {
+      grantConditions.push(ilike(emailAccessGrants.email, `%${filter.user_email}%`));
+    }
+    if (filter.start_date) {
+      grantConditions.push(gte(emailAccessGrants.grantedAt, filter.start_date));
+    }
+    if (filter.end_date) {
+      grantConditions.push(lte(emailAccessGrants.grantedAt, filter.end_date));
+    }
+
+    const grantRows = await db
+      .select({
+        grant: emailAccessGrants,
+        ticketTitle: tickets.title,
+      })
+      .from(emailAccessGrants)
+      .leftJoin(tickets, eq(emailAccessGrants.ticketId, tickets.id))
+      .where(and(...grantConditions))
+      .orderBy(desc(emailAccessGrants.grantedAt));
+
+    grantRows.forEach((row) => {
+      entries.push({
+        id: `grant-${row.grant.id}`,
+        type: 'granted',
+        date: row.grant.grantedAt,
+        user_email: row.grant.email,
+        ticket_id: row.grant.ticketId,
+        ticket_title: row.ticketTitle || '',
+        quantity: 1, // Grants are typically 1 per email
+        currency: 'INR', // Grants don't have currency
+      });
+    });
+  }
+
+  // Sort entries
+  const sortBy = sort.sort_by || 'date';
+  const sortOrder = sort.sort_order || 'desc';
+  entries.sort((a, b) => {
+    let comparison = 0;
+    if (sortBy === 'date') {
+      comparison = a.date.getTime() - b.date.getTime();
+    } else if (sortBy === 'user_email') {
+      comparison = a.user_email.localeCompare(b.user_email);
+    } else if (sortBy === 'ticket_title') {
+      comparison = a.ticket_title.localeCompare(b.ticket_title);
+    } else if (sortBy === 'quantity') {
+      comparison = a.quantity - b.quantity;
+    }
+    return sortOrder === 'asc' ? comparison : -comparison;
+  });
+
+  // Pagination
+  const total = entries.length;
+  const paginatedEntries = entries.slice(offset, offset + pageSize);
+
+  return {
+    data: paginatedEntries,
+    total,
+    page,
+    page_size: pageSize,
+    total_pages: Math.ceil(total / pageSize),
   };
 };

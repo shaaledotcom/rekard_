@@ -4,12 +4,17 @@ import { requireSession } from '../../domains/auth/session.js';
 import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
 import { ok, created, noContent, badRequest } from '../../shared/utils/response.js';
 import { asyncHandler } from '../../shared/middleware/error-handler.js';
+import { timeoutMiddleware } from '../../shared/middleware/security.js';
 import { imageUpload, mediaUpload } from '../../shared/utils/file-upload.js';
 import * as uploadsService from '../../domains/uploads/service.js';
 import type { UploadCategory, PresignedUrlRequest } from '../../domains/uploads/types.js';
 import type { AppRequest } from '../../shared/types/index.js';
 
 const router = Router();
+
+// Apply longer timeout for upload routes (30 minutes for large file uploads)
+// This is needed because large video files can take a long time to upload
+router.use(timeoutMiddleware(30 * 60 * 1000)); // 30 minutes
 
 // Apply authentication middleware
 router.use(requireSession);

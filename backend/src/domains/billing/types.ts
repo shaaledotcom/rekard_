@@ -51,6 +51,7 @@ export type WalletTransaction = {
   description?: string;
   metadata: Record<string, unknown>;
   created_at: Date;
+  user_email?: string;
 };
 
 export type Invoice = {
@@ -290,5 +291,27 @@ export type TicketBuyer = {
   currency: string;
   purchased_at: Date;
   order_number: string;
+};
+
+// Sales Report
+export type SalesReportEntry = {
+  id: string; // "order-{id}" or "grant-{id}"
+  type: 'purchased' | 'granted';
+  date: Date;
+  user_email: string;
+  ticket_id: number;
+  ticket_title: string;
+  quantity: number;
+  amount?: number; // Only for purchased orders
+  currency: string;
+  order_number?: string; // Only for purchased orders
+};
+
+export type SalesReportFilter = {
+  type?: 'purchased' | 'granted' | 'all';
+  ticket_id?: number;
+  user_email?: string;
+  start_date?: Date;
+  end_date?: Date;
 };
 

@@ -10,8 +10,13 @@ export const securityMiddleware = helmet({
 });
 
 // Request timeout middleware
-export const timeoutMiddleware = (timeoutMs: number) => {
-  return (_req: Request, res: Response, next: NextFunction): void => {
+export const timeoutMiddleware = (timeoutMs: number, skipPaths?: string[]) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    // Skip timeout for specified paths
+    if (skipPaths && skipPaths.some(path => req.path.startsWith(path))) {
+      return next();
+    }
+
     const timeout = setTimeout(() => {
       if (!res.headersSent) {
         res.status(408).json({

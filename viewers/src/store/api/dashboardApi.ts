@@ -36,6 +36,7 @@ export interface PublicEventDetails {
   featured_image?: string;
   embed?: string;
   watch_link?: string;
+  archive_after?: string;
 }
 
 export interface PublicTicketPricing {

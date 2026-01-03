@@ -18,6 +18,7 @@ import { ROLE_VIEWER } from '../auth/constants.js';
 import * as ordersRepo from '../orders/repository.js';
 import * as dashboardRepo from '../dashboard/repository.js';
 import { sendAccessGrantEmail } from '../../shared/utils/email.js';
+import * as billingService from '../billing/service.js';
 
 // ===== CSV Parsing =====
 
@@ -62,6 +63,35 @@ export const parseCSV = (csvData: string): CSVParseResult => {
   }
 
   return { valid, invalid };
+};
+
+// Helper function to consume tickets from producer's wallet when access is granted
+const consumeProducerWalletTicketsForGrant = async (
+  appId: string,
+  tenantId: string,
+  userId: string,
+  ticketId: number,
+  quantity: number
+): Promise<void> => {
+  try {
+    // Consume tickets from producer's wallet
+    await billingService.consumeTickets(
+      appId,
+      tenantId,
+      userId,
+      {
+        quantity,
+        reference_type: 'access_grant',
+        reference_id: String(ticketId),
+        description: `Consumed ${quantity} tickets for access grant (ticket ${ticketId})`,
+      }
+    );
+    log.info(`Consumed ${quantity} tickets from producer ${userId}'s wallet for access grant on ticket ${ticketId}`);
+  } catch (error) {
+    // If wallet doesn't have enough tickets, log warning but don't fail the grant
+    // This allows grants to complete even if producer's wallet is empty
+    log.warn(`Failed to consume tickets from producer ${userId}'s wallet for access grant on ticket ${ticketId}:`, error);
+  }
 };
 
 // ===== Access Grant Operations =====
@@ -154,6 +184,12 @@ export const grantAccess = async (
               status: 'active',
               expiresAt: request.expires_at || null,
             });
+            
+            // Consume tickets from producer's wallet (non-blocking)
+            consumeProducerWalletTicketsForGrant(appId, tenantId, userId, ticketId, 1).catch((error) => {
+              log.error(`Failed to consume producer wallet tickets for re-activated access grant (ticket ${ticketId}, email ${email}):`, error);
+            });
+            
             emailSuccess = true;
             successfullyGrantedTicketIds.push(ticketId);
           } else {
@@ -201,6 +237,12 @@ export const grantAccess = async (
             email,
             request.expires_at
           );
+          
+          // Consume tickets from producer's wallet (non-blocking)
+          consumeProducerWalletTicketsForGrant(appId, tenantId, userId, ticketId, 1).catch((error) => {
+            log.error(`Failed to consume producer wallet tickets for access grant (ticket ${ticketId}, email ${email}):`, error);
+          });
+          
           emailSuccess = true;
           successfullyGrantedTicketIds.push(ticketId);
         }
@@ -221,12 +263,18 @@ export const grantAccess = async (
           if (ticketDetails) {
             log.info(`[EMAIL] Retrieved ticket details for ticket ${ticketId} - Title: ${ticketDetails.title || 'Unknown'}`);
             // Get the earliest event start datetime if available
-            const eventStartDatetime = ticketDetails.events && ticketDetails.events.length > 0
+            const firstEvent = ticketDetails.events && ticketDetails.events.length > 0
               ? ticketDetails.events
-                  .map(e => e.start_datetime)
-                  .filter((dt): dt is Date => !!dt)
-                  .sort((a, b) => a.getTime() - b.getTime())[0]
+                  .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0]
               : undefined;
+            const eventStartDatetime = firstEvent?.start_datetime;
+            const eventEndDatetime = firstEvent?.end_datetime;
+            
+            // Get event thumbnail - prefer event thumbnail, fallback to ticket thumbnail
+            const eventThumbnailUrl = firstEvent?.thumbnail_image_portrait 
+              || firstEvent?.featured_image 
+              || ticketDetails.thumbnail_image_portrait 
+              || ticketDetails.featured_image;
 
             // Construct watch link - use ticket URL if available, otherwise use ticket ID
             let watchLink: string | undefined;
@@ -246,10 +294,14 @@ export const grantAccess = async (
               recipientEmail: email,
               ticketTitle: ticketDetails.title || 'Ticket',
               ticketDescription: ticketDetails.description,
-              eventTitle: ticketDetails.events && ticketDetails.events.length > 0 ? ticketDetails.events[0].title : undefined,
+              eventTitle: firstEvent?.title,
               eventStartDatetime,
+              eventEndDatetime,
+              eventThumbnailUrl,
               watchLink,
               expiresAt,
+              tenantId,
+              appId,
             });
           } else {
             log.warn(`[EMAIL] Ticket details not found for ticket ${ticketId}, skipping email to ${email}`);

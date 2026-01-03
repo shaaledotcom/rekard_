@@ -601,8 +601,8 @@ export function EventFormDialog({
                 VOD Options
               </h4>
 
-              {/* Watch Up To */}
-              <div className="space-y-2">
+              {/* Watch Up To - Commented out for VOD */}
+              {/* <div className="space-y-2">
                 <Label className="text-foreground/70 text-sm font-medium">Watch Up To</Label>
                 <Input
                   value={formData.watch_upto || ""}
@@ -613,7 +613,7 @@ export function EventFormDialog({
                 <p className="text-xs text-muted-foreground">
                   How long viewers can access the content after purchase
                 </p>
-              </div>
+              </div> */}
 
               {/* Archive After */}
               <div className="space-y-2">

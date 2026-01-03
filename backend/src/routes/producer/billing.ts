@@ -8,6 +8,7 @@ import type {
   WalletTransactionFilter,
   InvoiceFilter,
   PurchasePlanRequest,
+  SalesReportFilter,
 } from '../../domains/billing/types.js';
 import { requireSession } from '../../domains/auth/session.js';
 import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
@@ -529,6 +530,38 @@ router.get('/email-access-status', asyncHandler(async (req: AppRequest, res: Res
       })),
     });
   }
+}));
+
+// Sales Report - combines purchased orders and granted access
+router.get('/sales-report', asyncHandler(async (req: AppRequest, res: Response) => {
+  const tenant = getTenantContext(req);
+
+  const filter: SalesReportFilter = {
+    type: (req.query.type as 'purchased' | 'granted' | 'all') || 'all',
+    ticket_id: req.query.ticket_id ? parseInt(req.query.ticket_id as string, 10) : undefined,
+    user_email: req.query.user_email as string,
+    start_date: req.query.start_date ? new Date(req.query.start_date as string) : undefined,
+    end_date: req.query.end_date ? new Date(req.query.end_date as string) : undefined,
+  };
+
+  const pagination: PaginationParams = {
+    page: parseInt(req.query.page as string, 10) || 1,
+    page_size: parseInt(req.query.page_size as string, 10) || 20,
+  };
+
+  const sort: SortParams = {
+    sort_by: req.query.sort_by as string,
+    sort_order: (req.query.sort_order as 'asc' | 'desc') || 'desc',
+  };
+
+  const result = await billingService.getSalesReport(
+    tenant.appId,
+    tenant.tenantId,
+    filter,
+    pagination,
+    sort
+  );
+  okList(res, result);
 }));
 
 export const billingRoutes: Router = router;

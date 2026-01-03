@@ -83,6 +83,7 @@ export type PublicEventDetails = {
   featured_image?: string;
   embed?: string;
   watch_link?: string;
+  archive_after?: Date;
 };
 
 export type PublicTicketPricing = {

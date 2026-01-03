@@ -30,9 +30,12 @@ export interface CompleteOrderRequest {
 }
 
 export interface PurchaseStatus {
+  ticket_id: number;
   has_purchased: boolean;
   order_id?: number;
-  purchased_at?: string;
+  order_number?: string;
+  is_archived?: boolean;
+  archive_date?: string;
 }
 
 export interface ValidateCouponRequest {

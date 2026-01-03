@@ -82,6 +82,7 @@ export interface WalletTransaction {
   description?: string;
   metadata: Record<string, unknown>;
   created_at: string;
+  user_email?: string;
 }
 
 export interface WalletTransactionListResponse {
@@ -322,10 +323,64 @@ export const billingApi = api.injectEndpoints({
       },
       providesTags: ["Billing"],
     }),
+
+    // Sales Report
+    getSalesReport: builder.query<SalesReportListResponse, SalesReportQueryParams | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params?.type) searchParams.append("type", params.type);
+        if (params?.ticket_id) searchParams.append("ticket_id", params.ticket_id.toString());
+        if (params?.user_email) searchParams.append("user_email", params.user_email);
+        if (params?.start_date) searchParams.append("start_date", params.start_date);
+        if (params?.end_date) searchParams.append("end_date", params.end_date);
+        if (params?.page) searchParams.append("page", params.page.toString());
+        if (params?.page_size) searchParams.append("page_size", params.page_size.toString());
+        if (params?.sort_by) searchParams.append("sort_by", params.sort_by);
+        if (params?.sort_order) searchParams.append("sort_order", params.sort_order);
+        const queryString = searchParams.toString();
+        return `/v1/producer/billing/sales-report${queryString ? `?${queryString}` : ""}`;
+      },
+      providesTags: ["Billing"],
+    }),
   }),
 });
 
 // Export hooks
+// Sales Report types
+export interface SalesReportEntry {
+  id: string;
+  type: 'purchased' | 'granted';
+  date: string;
+  user_email: string;
+  ticket_id: number;
+  ticket_title: string;
+  quantity: number;
+  amount?: number;
+  currency: string;
+  order_number?: string;
+}
+
+export interface SalesReportListResponse {
+  success: boolean;
+  data: SalesReportEntry[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface SalesReportQueryParams {
+  type?: 'purchased' | 'granted' | 'all';
+  ticket_id?: number;
+  user_email?: string;
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  page_size?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+}
+
 export const {
   useGetBillingPlansQuery,
   useGetPlanByIdQuery,
@@ -337,5 +392,6 @@ export const {
   usePurchasePlanMutation,
   useCancelSubscriptionMutation,
   useGetInvoicesQuery,
+  useGetSalesReportQuery,
 } = billingApi;
 

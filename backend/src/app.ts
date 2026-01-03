@@ -34,8 +34,8 @@ export const createApp = (): Express => {
   // Security middleware
   app.use(securityMiddleware);
 
-  // Request timeout (25 seconds)
-  app.use(timeoutMiddleware(25000));
+  // Request timeout (25 seconds) - skip upload routes which need longer timeout
+  app.use(timeoutMiddleware(25000, ['/v1/uploads']));
 
   // Compression
   app.use(compression());

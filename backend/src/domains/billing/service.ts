@@ -18,6 +18,8 @@ import type {
   SortParams,
   ListResponse,
   InvoiceItem,
+  SalesReportEntry,
+  SalesReportFilter,
 } from './types.js';
 import { log } from '../../shared/middleware/logger.js';
 import { getPlanTier } from '../../shared/middleware/plan.js';
@@ -614,5 +616,16 @@ export const getEmailAccessStatuses = async (
   ticketId: number
 ) => {
   return repo.getEmailAccessStatuses(appId, tenantId, emails, ticketId);
+};
+
+// Sales Report
+export const getSalesReport = async (
+  appId: string,
+  tenantId: string,
+  filter: SalesReportFilter = {},
+  pagination: PaginationParams = {},
+  sort: SortParams = {}
+): Promise<ListResponse<SalesReportEntry>> => {
+  return repo.getSalesReport(appId, tenantId, filter, pagination, sort);
 };
 

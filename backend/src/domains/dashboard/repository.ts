@@ -258,6 +258,7 @@ export const getTicketEvents = async (ticketId: number): Promise<PublicEventDeta
     featured_image: e.featuredImage || undefined,
     embed: e.embed || undefined,
     watch_link: e.watchLink || undefined,
+    archive_after: e.archiveAfter || undefined,
   }));
 };
 

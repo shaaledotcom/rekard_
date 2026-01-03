@@ -29,6 +29,8 @@ import { ROLE_VIEWER } from '../auth/constants.js';
 import { log } from '../../shared/middleware/logger.js';
 import { badRequest, notFound } from '../../shared/errors/app-error.js';
 import { sendPurchaseConfirmationEmail } from '../../shared/utils/email.js';
+import * as billingService from '../billing/service.js';
+import * as tenantRepo from '../tenant/repository.js';
 
 // Create order with validation
 export const createOrder = async (
@@ -70,6 +72,55 @@ export const createOrder = async (
 
   log.info(`Created order ${order.order_number} for user ${userId}`);
   return order;
+};
+
+// Helper function to consume tickets from producer's wallet when ticket is purchased
+const consumeProducerWalletTickets = async (
+  ticketId: number,
+  quantity: number
+): Promise<void> => {
+  try {
+    // Get ticket owner's tenant info
+    const ticketInfo = await dashboardRepo.getTicketByIdForPayment(ticketId);
+    if (!ticketInfo) {
+      log.warn(`Could not find ticket ${ticketId} for wallet deduction`);
+      return;
+    }
+
+    // Get tenant to find producer's user ID
+    const tenant = await tenantRepo.getTenantById(ticketInfo.tenantId);
+    if (!tenant) {
+      log.warn(`Could not find tenant ${ticketInfo.tenantId} for wallet deduction`);
+      return;
+    }
+
+    const producerUserId = tenant.user_id;
+    const producerAppId = ticketInfo.appId;
+    const producerTenantId = ticketInfo.tenantId;
+
+    // Consume tickets from producer's wallet
+    try {
+      await billingService.consumeTickets(
+        producerAppId,
+        producerTenantId,
+        producerUserId,
+        {
+          quantity,
+          reference_type: 'ticket_purchase',
+          reference_id: String(ticketId),
+          description: `Consumed ${quantity} tickets for ticket purchase (ticket ${ticketId})`,
+        }
+      );
+      log.info(`Consumed ${quantity} tickets from producer ${producerUserId}'s wallet for ticket ${ticketId}`);
+    } catch (error) {
+      // If wallet doesn't have enough tickets, log warning but don't fail the purchase
+      // This allows purchases to complete even if producer's wallet is empty
+      log.warn(`Failed to consume tickets from producer ${producerUserId}'s wallet for ticket ${ticketId}:`, error);
+    }
+  } catch (error) {
+    // Log error but don't fail the purchase/order completion
+    log.error(`Error consuming producer wallet tickets for ticket ${ticketId}:`, error);
+  }
 };
 
 // Get order by ID
@@ -362,6 +413,11 @@ export const completeOrderFromPayment = async (
 
   log.info(`Completed order ${order.order_number} with payment ${paymentId} (order: ${order.app_id}/${order.tenant_id}, ticket owner: ${ticketOwnerAppId}/${ticketOwnerTenantId})`);
 
+  // Consume tickets from producer's wallet (non-blocking)
+  consumeProducerWalletTickets(updated.ticket_id, updated.quantity).catch((error) => {
+    log.error(`Failed to consume producer wallet tickets for order ${updated.order_number}:`, error);
+  });
+
   // Send purchase confirmation email (non-blocking)
   if (updated.customer_email) {
     log.info(`[EMAIL] Preparing to send purchase confirmation email for order ${updated.order_number} to ${updated.customer_email}`);
@@ -371,12 +427,18 @@ export const completeOrderFromPayment = async (
       if (ticketDetails) {
         log.info(`[EMAIL] Retrieved ticket details for order ${updated.order_number} - Ticket: ${ticketDetails.title || 'Unknown'}`);
         // Get the earliest event start datetime if available
-        const eventStartDatetime = ticketDetails.events && ticketDetails.events.length > 0
+        const firstEvent = ticketDetails.events && ticketDetails.events.length > 0
           ? ticketDetails.events
-              .map(e => e.start_datetime)
-              .filter((dt): dt is Date => !!dt)
-              .sort((a, b) => a.getTime() - b.getTime())[0]
+              .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0]
           : undefined;
+        const eventStartDatetime = firstEvent?.start_datetime;
+        const eventEndDatetime = firstEvent?.end_datetime;
+        
+        // Get event thumbnail - prefer event thumbnail, fallback to ticket thumbnail
+        const eventThumbnailUrl = firstEvent?.thumbnail_image_portrait 
+          || firstEvent?.featured_image 
+          || ticketDetails.thumbnail_image_portrait 
+          || ticketDetails.featured_image;
 
         // Construct watch link - use ticket URL if available, otherwise use ticket ID
         let watchLink: string | undefined;
@@ -398,9 +460,13 @@ export const completeOrderFromPayment = async (
           unitPrice: updated.unit_price,
           totalAmount: updated.total_amount,
           currency: updated.currency,
-          eventTitle: ticketDetails.events && ticketDetails.events.length > 0 ? ticketDetails.events[0].title : undefined,
+          eventTitle: firstEvent?.title,
           eventStartDatetime,
+          eventEndDatetime,
+          eventThumbnailUrl,
           watchLink,
+          tenantId: ticketOwnerTenantId,
+          appId: ticketOwnerAppId,
         });
       } else {
         log.warn(`[EMAIL] Ticket details not found for ticket ${updated.ticket_id}, skipping email for order ${updated.order_number}`);
@@ -416,8 +482,31 @@ export const completeOrderFromPayment = async (
   return updated;
 };
 
+// Helper function to check if VOD content has been archived
+const isVodContentArchived = async (ticketId: number): Promise<{ isArchived: boolean; archiveDate?: Date }> => {
+  const ticket = await dashboardRepo.getPublicTicketById(ticketId);
+  if (!ticket || !ticket.events || ticket.events.length === 0) {
+    return { isArchived: false };
+  }
+
+  const now = new Date();
+  
+  // Check if any VOD event has archive_after date that has passed
+  for (const event of ticket.events) {
+    if (event.is_vod && event.archive_after) {
+      const archiveDate = new Date(event.archive_after);
+      if (archiveDate <= now) {
+        return { isArchived: true, archiveDate };
+      }
+    }
+  }
+
+  return { isArchived: false };
+};
+
 // Check if user has purchased a ticket
 // Also checks for email access grants
+// Note: Archive checking is done per-event, not per-ticket
 export const checkUserPurchaseStatus = async (
   appId: string,
   tenantId: string,
@@ -472,6 +561,8 @@ export const checkUserPurchaseStatus = async (
 
 // Get watch link for a purchased ticket
 // Also checks for email access grants
+// Note: Archive checking is primarily done per-event in the frontend VideoPageLayout component
+// This is a basic ticket-level check - individual events are checked when selected
 export const getWatchLink = async (
   appId: string,
   tenantId: string,
@@ -479,6 +570,13 @@ export const getWatchLink = async (
   ticketId: number,
   userEmail?: string
 ): Promise<{ ticket_id: number; watch_link: string; order_id: number }> => {
+  // Basic check: if ALL VOD events are archived, block access
+  // Individual event archive checks happen in the frontend when events are selected
+  const archiveCheck = await isVodContentArchived(ticketId);
+  if (archiveCheck.isArchived) {
+    throw badRequest('This content has been archived and is no longer available');
+  }
+
   // Check if user has purchased the ticket
   const orders = await repo.getUserTicketOrders(appId, tenantId, userId, ticketId);
   const completedOrder = orders.find(o => o.status === 'completed');
