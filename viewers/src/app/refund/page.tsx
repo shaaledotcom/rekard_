@@ -8,7 +8,7 @@ export default function RefundPage() {
   const { config, isLoading } = useTenant();
 
   const refundPolicy = config?.footer_policies?.refund_policy;
-  const legalName = config?.legal_name || "Rekard Media Pvt Ltd";
+  const legalName = config?.legal_name || "Rekard";
 
   if (isLoading) {
     return (

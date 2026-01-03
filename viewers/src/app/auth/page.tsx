@@ -1,83 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2, Mail, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OtpInput } from "@/components/auth/OtpInput";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthPage } from "@/hooks/useAuthPage";
 import { useTenant } from "@/hooks/useTenant";
 
 export default function AuthPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { isAuthenticated, isLoading: authLoading, sendEmailOtp, verifyEmailOtp } = useAuth();
   const { config, isLoading: tenantLoading } = useTenant();
-
-  const [email, setEmail] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-
-  // Get return URL from query params
-  const returnUrl = searchParams?.get("returnUrl") || "/";
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      router.push(returnUrl);
-    }
-  }, [authLoading, isAuthenticated, router, returnUrl]);
-
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      await sendEmailOtp(email);
-      setSuccess("OTP sent to your email. Please check your inbox.");
-      setOtpSent(true);
-    } catch (err: any) {
-      setError(err.message || "Failed to send OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpCode) return;
-
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      await verifyEmailOtp(email, otpCode);
-      setSuccess("Login successful! Redirecting...");
-      setTimeout(() => router.push(returnUrl), 1500);
-    } catch (err: any) {
-      setError(err.message || "Invalid OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChangeEmail = () => {
-    setOtpSent(false);
-    setOtpCode("");
-    setError("");
-    setSuccess("");
-  };
+  const {
+    email,
+    setEmail,
+    otpCode,
+    setOtpCode,
+    loading,
+    error,
+    success,
+    otpSent,
+    authLoading,
+    handleSendOtp,
+    handleVerifyOtp,
+    handleChangeEmail,
+  } = useAuthPage();
 
   if (authLoading) {
     return (
@@ -89,7 +38,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      {/* Logo */}
       <div className="mb-8">
         {!tenantLoading && config?.logo_url && (
           <Image
@@ -110,7 +58,6 @@ export default function AuthPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {!otpSent ? (
-            // Email form
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div className="space-y-2">
                 <div className="relative">
@@ -144,7 +91,6 @@ export default function AuthPage() {
               </Button>
             </form>
           ) : (
-            // OTP form
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               <div className="text-center text-sm text-muted-foreground mb-4">
                 OTP sent to: <span className="font-medium text-foreground">{email}</span>
@@ -202,14 +148,12 @@ export default function AuthPage() {
             </form>
           )}
 
-          {/* Error message */}
           {error && (
             <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
               {error}
             </div>
           )}
 
-          {/* Success message */}
           {success && (
             <div className="p-3 rounded-md bg-green-500/10 border border-green-500/20 text-green-600 text-sm">
               {success}
@@ -218,7 +162,6 @@ export default function AuthPage() {
         </CardContent>
       </Card>
 
-      {/* Back to home */}
       <Button
         variant="ghost"
         className="mt-6 text-muted-foreground"

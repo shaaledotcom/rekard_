@@ -8,7 +8,7 @@ export default function PrivacyPage() {
   const { config, isLoading } = useTenant();
 
   const privacyPolicy = config?.footer_policies?.privacy_policy;
-  const legalName = config?.legal_name || "Rekard Media Pvt Ltd";
+  const legalName = config?.legal_name || "Rekard";
 
   if (isLoading) {
     return (

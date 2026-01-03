@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React from "react";
 import { Calendar, Loader2, Archive } from "lucide-react";
 import { MainLayout } from "../layout";
 import DaySelector from "./DaySelector";
@@ -10,10 +10,8 @@ import LiveChatSection from "./LiveChatSection";
 import SponsorsSection from "./SponsorsSection";
 import { GeolocationBlockedMessage } from "./GeolocationBlockedMessage";
 import { SecureVideoAccess } from "./SecureVideoAccess";
-import { useTenant } from "@/providers/TenantProvider";
-import { useGetTicketByIdQuery } from "@/store/api";
+import { useVideoPageLayout } from "@/hooks/useVideoPageLayout";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
-import type { PublicEventDetails } from "@/store/api/dashboardApi";
 
 interface VideoPageLayoutProps {
   videoSrc: string;
@@ -62,67 +60,25 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
   onVideoEnded,
   ticketId,
 }) => {
-  const [selectedDay, setSelectedDay] = useState("");
-  const { config, isLoading: isSettingsLoading } = useTenant();
   const { formatDate } = useTimezoneFormat();
 
-  const enableLiveChat = isSettingsLoading ? true : (config?.enable_live_chat ?? true);
-
-  const { data: ticket, isLoading: isTicketLoading } = useGetTicketByIdQuery(
-    ticketId ? parseInt(ticketId) : 0,
-    { skip: !ticketId }
-  );
-
-  const events = ticket?.events || [];
-  const sortedEvents = [...events].sort(
-    (a, b) =>
-      new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime()
-  );
-
-  const selectedEvent = useMemo(() => {
-    if (!ticketId || !selectedDay.startsWith("event-")) {
-      return null;
-    }
-    const eventId = parseInt(selectedDay.replace("event-", ""));
-    return sortedEvents.find((event) => event.id === eventId) || null;
-  }, [selectedDay, sortedEvents, ticketId]);
-
-  // Simplified geoblocking check - can be enhanced with actual geolocation data
-  const isTicketBlocked = useMemo(() => {
-    if (!ticket) {
-      return false;
-    }
-    // For now, return false - implement full geolocation check if needed
-    return false;
-  }, [ticket]);
-
-  const isEventExpired = useMemo(() => {
-    if (!events || events.length === 0) return false;
-    const now = new Date();
-    return events.every((event) => {
-      if (event.end_datetime) {
-        const endDate = new Date(event.end_datetime);
-        return endDate < now;
-      }
-      return false;
-    });
-  }, [events]);
-
-  const latestEndDate = useMemo(() => {
-    if (!events || events.length === 0) return null;
-    const endDates = events
-      .map((event) =>
-        event.end_datetime ? new Date(event.end_datetime) : null
-      )
-      .filter((date): date is Date => date !== null);
-    if (endDates.length === 0) return null;
-    return new Date(Math.max(...endDates.map((d) => d.getTime())));
-  }, [events]);
-
-  const currentThumbnailSrc =
-    selectedEvent?.thumbnail_image_portrait || thumbnailSrc;
-  const currentEmbed = selectedEvent?.embed;
-  const videoSrcToUse = selectedEvent?.watch_link || videoSrc;
+  const {
+    ticket,
+    events,
+    selectedDay,
+    setSelectedDay,
+    selectedEvent,
+    isTicketBlocked,
+    isEventExpired,
+    latestEndDate,
+    isEventArchived,
+    currentThumbnailSrc,
+    currentEmbed,
+    videoSrcToUse,
+    enableLiveChat,
+    isTicketLoading,
+    isSettingsLoading,
+  } = useVideoPageLayout(ticketId, videoSrc, thumbnailSrc);
 
   if (!ticketId) {
     return (
@@ -177,16 +133,6 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
       </MainLayout>
     );
   }
-
-  // Check if selected event is archived (VOD only)
-  const isEventArchived = useMemo(() => {
-    if (!selectedEvent || !selectedEvent.is_vod || !selectedEvent.archive_after) {
-      return false;
-    }
-    const now = new Date();
-    const archiveDate = new Date(selectedEvent.archive_after);
-    return archiveDate <= now;
-  }, [selectedEvent]);
 
   if (isEventArchived) {
     return (

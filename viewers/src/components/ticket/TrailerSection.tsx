@@ -1,64 +1,32 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React from "react";
 import { ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-interface MediaItem {
-  id: string;
-  type: "image" | "video";
-  src: string;
-  alt?: string;
-  thumbnail?: string;
-}
+import { useTrailerSection, MediaItem } from "@/hooks/useTrailerSection";
 
 interface TrailerSectionProps {
   media: MediaItem[];
 }
 
 export function TrailerSection({ media }: TrailerSectionProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % media.length);
-    setIsPlaying(false);
-  }, [media.length]);
-
-  const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + media.length) % media.length);
-    setIsPlaying(false);
-  }, [media.length]);
-
-  const handleVideoPlay = useCallback(() => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        videoRef.current.play().catch((error) => {
-          console.error("Error playing video:", error);
-        });
-        setIsPlaying(true);
-      }
-    }
-  }, [isPlaying]);
-
-  const handleVideoEnded = useCallback(() => {
-    setIsPlaying(false);
-    nextSlide();
-  }, [nextSlide]);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.load();
-    }
-  }, [currentIndex]);
-
-  const currentMedia = media[currentIndex];
+  const {
+    currentIndex,
+    currentMedia,
+    isPlaying,
+    videoRef,
+    hasMultipleMedia,
+    nextSlide,
+    prevSlide,
+    goToSlide,
+    handleVideoPlay,
+    handleVideoEnded,
+    handleVideoPlayEvent,
+    handleVideoPauseEvent,
+    handleVideoError,
+  } = useTrailerSection(media);
 
   if (!media.length || !currentMedia) {
     return null;
@@ -84,12 +52,9 @@ export function TrailerSection({ media }: TrailerSectionProps) {
                 src={currentMedia?.src}
                 className="w-full h-full object-contain"
                 onEnded={handleVideoEnded}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onError={(e) => {
-                  console.error("Video error:", e);
-                  setIsPlaying(false);
-                }}
+                onPlay={handleVideoPlayEvent}
+                onPause={handleVideoPauseEvent}
+                onError={handleVideoError}
                 preload="metadata"
                 controls={false}
                 autoPlay={true}
@@ -114,7 +79,7 @@ export function TrailerSection({ media }: TrailerSectionProps) {
             )}
           </div>
 
-          {media.length > 1 && (
+          {hasMultipleMedia && (
             <>
               <Button
                 size="icon"
@@ -137,15 +102,12 @@ export function TrailerSection({ media }: TrailerSectionProps) {
           )}
         </Card>
 
-        {media.length > 1 && (
+        {hasMultipleMedia && (
           <div className="flex justify-center mt-4 space-x-2">
             {media.map((_, index) => (
               <button
                 key={index}
-                onClick={() => {
-                  setCurrentIndex(index);
-                  setIsPlaying(false);
-                }}
+                onClick={() => goToSlide(index)}
                 className={cn(
                   "w-2 h-2 rounded-full transition-colors",
                   index === currentIndex

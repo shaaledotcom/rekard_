@@ -1,10 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
+import { useEventCard } from "@/hooks/useEventCard";
 
 export interface EventCardProps {
   id: number;
@@ -26,45 +24,12 @@ export function EventCard({
   isPurchased = false,
   startDatetime = "",
 }: EventCardProps) {
-  const router = useRouter();
-  const [isNavigating, setIsNavigating] = useState(false);
-  const { formatDateTime } = useTimezoneFormat();
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    return formatDateTime(dateString, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  const handleClick = async () => {
-    if (isNavigating) return;
-
-    setIsNavigating(true);
-
-    try {
-      const cleanUrl = url?.replace(/^\//, "").trim();
-
-      if (cleanUrl && cleanUrl !== "") {
-        // If purchased, navigate to watch page; otherwise, navigate to ticket details
-        const destination = isPurchased ? `/${cleanUrl}/watch` : `/${cleanUrl}`;
-        router.push(destination);
-      } else if (id) {
-        // If purchased, navigate to watch page; otherwise, navigate to ticket details
-        const destination = isPurchased ? `/${id}/watch` : `/${id}`;
-        router.push(destination);
-      } else {
-        console.error("No valid URL or ticket ID provided for navigation");
-      }
-    } finally {
-      setIsNavigating(false);
-    }
-  };
+  const { formattedDate, handleClick } = useEventCard(
+    id,
+    url,
+    isPurchased,
+    startDatetime
+  );
 
   return (
     <div className="relative w-full sm:w-auto">
@@ -93,7 +58,7 @@ export function EventCard({
             {title}
           </h3>
           <span className="text-muted-foreground text-xs sm:text-sm">
-            {startDatetime ? formatDate(startDatetime) : ""}
+            {formattedDate}
           </span>
         </div>
       </div>

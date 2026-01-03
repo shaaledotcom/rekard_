@@ -11,7 +11,7 @@ export default function ContactPage() {
   const { config, isLoading } = useTenant();
 
   const supportChannels = config?.support_channels || [];
-  const legalName = config?.legal_name || "Rekard Media Pvt Ltd";
+  const legalName = config?.legal_name || "Rekard";
 
   const getIcon = (type: string) => {
     switch (type.toLowerCase()) {

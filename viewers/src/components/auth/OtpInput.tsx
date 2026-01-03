@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useOtpInput } from "@/hooks/useOtpInput";
 
 interface OtpInputProps {
   length?: number;
@@ -16,50 +17,13 @@ export function OtpInput({
   onChange,
   disabled = false,
 }: OtpInputProps) {
-  const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
-
-  const handleChange = (index: number, inputValue: string) => {
-    // Handle paste
-    if (inputValue.length > 1) {
-      const pastedValue = inputValue.slice(0, length);
-      onChange(pastedValue);
-      // Focus last filled input or last input
-      const focusIndex = Math.min(pastedValue.length, length - 1);
-      inputRefs.current[focusIndex]?.focus();
-      return;
-    }
-
-    // Handle single character
-    const newValue = value.split("");
-    newValue[index] = inputValue;
-    const joined = newValue.join("").slice(0, length);
-    onChange(joined);
-
-    // Move to next input
-    if (inputValue && index < length - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !value[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-    if (e.key === "ArrowLeft" && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-    if (e.key === "ArrowRight" && index < length - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "");
-    onChange(pastedData.slice(0, length));
-    const focusIndex = Math.min(pastedData.length, length - 1);
-    inputRefs.current[focusIndex]?.focus();
-  };
+  const {
+    inputRefs,
+    handleChange,
+    handleKeyDown,
+    handlePaste,
+    sanitizeInput,
+  } = useOtpInput(length, value, onChange);
 
   return (
     <div className="flex gap-2 justify-center">
@@ -74,7 +38,7 @@ export function OtpInput({
           pattern="[0-9]*"
           maxLength={1}
           value={value[index] || ""}
-          onChange={(e) => handleChange(index, e.target.value.replace(/\D/g, ""))}
+          onChange={(e) => handleChange(index, sanitizeInput(e.target.value))}
           onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}
           disabled={disabled}

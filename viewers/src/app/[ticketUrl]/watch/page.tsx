@@ -1,73 +1,29 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useParams, useRouter, usePathname } from "next/navigation";
+import React from "react";
+import { useRouter } from "next/navigation";
 import { VideoPageLayout } from "@/components/watch";
-import { useAuth } from "@/hooks/useAuth";
-import { useGetTicketByUrlQuery, useGetPurchaseStatusQuery } from "@/store/api";
+import { useWatchPage } from "@/hooks/useWatchPage";
 import { Loader2, Lock } from "lucide-react";
 import { MainLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 
 export default function WatchPage() {
-  const params = useParams();
   const router = useRouter();
-  const pathname = usePathname();
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  const ticketUrl = params.ticketUrl as string;
-
-  const urlWithSlash = ticketUrl?.startsWith("/") ? ticketUrl : `/${ticketUrl}`;
-
-  const { data: ticket, isLoading: isTicketLoading } = useGetTicketByUrlQuery(
-    urlWithSlash,
-    { skip: !ticketUrl }
-  );
-
-  const ticketId = ticket?.id;
-
-  const { data: purchaseStatus, isLoading: isPurchaseStatusLoading } =
-    useGetPurchaseStatusQuery(ticketId || 0, {
-      skip: !ticketId || !isAuthenticated,
-    });
+  const {
+    ticketUrl,
+    ticket,
+    ticketId,
+    purchaseStatus,
+    isLoading,
+    isAuthenticated,
+    isTicketLoading,
+  } = useWatchPage();
 
   const handleVideoEnded = () => {
     console.log("Video ended");
   };
 
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
-      const returnUrl = pathname ? encodeURIComponent(pathname) : undefined;
-      const authUrl = returnUrl ? `/auth?returnUrl=${returnUrl}` : "/auth";
-      router.push(authUrl);
-    }
-  }, [isAuthLoading, isAuthenticated, router, pathname]);
-
-  // Redirect to ticket page if not purchased (but not if archived - archived check happens in render)
-  useEffect(() => {
-    if (
-      !isAuthLoading &&
-      isAuthenticated &&
-      !isPurchaseStatusLoading &&
-      purchaseStatus &&
-      !purchaseStatus.has_purchased &&
-      ticketId
-    ) {
-      router.push(`/${ticketUrl}`);
-    }
-  }, [
-    isAuthLoading,
-    isAuthenticated,
-    isPurchaseStatusLoading,
-    purchaseStatus,
-    ticketId,
-    ticketUrl,
-    router,
-  ]);
-
-  // Loading state - also wait for ticket data before showing "not found"
-  const isLoading = isAuthLoading || isTicketLoading || (isAuthenticated && ticketId && isPurchaseStatusLoading);
-  
   if (isLoading) {
     return (
       <MainLayout>
@@ -81,12 +37,10 @@ export default function WatchPage() {
     );
   }
 
-  // Not authenticated
   if (!isAuthenticated) {
     return null;
   }
 
-  // Ticket not found - only show after ticket query has completed
   if (!isTicketLoading && !ticketId) {
     return (
       <MainLayout>
@@ -106,8 +60,6 @@ export default function WatchPage() {
     );
   }
 
-  // Not purchased
-  // Note: Archive checking is done per-event in VideoPageLayout, not per-ticket
   if (purchaseStatus && !purchaseStatus.has_purchased) {
     return (
       <MainLayout>

@@ -8,7 +8,7 @@ export default function TermsPage() {
   const { config, isLoading } = useTenant();
 
   const termsPolicy = config?.footer_policies?.terms_of_service;
-  const legalName = config?.legal_name || "Rekard Media Pvt Ltd";
+  const legalName = config?.legal_name || "Rekard";
 
   if (isLoading) {
     return (

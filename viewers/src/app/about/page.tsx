@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function AboutPage() {
   const { config, isLoading } = useTenant();
 
-  const legalName = config?.legal_name || "Rekard Media Pvt Ltd";
+  const legalName = config?.legal_name || "Rekard";
   const isCustomDomain = config?.is_custom_domain;
 
   if (isLoading) {
