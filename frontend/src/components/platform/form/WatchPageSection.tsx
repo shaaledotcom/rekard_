@@ -66,7 +66,6 @@ export function WatchPageSection({
               <li>• Real-time chat messages during live events</li>
               <li>• Comment sections on video on demand (VOD) content</li>
               <li>• Interactive viewer engagement features</li>
-              <li>• Moderation tools for managing conversations</li>
             </ul>
           </div>
         </div>

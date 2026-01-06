@@ -20,6 +20,7 @@ import {
   Ticket,
   TrendingUp,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface TicketsPurchaseProps {
   setActiveTab?: (tab: string) => void;
@@ -27,6 +28,7 @@ interface TicketsPurchaseProps {
 }
 
 export function TicketsPurchase({ setActiveTab, subscription }: TicketsPurchaseProps) {
+  const router = useRouter();
   const { user } = useAuth();
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(500);
@@ -145,7 +147,9 @@ export function TicketsPurchase({ setActiveTab, subscription }: TicketsPurchaseP
               TICKETS USED
             </div>
             <div className="text-3xl sm:text-4xl font-bold text-foreground">0</div>
-            <Button variant="link" className="mt-2 text-xs sm:text-sm text-primary">
+            <Button variant="link" className="mt-2 text-xs sm:text-sm text-primary" onClick={() => {
+              router.push("/");
+            }}>
               View Details
             </Button>
           </CardContent>

@@ -41,7 +41,6 @@ const DEFAULT_PLANS = [
       { code: 'whitelabel', label: 'Full white-labeled', icon: 'crown', included: true },
       { code: 'custom_domain', label: 'Custom Domain', icon: 'globe', included: true },
       { code: 'custom_payments', label: 'Your Payment Gateway', icon: 'credit-card', included: true },
-      { code: 'whitelabel_comms', label: 'Whitelabeled Email / SMS', icon: 'mail', included: true },
       { code: 'free_tickets', label: '100 Tickets Free', icon: 'sparkles', included: true },
       { code: 'premium_features', label: 'All Premium features', icon: 'shield-check', included: true },
     ],

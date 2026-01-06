@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Navbar } from "@/components/layout";
 import { SalesTransactions } from "@/components/billing/SalesTransactions";
@@ -71,11 +72,19 @@ function DashboardContent() {
             </Card>
           )}
 
-          {/* Sales Report */}
-          <SalesReport />
-
-          {/* Sales Transactions Ledger */}
-          <SalesTransactions />
+          {/* Tabs for Sales Report and Transactions */}
+          <Tabs defaultValue="sales-report" className="w-full">
+            <TabsList className="bg-secondary border-border">
+              <TabsTrigger value="sales-report">Sales Report</TabsTrigger>
+              <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            </TabsList>
+            <TabsContent value="sales-report" className="mt-6">
+              <SalesReport />
+            </TabsContent>
+            <TabsContent value="transactions" className="mt-6">
+              <SalesTransactions />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>

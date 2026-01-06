@@ -15,9 +15,15 @@ const router = Router();
 // Apply tenant middleware (optional auth - anonymous allowed)
 router.use(viewerTenantMiddleware);
 
-// Get username from request (session or body)
+// Get username from request (prioritize body username over userId)
 const getUsername = (req: AppRequest, bodyUsername?: string): string => {
-  return req.tenant?.userId || bodyUsername || 'Anonymous';
+  // Prioritize username from request body (user-entered name)
+  // Only use userId if no username is provided in the body
+  // Treat empty strings as no username provided
+  if (bodyUsername && bodyUsername.trim()) {
+    return bodyUsername.trim();
+  }
+  return req.tenant?.userId || 'Anonymous';
 };
 
 // Get messages

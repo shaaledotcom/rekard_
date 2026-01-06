@@ -89,7 +89,7 @@ export function HeaderSection({
       <div className="text-center space-y-2">
         <h3 className="text-xl font-semibold text-foreground">Header Settings</h3>
         <p className="text-sm text-muted-foreground">
-          Configure your platform logo, cart, and coupon settings
+          Configure your platform logo
         </p>
       </div>
 
@@ -152,41 +152,43 @@ export function HeaderSection({
         </div>
       </div>
 
-      {/* Cart Toggle */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          <Label className="text-foreground/70 text-sm font-medium">
-            Shopping Cart
-          </Label>
-        </div>
-
-        <div className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-border">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">Enable Cart</p>
-            <p className="text-xs text-muted-foreground">
-              Allow users to purchase multiple items at once
-            </p>
+      {/* Cart Toggle - Hidden */}
+      {false && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-foreground/70 text-sm font-medium">
+              Shopping Cart
+            </Label>
           </div>
-          <button
-            type="button"
-            onClick={() => !isReadOnly && onChange({ enable_cart: !formData.enable_cart })}
-            disabled={isReadOnly}
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
-              formData.enable_cart ? "bg-primary" : "bg-muted"
-            } ${isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ${
-                formData.enable_cart ? "translate-x-5" : "translate-x-0.5"
-              }`}
-            />
-          </button>
-        </div>
-      </div>
 
-      {/* Coupon Codes - Only show when cart is enabled */}
-      {formData.enable_cart && (
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-border">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">Enable Cart</p>
+              <p className="text-xs text-muted-foreground">
+                Allow users to purchase multiple items at once
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => !isReadOnly && onChange({ enable_cart: !formData.enable_cart })}
+              disabled={isReadOnly}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
+                formData.enable_cart ? "bg-primary" : "bg-muted"
+              } ${isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ${
+                  formData.enable_cart ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Coupon Codes - Hidden */}
+      {false && formData.enable_cart && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

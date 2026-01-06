@@ -9,6 +9,8 @@ import {
   useGetSalesReportQuery,
   type SalesReportEntry,
 } from "@/store/api";
+import { useAppSelector } from "@/store";
+import { config } from "@/lib/config";
 import {
   Calendar,
   Search,
@@ -19,6 +21,7 @@ import {
   Filter,
   Loader2,
   FileText,
+  Download,
 } from "lucide-react";
 import { formatDateLocal, formatTimeLocal } from "@/lib/datetime";
 
@@ -53,6 +56,7 @@ export function SalesReport() {
     sort_by: "date",
     sort_order: "desc",
   });
+
 
   // Filter by search query (client-side)
   const filteredEntries = useMemo(() => {
@@ -93,6 +97,113 @@ export function SalesReport() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const accessToken = useAppSelector((state) => state.auth.accessToken);
+
+  // CSV Export functionality
+  const exportToCSV = async () => {
+    // Fetch all data for export
+    const exportQuery = {
+      type: typeFilter === "all" ? undefined : typeFilter,
+      ...dateRange,
+      page: 1,
+      page_size: 10000,
+      sort_by: "date",
+      sort_order: "desc" as const,
+    };
+
+    try {
+      // Build query string
+      const searchParams = new URLSearchParams();
+      if (exportQuery.type) searchParams.append("type", exportQuery.type);
+      if (exportQuery.start_date) searchParams.append("start_date", exportQuery.start_date);
+      if (exportQuery.end_date) searchParams.append("end_date", exportQuery.end_date);
+      if (exportQuery.page) searchParams.append("page", exportQuery.page.toString());
+      if (exportQuery.page_size) searchParams.append("page_size", exportQuery.page_size.toString());
+      if (exportQuery.sort_by) searchParams.append("sort_by", exportQuery.sort_by);
+      if (exportQuery.sort_order) searchParams.append("sort_order", exportQuery.sort_order);
+
+      const queryString = searchParams.toString();
+      const apiUrl = `${config.apiUrl}/v1/producer/billing/sales-report${queryString ? `?${queryString}` : ""}`;
+
+      // Fetch with auth headers
+      const response = await fetch(apiUrl, {
+        headers: {
+          "Authorization": accessToken ? `Bearer ${accessToken}` : "",
+          "X-Service": "producer",
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch sales data");
+      }
+
+      const data = await response.json();
+      let entriesToExport = data.data || [];
+
+      // Apply client-side search filter if applicable
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        entriesToExport = entriesToExport.filter(
+          (entry: SalesReportEntry) =>
+            entry.user_email.toLowerCase().includes(query) ||
+            entry.ticket_title.toLowerCase().includes(query) ||
+            entry.order_number?.toLowerCase().includes(query)
+        );
+      }
+
+      // Convert to CSV
+      const headers = [
+        "Date",
+        "Time",
+        "User Email",
+        "Ticket Title",
+        "Order Number",
+        "Type",
+        "Quantity",
+        "Amount",
+        "Currency",
+      ];
+
+      const csvRows = [
+        headers.join(","),
+        ...entriesToExport.map((entry: SalesReportEntry) => {
+          const row = [
+            formatDate(entry.date),
+            formatTime(entry.date),
+            `"${entry.user_email.replace(/"/g, '""')}"`,
+            `"${entry.ticket_title.replace(/"/g, '""')}"`,
+            entry.order_number ? `"${entry.order_number.replace(/"/g, '""')}"` : "",
+            entry.type === "purchased" ? "Sold" : "Complimentary",
+            entry.quantity.toString(),
+            entry.amount !== undefined ? entry.amount.toString() : "",
+            entry.currency || "INR",
+          ];
+          return row.join(",");
+        }),
+      ];
+
+      const csvContent = csvRows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      // Generate filename with date range
+      const dateStr = new Date().toISOString().split("T")[0];
+      const filename = `sales-report-${dateStr}.csv`;
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      alert("Failed to export sales data. Please try again.");
+    }
   };
 
   // Summary stats
@@ -139,7 +250,7 @@ export function SalesReport() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Purchased Orders
+                 Sales
                 </p>
                 <p className="text-2xl font-bold text-foreground mt-1">
                   {stats.purchasedCount}
@@ -187,7 +298,7 @@ export function SalesReport() {
                   {formatCurrency(stats.totalRevenue)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  From purchases
+                  From sales
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-emerald-500/10">
@@ -202,7 +313,7 @@ export function SalesReport() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Total Sales
+                  Total tickets
                 </p>
                 <p className="text-2xl font-bold text-foreground mt-1">
                   {stats.purchasedCount + stats.grantedCount}
@@ -252,7 +363,7 @@ export function SalesReport() {
               <div className="flex gap-1 p-1 bg-secondary rounded-lg">
                 {([
                   { value: "all", label: "All" },
-                  { value: "purchased", label: "Purchased" },
+                  { value: "purchased", label: "Sales" },
                   { value: "granted", label: "Complimentary" },
                 ] as const).map((option) => (
                   <button
@@ -298,9 +409,21 @@ export function SalesReport() {
               <FileText className="h-4 w-4" />
               Sales Report
             </CardTitle>
-            <Badge variant="secondary" className="text-xs">
-              {salesData?.total || 0} entries
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="text-xs">
+                {salesData?.total || 0} entries
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToCSV}
+                className="h-8 gap-2"
+                disabled={isLoading || !salesData?.data || salesData.data.length === 0}
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span className="text-xs">Export CSV</span>
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

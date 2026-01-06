@@ -9,7 +9,8 @@ import { useGetUserSubscriptionQuery, useGetUserWalletQuery } from "@/store/api"
 import { CreditCard, Ticket, Sparkles } from "lucide-react";
 
 function BillingContent() {
-  const [activeTab, setActiveTab] = useState<string>("tickets");
+  const [activeTab, setActiveTab] = useState<string>("plans");
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const { 
     data: subscriptionData, 
@@ -22,17 +23,26 @@ function BillingContent() {
   } = useGetUserWalletQuery();
 
   const subscription = subscriptionData?.data;
+  const hasActivePlan = subscription && subscription.status === "active";
 
-  // Handle URL params for tab switching
+  // Handle URL params for tab switching and set default based on active plan
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && !hasInitialized) {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get("tab");
       if (tabParam && ["plans", "tickets"].includes(tabParam)) {
         setActiveTab(tabParam);
+        setHasInitialized(true);
+      } else if (subscriptionData !== undefined) {
+        // Subscription data has loaded, set default based on active plan
+        if (hasActivePlan) {
+          setActiveTab("tickets");
+        }
+        // If no active plan, keep "plans" as default (already set)
+        setHasInitialized(true);
       }
     }
-  }, []);
+  }, [hasActivePlan, subscriptionData, hasInitialized]);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">

@@ -1,6 +1,6 @@
 // Chat repository - database operations using Drizzle ORM
 import { eq, and, lt, desc } from 'drizzle-orm';
-import { db, chatMessages } from '../../db/index';
+import { db, chatMessages, ticketEvents } from '../../db/index';
 import type {
   Message,
   CreateMessageRequest,
@@ -20,6 +20,18 @@ const transformMessage = (row: typeof chatMessages.$inferSelect): Message => ({
   updated_at: row.updatedAt,
 });
 
+// Helper function to get event_id from ticket_id
+// Returns the first event associated with the ticket, or null if none found
+const getEventIdFromTicketId = async (ticketId: number): Promise<number | null> => {
+  const [ticketEvent] = await db
+    .select({ eventId: ticketEvents.eventId })
+    .from(ticketEvents)
+    .where(eq(ticketEvents.ticketId, ticketId))
+    .limit(1);
+  
+  return ticketEvent?.eventId || null;
+};
+
 export const createMessage = async (
   userId: string | undefined,
   username: string,
@@ -27,12 +39,16 @@ export const createMessage = async (
   tenantId: string,
   appId: string
 ): Promise<Message> => {
+  // Resolve event_id from ticket_id
+  const ticketId = parseInt(data.ticket_id, 10);
+  const eventId = ticketId ? await getEventIdFromTicketId(ticketId) : null;
+
   const [message] = await db
     .insert(chatMessages)
     .values({
       appId: appId,
       tenantId: tenantId,
-      eventId: parseInt(data.ticket_id, 10) || null,
+      eventId: eventId,
       userId: userId || '',
       userName: username || data.username || 'Anonymous',
       userEmail: null,
@@ -87,7 +103,19 @@ export const getMessages = async (
   limit: number = 20,
   cursor?: Date
 ): Promise<MessagesResponse> => {
-  const eventId = parseInt(ticketId, 10);
+  // Resolve event_id from ticket_id
+  const ticketIdNum = parseInt(ticketId, 10);
+  const eventId = ticketIdNum ? await getEventIdFromTicketId(ticketIdNum) : null;
+
+  if (!eventId) {
+    // No event found for this ticket, return empty result
+    return {
+      messages: [],
+      has_more: false,
+      next_cursor: undefined,
+    };
+  }
+
   const conditions = [eq(chatMessages.eventId, eventId)];
 
   if (cursor) {
@@ -134,7 +162,14 @@ export const pinMessage = async (
 };
 
 export const getPinnedMessages = async (ticketId: string): Promise<Message[]> => {
-  const eventId = parseInt(ticketId, 10);
+  // Resolve event_id from ticket_id
+  const ticketIdNum = parseInt(ticketId, 10);
+  const eventId = ticketIdNum ? await getEventIdFromTicketId(ticketIdNum) : null;
+
+  if (!eventId) {
+    // No event found for this ticket, return empty result
+    return [];
+  }
   
   const messages = await db
     .select()

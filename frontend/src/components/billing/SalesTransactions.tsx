@@ -179,75 +179,7 @@ export function SalesTransactions() {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Total Credits
-                </p>
-                <p className="text-2xl font-bold text-foreground mt-1">
-                  {formatCurrency(stats.totalCredits)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats.creditCount} transactions
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-emerald-500/10">
-                <ArrowUpRight className="h-5 w-5 text-emerald-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Total Debits
-                </p>
-                <p className="text-2xl font-bold text-foreground mt-1">
-                  {formatCurrency(stats.totalDebits)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats.debitCount} transactions
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-rose-500/10">
-                <ArrowDownLeft className="h-5 w-5 text-rose-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Net Balance
-                </p>
-                <p className={`text-2xl font-bold mt-1 ${
-                  stats.totalCredits - stats.totalDebits >= 0 
-                    ? "text-emerald-500" 
-                    : "text-rose-500"
-                }`}>
-                  {formatCurrency(stats.totalCredits - stats.totalDebits)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  For selected period
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-primary/10">
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Filters and Search */}
       <Card className="bg-card border-border">
@@ -326,7 +258,7 @@ export function SalesTransactions() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Receipt className="h-4 w-4" />
-              Transaction Ledger
+              Ticket Ledger
             </CardTitle>
             <Badge variant="secondary" className="text-xs">
               {filteredEntries.length} entries
