@@ -461,6 +461,26 @@ export const getUserTicketOrders = async (
   return data.map(transformOrder);
 };
 
+// Get user's orders for a ticket across all tenants (for cross-domain purchase checking)
+// Orders can be created from any domain (custom domain or watch.rekard.com)
+export const getUserTicketOrdersAcrossTenants = async (
+  userId: string,
+  ticketId: number
+): Promise<Order[]> => {
+  const data = await db
+    .select()
+    .from(orders)
+    .where(
+      and(
+        eq(orders.userId, userId),
+        eq(orders.ticketId, ticketId),
+        inArray(orders.status, ['pending', 'completed'])
+      )
+    );
+
+  return data.map(transformOrder);
+};
+
 // Get user purchases with ticket details (for my-purchases endpoint)
 export const listUserPurchasesWithTicketDetails = async (
   appId: string,
