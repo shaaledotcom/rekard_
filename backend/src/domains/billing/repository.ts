@@ -439,9 +439,16 @@ export const getWalletTransactions = async (
       orders,
       and(
         sql`${walletTransactions.referenceId} IS NOT NULL`,
-        // Try to match ticketId when referenceId is numeric (using safe cast)
-        sql`${orders.ticketId} = CASE WHEN ${walletTransactions.referenceId} ~ '^[0-9]+$' THEN CAST(${walletTransactions.referenceId} AS INTEGER) ELSE NULL END`,
-        eq(orders.appId, walletTransactions.appId),
+        // Try to match by order ID first, then by ticket ID
+        or(
+          // Match by order ID if referenceId is numeric
+          sql`${orders.id} = CASE WHEN ${walletTransactions.referenceId} ~ '^[0-9]+$' THEN CAST(${walletTransactions.referenceId} AS INTEGER) ELSE NULL END`,
+          // Match by ticket ID if referenceId is numeric
+          sql`${orders.ticketId} = CASE WHEN ${walletTransactions.referenceId} ~ '^[0-9]+$' THEN CAST(${walletTransactions.referenceId} AS INTEGER) ELSE NULL END`
+        ),
+        // Orders are created with appId='public' for viewer purchases,
+        // but wallet transactions might have a different appId. Query for both.
+        or(eq(orders.appId, walletTransactions.appId), eq(orders.appId, 'public')),
         eq(orders.tenantId, walletTransactions.tenantId),
         // Prefer completed orders for accurate email
         eq(orders.status, 'completed')
@@ -453,7 +460,8 @@ export const getWalletTransactions = async (
         sql`${walletTransactions.referenceId} IS NOT NULL`,
         // Try to match ticketId when referenceId is numeric (using safe cast)
         sql`${ticketBuyers.ticketId} = CASE WHEN ${walletTransactions.referenceId} ~ '^[0-9]+$' THEN CAST(${walletTransactions.referenceId} AS INTEGER) ELSE NULL END`,
-        eq(ticketBuyers.appId, walletTransactions.appId),
+        // Ticket buyers might have appId='public' or match wallet transaction's appId
+        or(eq(ticketBuyers.appId, walletTransactions.appId), eq(ticketBuyers.appId, 'public')),
         eq(ticketBuyers.tenantId, walletTransactions.tenantId)
       )
     )
@@ -462,11 +470,28 @@ export const getWalletTransactions = async (
     .limit(pageSize)
     .offset(offset);
 
-  return {
-    data: rows.map((row) => {
+  // Deduplicate transactions (in case join matches multiple orders)
+  // Use a Map to keep the first occurrence of each transaction
+  const transactionMap = new Map<number, { transaction: typeof walletTransactions.$inferSelect; email?: string }>();
+  
+  rows.forEach((row) => {
+    const txId = row.transaction.id;
+    if (!transactionMap.has(txId)) {
       // Prefer order email, fallback to buyer email
       const userEmail = row.orderEmail || row.buyerEmail || undefined;
-      return transformWalletTransaction(row.transaction, userEmail);
+      transactionMap.set(txId, { transaction: row.transaction, email: userEmail });
+    } else {
+      // If we already have this transaction, prefer non-null email if current one is null
+      const existing = transactionMap.get(txId)!;
+      if (!existing.email && (row.orderEmail || row.buyerEmail)) {
+        existing.email = row.orderEmail || row.buyerEmail || undefined;
+      }
+    }
+  });
+
+  return {
+    data: Array.from(transactionMap.values()).map(({ transaction, email }) => {
+      return transformWalletTransaction(transaction, email);
     }),
     total,
     page,
@@ -998,7 +1023,9 @@ export const getTicketBuyers = async (
   paginationToken?: string
 ): Promise<{ buyers: TicketBuyer[]; next_pagination_token: string | null }> => {
   const conditions = [
-    eq(orders.appId, appId),
+    // Orders are created with appId='public' for viewer purchases,
+    // but producer might have a different appId. Query for both.
+    or(eq(orders.appId, appId), eq(orders.appId, 'public')),
     eq(orders.tenantId, tenantId),
     eq(orders.status, 'completed'),
   ];
@@ -1070,7 +1097,9 @@ export const getSalesReport = async (
   // Get completed orders (purchased)
   if (!filter.type || filter.type === 'purchased' || filter.type === 'all') {
     const orderConditions = [
-      eq(orders.appId, appId),
+      // Orders are created with appId='public' for viewer purchases,
+      // but producer might have a different appId. Query for both.
+      or(eq(orders.appId, appId), eq(orders.appId, 'public')),
       eq(orders.tenantId, tenantId),
       eq(orders.status, 'completed'),
     ];

@@ -27,6 +27,7 @@ export interface PurchaseConfirmationEmailData {
   orderNumber: string;
   ticketTitle: string;
   ticketDescription?: string;
+  ticketThumbnailUrl?: string;
   quantity: number;
   unitPrice: number;
   totalAmount: number;
@@ -34,7 +35,6 @@ export interface PurchaseConfirmationEmailData {
   eventTitle?: string;
   eventStartDatetime?: Date;
   eventEndDatetime?: Date;
-  eventThumbnailUrl?: string;
   watchLink?: string;
   tenantId?: string;
   appId?: string;
@@ -45,10 +45,10 @@ export interface AccessGrantEmailData {
   recipientName?: string;
   ticketTitle: string;
   ticketDescription?: string;
+  ticketThumbnailUrl?: string;
   eventTitle?: string;
   eventStartDatetime?: Date;
   eventEndDatetime?: Date;
-  eventThumbnailUrl?: string;
   watchLink?: string;
   expiresAt?: Date;
   tenantId?: string;
@@ -108,7 +108,7 @@ const makeAbsoluteWatchLink = async (
 
 // Generate HTML email template for purchase confirmation
 const generatePurchaseConfirmationHTML = async (data: PurchaseConfirmationEmailData): Promise<string> => {
-  const eventName = data.eventTitle || data.ticketTitle;
+  const ticketName = data.ticketTitle;
   const eventStartDateTime = data.eventStartDatetime ? formatDateTime(data.eventStartDatetime) : 'TBD';
   const eventEndDateTime = data.eventEndDatetime ? formatDateTime(data.eventEndDatetime) : '';
   const eventDateTimeRange = eventEndDateTime 
@@ -134,10 +134,10 @@ const generatePurchaseConfirmationHTML = async (data: PurchaseConfirmationEmailD
     domain = env.platform.sharedDomains[0] || 'watch.rekard.com';
   }
   
-  // Event thumbnail - use provided thumbnail or hide the section
-  const eventThumbnailSection = data.eventThumbnailUrl
+  // Ticket thumbnail - use provided thumbnail or hide the section
+  const ticketThumbnailSection = data.ticketThumbnailUrl
     ? `<div style="text-align: center; margin-bottom: 28px;">
-        <img src="${data.eventThumbnailUrl}" alt="${eventName}" style="max-width: 200px; height: auto; border-radius: 8px;">
+        <img src="${data.ticketThumbnailUrl}" alt="${ticketName}" style="max-width: 200px; height: auto; border-radius: 8px;">
       </div>`
     : '';
 
@@ -148,7 +148,7 @@ const generatePurchaseConfirmationHTML = async (data: PurchaseConfirmationEmailD
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>${eventName} - Ticket confirmation</title>
+  <title>${ticketName} - Ticket confirmation</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; line-height: 1.6;">
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
@@ -167,12 +167,12 @@ const generatePurchaseConfirmationHTML = async (data: PurchaseConfirmationEmailD
           <tr>
             <td style="padding: 40px;">
               
-              ${eventThumbnailSection}
+              ${ticketThumbnailSection}
               
-              <!-- Event Details Highlight -->
+              <!-- Ticket Details Highlight -->
               <div style="text-align: center; margin-bottom: 28px;">
-                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Event</p>
-                <p style="margin: 0 0 4px 0; font-size: 24px; color: #111827; font-weight: 700; line-height: 1.3;">${eventName}</p>
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Ticket</p>
+                <p style="margin: 0 0 4px 0; font-size: 24px; color: #111827; font-weight: 700; line-height: 1.3;">${ticketName}</p>
                 <p style="margin: 0 0 12px 0; font-size: 16px; color: #374151;">${eventDateTimeRange}</p>
                 <p style="margin: 0; font-size: 16px; color: #2563eb; font-weight: 600;">Amount Paid: ${amountPaid}</p>
   </div>
@@ -248,7 +248,7 @@ const generatePurchaseConfirmationHTML = async (data: PurchaseConfirmationEmailD
 
 // Generate HTML email template for access grant
 const generateAccessGrantHTML = async (data: AccessGrantEmailData): Promise<string> => {
-  const eventName = data.eventTitle || data.ticketTitle;
+  const ticketName = data.ticketTitle;
   const eventStartDateTime = data.eventStartDatetime ? formatDateTime(data.eventStartDatetime) : 'TBD';
   const eventEndDateTime = data.eventEndDatetime ? formatDateTime(data.eventEndDatetime) : '';
   const eventDateTimeRange = eventEndDateTime 
@@ -273,10 +273,10 @@ const generateAccessGrantHTML = async (data: AccessGrantEmailData): Promise<stri
     domain = env.platform.sharedDomains[0] || 'watch.rekard.com';
   }
   
-  // Event thumbnail - use provided thumbnail or hide the section
-  const eventThumbnailSection = data.eventThumbnailUrl
+  // Ticket thumbnail - use provided thumbnail or hide the section
+  const ticketThumbnailSection = data.ticketThumbnailUrl
     ? `<div style="text-align: center; margin-bottom: 28px;">
-        <img src="${data.eventThumbnailUrl}" alt="${eventName}" style="max-width: 200px; height: auto; border-radius: 8px;">
+        <img src="${data.ticketThumbnailUrl}" alt="${ticketName}" style="max-width: 200px; height: auto; border-radius: 8px;">
       </div>`
     : '';
 
@@ -287,7 +287,7 @@ const generateAccessGrantHTML = async (data: AccessGrantEmailData): Promise<stri
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>${eventName} - Ticket confirmation</title>
+  <title>${ticketName} - Ticket confirmation</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; line-height: 1.6;">
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
@@ -306,12 +306,12 @@ const generateAccessGrantHTML = async (data: AccessGrantEmailData): Promise<stri
           <tr>
             <td style="padding: 40px;">
               
-              ${eventThumbnailSection}
+              ${ticketThumbnailSection}
               
-              <!-- Event Details Highlight -->
+              <!-- Ticket Details Highlight -->
               <div style="text-align: center; margin-bottom: 28px;">
-                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Event</p>
-                <p style="margin: 0 0 4px 0; font-size: 24px; color: #111827; font-weight: 700; line-height: 1.3;">${eventName}</p>
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Ticket</p>
+                <p style="margin: 0 0 4px 0; font-size: 24px; color: #111827; font-weight: 700; line-height: 1.3;">${ticketName}</p>
                 <p style="margin: 0 0 12px 0; font-size: 16px; color: #374151;">${eventDateTimeRange}</p>
                 ${data.expiresAt ? `<p style="margin: 0; font-size: 14px; color: #6b7280;">Access expires: ${formatDateTime(data.expiresAt)}</p>` : ''}
   </div>

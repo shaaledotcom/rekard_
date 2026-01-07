@@ -446,10 +446,8 @@ export const completeOrderFromPayment = async (
         const eventStartDatetime = firstEvent?.start_datetime;
         const eventEndDatetime = firstEvent?.end_datetime;
         
-        // Get event thumbnail - prefer event thumbnail, fallback to ticket thumbnail
-        const eventThumbnailUrl = firstEvent?.thumbnail_image_portrait 
-          || firstEvent?.featured_image 
-          || ticketDetails.thumbnail_image_portrait 
+        // Get ticket thumbnail
+        const ticketThumbnailUrl = ticketDetails.thumbnail_image_portrait 
           || ticketDetails.featured_image;
 
         // Construct watch link - use ticket URL if available, otherwise use ticket ID
@@ -468,6 +466,7 @@ export const completeOrderFromPayment = async (
           orderNumber: updated.order_number,
           ticketTitle: ticketDetails.title || 'Ticket',
           ticketDescription: ticketDetails.description,
+          ticketThumbnailUrl,
           quantity: updated.quantity,
           unitPrice: updated.unit_price,
           totalAmount: updated.total_amount,
@@ -475,7 +474,6 @@ export const completeOrderFromPayment = async (
           eventTitle: firstEvent?.title,
           eventStartDatetime,
           eventEndDatetime,
-          eventThumbnailUrl,
           watchLink,
           tenantId: ticketOwnerTenantId,
           appId: ticketOwnerAppId,
@@ -627,6 +625,8 @@ export const getWatchLink = async (
 
 // Get user's purchases (completed orders with ticket details)
 // Also includes tickets with email access grants
+// Checks purchases across all tenants (similar to watch link check)
+// Orders can be created from any domain (custom domain or watch.rekard.com)
 export const getMyPurchases = async (
   appId: string,
   tenantId: string,
@@ -634,8 +634,8 @@ export const getMyPurchases = async (
   pagination: PaginationParams = {},
   userEmail?: string
 ): Promise<MyPurchasesListResponse> => {
-  // Get purchases from orders
-  const orderPurchases = await repo.listUserPurchasesWithTicketDetails(appId, tenantId, userId, pagination);
+  // Get purchases from orders across all tenants
+  const orderPurchases = await repo.listUserPurchasesWithTicketDetailsAcrossTenants(userId, pagination);
   
   // If no email provided, return only order purchases
   if (!userEmail) {

@@ -104,6 +104,10 @@ export function MediaSection({
 
     if (error) {
       alert(error);
+      // Reset input value even on error so user can try again
+      if (fileInputRefs.current[field.key]) {
+        fileInputRefs.current[field.key]!.value = "";
+      }
       return;
     }
 
@@ -116,6 +120,11 @@ export function MediaSection({
 
     // Clear existing URL
     onChange({ [field.formKey]: undefined });
+    
+    // Reset input value to allow selecting the same file again
+    if (fileInputRefs.current[field.key]) {
+      fileInputRefs.current[field.key]!.value = "";
+    }
   }, [mediaFiles, onMediaFilesChange, onChange]);
 
   const removeFile = useCallback((field: MediaField) => {

@@ -7,7 +7,7 @@ import type {
 } from '../../domains/platform/types.js';
 import { requireSession } from '../../domains/auth/session.js';
 import { tenantMiddleware, getTenantContext } from '../../shared/middleware/tenant.js';
-import { requireProPlan } from '../../shared/middleware/plan.js';
+import { requireExactProPlan } from '../../shared/middleware/plan.js';
 import { ok } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
 import { asyncHandler } from '../../shared/index.js';
@@ -25,8 +25,8 @@ router.get('/', asyncHandler(async (req: AppRequest, res: Response) => {
   ok(res, settings);
 }));
 
-// Update platform settings (Pro Feature - requires Pro plan to customize platform)
-router.put('/', requireProPlan('Platform Customization'), asyncHandler(async (req: AppRequest, res: Response) => {
+// Update platform settings (Pro Feature - requires exactly Pro plan, Premium not eligible)
+router.put('/', requireExactProPlan('Platform Customization'), asyncHandler(async (req: AppRequest, res: Response) => {
   const tenant = getTenantContext(req);
   const data: UpdatePlatformSettingsRequest = req.body;
 

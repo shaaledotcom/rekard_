@@ -11,7 +11,7 @@ import { AlertTriangle } from "lucide-react";
 
 function PlatformContent() {
   const { formData, isLoading, isSubmitting, handleFormChange, handleSubmit } = usePlatformForm();
-  const { hasProFeatures, isLoading: isPlanLoading } = usePlan();
+  const { isProPlan, isLoading: isPlanLoading } = usePlan();
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -21,7 +21,7 @@ function PlatformContent() {
 
       <main className="container mx-auto px-4 lg:px-6 py-8 relative z-10">
         {/* Upgrade Banner - Show prominently when user doesn't have Pro */}
-        {!hasProFeatures && !isPlanLoading && (
+        {!isProPlan && !isPlanLoading && (
           <Card className="mb-6 border-destructive/30 bg-destructive/5">
             <CardContent className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -52,7 +52,7 @@ function PlatformContent() {
           formData={formData}
           isLoading={isLoading}
           isSubmitting={isSubmitting}
-          isReadOnly={!hasProFeatures}
+          isReadOnly={!isProPlan}
           onChange={handleFormChange}
           onSubmit={handleSubmit}
         />

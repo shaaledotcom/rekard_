@@ -14,6 +14,7 @@ export interface PlanStatus {
   // Feature access
   hasProFeatures: boolean;
   hasPremiumFeatures: boolean;
+  isProPlan: boolean; // Exactly Pro plan (not Premium)
   
   // Publishing requirements
   hasActivePlan: boolean;
@@ -71,6 +72,7 @@ export function usePlan(): PlanStatus {
     
     const hasProFeatures = planTier === "pro" || planTier === "premium";
     const hasPremiumFeatures = planTier === "premium";
+    const isProPlan = planTier === "pro"; // Exactly Pro plan (not Premium)
     
     const ticketBalance = wallet?.ticket_balance || 0;
     const hasTickets = ticketBalance > 0;
@@ -84,6 +86,7 @@ export function usePlan(): PlanStatus {
       isActive,
       hasProFeatures,
       hasPremiumFeatures,
+      isProPlan,
       hasActivePlan: isActive,
       hasTickets,
       canPublish,

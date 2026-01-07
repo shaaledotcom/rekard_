@@ -85,12 +85,21 @@ export function EventFormDialog({
     const error = validateVideoFile(file);
     if (error) {
       alert(error);
+      // Reset input value even on error so user can try again
+      if (videoInputRef.current) {
+        videoInputRef.current.value = "";
+      }
       return;
     }
 
     onVideoFileChange?.(file);
     // Clear embed when video file is selected
     onFormChange({ ...formData, embed: undefined });
+    
+    // Reset input value to allow selecting the same file again
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+    }
   }, [formData, onFormChange, onVideoFileChange]);
 
   const handleVideoDrop = useCallback((e: React.DragEvent) => {
@@ -145,12 +154,21 @@ export function EventFormDialog({
     const error = validateImageFile(file);
     if (error) {
       alert(error);
+      // Reset input value even on error so user can try again
+      if (thumbnailInputRef.current) {
+        thumbnailInputRef.current.value = "";
+      }
       return;
     }
 
     onThumbnailFileChange?.(file);
     // Clear existing URL when new file is selected
     onFormChange({ ...formData, thumbnail_image_portrait: undefined });
+    
+    // Reset input value to allow selecting the same file again
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = "";
+    }
   }, [formData, onFormChange, onThumbnailFileChange]);
 
   const handleThumbnailDrop = useCallback((e: React.DragEvent) => {

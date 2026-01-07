@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import {
   useGetUserWalletQuery,
   useGetTicketPricingQuery,
+  useGetWalletTransactionsQuery,
   UserSubscription,
 } from "@/store/api";
 import { useRazorpayPayment } from "@/hooks/useRazorpayPayment";
@@ -36,6 +37,7 @@ export function TicketsPurchase({ setActiveTab, subscription }: TicketsPurchaseP
   const maxTickets = 10000;
 
   const { data: walletData, isLoading: isWalletLoading, refetch: refetchWallet } = useGetUserWalletQuery();
+  const { data: transactionsData, refetch: refetchTransactions } = useGetWalletTransactionsQuery({ page_size: 1000 });
   const { data: pricingData, isLoading: isPricingLoading } = useGetTicketPricingQuery(
     { quantity, currency: "INR" },
     { skip: quantity < minTickets || quantity > maxTickets }
@@ -44,6 +46,7 @@ export function TicketsPurchase({ setActiveTab, subscription }: TicketsPurchaseP
   const handlePaymentSuccess = () => {
     setTimeout(() => {
       refetchWallet();
+      refetchTransactions();
     }, 1000);
   };
 
@@ -100,6 +103,14 @@ export function TicketsPurchase({ setActiveTab, subscription }: TicketsPurchaseP
   const wallet = walletData?.data;
   const pricing = pricingData?.data;
   const currentBalance = wallet?.ticket_balance || 0;
+  
+  // Calculate tickets used (sum of all negative transaction amounts)
+  const ticketsUsed = React.useMemo(() => {
+    if (!transactionsData?.data) return 0;
+    return transactionsData.data
+      .filter((tx) => tx.amount < 0) // Only negative amounts (consumptions)
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  }, [transactionsData]);
 
   const getBalanceColor = (balance: number) => {
     if (balance >= 100) return "text-emerald-400";
@@ -146,7 +157,9 @@ export function TicketsPurchase({ setActiveTab, subscription }: TicketsPurchaseP
               <TrendingUp className="w-4 h-4" />
               TICKETS USED
             </div>
-            <div className="text-3xl sm:text-4xl font-bold text-foreground">0</div>
+            <div className="text-3xl sm:text-4xl font-bold text-foreground">
+              {ticketsUsed.toLocaleString()}
+            </div>
             <Button variant="link" className="mt-2 text-xs sm:text-sm text-primary" onClick={() => {
               router.push("/");
             }}>

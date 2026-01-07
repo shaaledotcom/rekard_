@@ -63,13 +63,21 @@ export function SalesTransactions() {
   // Convert transactions to unified ledger entries
   const ledgerEntries = useMemo((): LedgerEntry[] => {
     const entries: LedgerEntry[] = [];
+    const seenIds = new Set<string>();
 
     // Add wallet transactions
     if (transactionsData?.data) {
       transactionsData.data.forEach((tx: WalletTransaction) => {
+        const entryId = `tx-${tx.id}`;
+        // Skip duplicates
+        if (seenIds.has(entryId)) {
+          return;
+        }
+        seenIds.add(entryId);
+
         const isCredit = tx.amount > 0 || tx.transaction_type === "ticket_sale" || tx.transaction_type === "credit";
         entries.push({
-          id: `tx-${tx.id}`,
+          id: entryId,
           date: tx.created_at,
           type: isCredit ? "credit" : "debit",
           description: tx.description || getTransactionLabel(tx.transaction_type),
@@ -166,6 +174,64 @@ export function SalesTransactions() {
     });
   };
 
+  // CSV Export functionality
+  const exportToCSV = () => {
+    try {
+      // Use filtered entries for export
+      const entriesToExport = filteredEntries;
+
+      // Convert to CSV
+      const headers = [
+        "Date",
+        "Time",
+        "User Email",
+        "Type",
+        "Description",
+        "Amount",
+        "Balance",
+        "Currency",
+        "Reference",
+      ];
+
+      const csvRows = [
+        headers.join(","),
+        ...entriesToExport.map((entry) => {
+          const row = [
+            formatDate(entry.date),
+            formatTime(entry.date),
+            entry.user_email ? `"${entry.user_email.replace(/"/g, '""')}"` : "",
+            entry.type === "credit" ? "Credit" : "Debit",
+            `"${entry.description.replace(/"/g, '""')}"`,
+            entry.amount.toString(),
+            entry.balance !== undefined ? entry.balance.toString() : "",
+            entry.currency || "INR",
+            entry.reference ? `"${entry.reference.replace(/"/g, '""')}"` : "",
+          ];
+          return row.join(",");
+        }),
+      ];
+
+      const csvContent = csvRows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      // Generate filename with date range
+      const dateStr = new Date().toISOString().split("T")[0];
+      const filename = `sales-transactions-${dateStr}.csv`;
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      alert("Failed to export transactions data. Please try again.");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -260,9 +326,21 @@ export function SalesTransactions() {
               <Receipt className="h-4 w-4" />
               Ticket Ledger
             </CardTitle>
-            <Badge variant="secondary" className="text-xs">
-              {filteredEntries.length} entries
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="text-xs">
+                {filteredEntries.length} entries
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToCSV}
+                className="h-8 gap-2"
+                disabled={isLoading || filteredEntries.length === 0}
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span className="text-xs">Export CSV</span>
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

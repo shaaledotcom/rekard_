@@ -149,6 +149,61 @@ export function requirePlan(requiredPlan: PlanTier, featureName?: string) {
 export const requireProPlan = (featureName?: string) => requirePlan('pro', featureName);
 
 /**
+ * Middleware factory to require exactly Pro plan (not Premium)
+ * @param featureName - Optional feature name for better error messages
+ */
+export function requireExactProPlan(featureName?: string) {
+  return async (req: AppRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const tenant = getTenantContext(req);
+      
+      if (!tenant.userId) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required',
+        });
+        return;
+      }
+      
+      const { planTier, isActive, planName } = await getUserPlanTier(
+        tenant.appId,
+        tenant.tenantId,
+        tenant.userId
+      );
+      
+      // Check if user has exactly Pro plan (not Premium)
+      if (planTier !== 'pro' || !isActive) {
+        const feature = featureName || 'this feature';
+        res.status(403).json({
+          success: false,
+          error: `Pro plan required`,
+          message: `Access to ${feature} requires a Pro plan (Premium plan not eligible). Your current plan: ${planName || 'Free'}`,
+          required_plan: 'pro',
+          current_plan: planTier,
+          is_active: isActive,
+        });
+        return;
+      }
+      
+      // Attach plan info to request for downstream use
+      req.planInfo = {
+        planTier,
+        planName,
+        isActive,
+      };
+      
+      next();
+    } catch (error) {
+      console.error('Plan check middleware error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to verify plan access',
+      });
+    }
+  };
+}
+
+/**
  * Convenience middleware for Premium plan features
  */
 export const requirePremiumPlan = (featureName?: string) => requirePlan('premium', featureName);

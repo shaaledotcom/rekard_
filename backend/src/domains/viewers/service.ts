@@ -270,10 +270,8 @@ export const grantAccess = async (
             const eventStartDatetime = firstEvent?.start_datetime;
             const eventEndDatetime = firstEvent?.end_datetime;
             
-            // Get event thumbnail - prefer event thumbnail, fallback to ticket thumbnail
-            const eventThumbnailUrl = firstEvent?.thumbnail_image_portrait 
-              || firstEvent?.featured_image 
-              || ticketDetails.thumbnail_image_portrait 
+            // Get ticket thumbnail
+            const ticketThumbnailUrl = ticketDetails.thumbnail_image_portrait 
               || ticketDetails.featured_image;
 
             // Construct watch link - use ticket URL if available, otherwise use ticket ID
@@ -294,10 +292,10 @@ export const grantAccess = async (
               recipientEmail: email,
               ticketTitle: ticketDetails.title || 'Ticket',
               ticketDescription: ticketDetails.description,
+              ticketThumbnailUrl,
               eventTitle: firstEvent?.title,
               eventStartDatetime,
               eventEndDatetime,
-              eventThumbnailUrl,
               watchLink,
               expiresAt,
               tenantId,
