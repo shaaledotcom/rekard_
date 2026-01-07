@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { UpgradeButton } from "@/components/ui/upgrade-button";
 import {
@@ -44,6 +44,11 @@ export function PlatformForm({
   const [visitedSteps, setVisitedSteps] = useState<Set<FormStep>>(new Set(["configurations"]));
 
   const currentStepIndex = FORM_STEPS.findIndex((step) => step.key === currentStep);
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentStep]);
 
   // Step validation - platform settings are mostly optional
   const isStepValid = (step: FormStep): boolean => {

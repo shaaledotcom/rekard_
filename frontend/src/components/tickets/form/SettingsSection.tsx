@@ -56,49 +56,49 @@ export function SettingsSection({
   onChange,
   isReadOnly = false,
 }: SettingsSectionProps) {
-  const [countrySearch, setCountrySearch] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  // const [countrySearch, setCountrySearch] = useState("");
+  // const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { canPublish, hasActivePlan, hasTickets } = usePlan();
 
-  const geoblockingCountries = formData.geoblocking_countries || [];
+  // const geoblockingCountries = formData.geoblocking_countries || [];
   
   // Check if we should show publishing warning (when trying to set status to published but can't)
   const isAttemptingPublish = formData.status === "published" || formData.status === "sold_out";
   const showPublishingWarning = !canPublish && isAttemptingPublish;
 
   // Filter countries based on search and already selected
-  const filteredCountries = COUNTRY_OPTIONS.filter((country) => {
-    const isAlreadySelected = geoblockingCountries.some(
-      (loc) => loc.value === country.code
-    );
-    const matchesSearch = 
-      country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-      country.code.toLowerCase().includes(countrySearch.toLowerCase());
-    return !isAlreadySelected && matchesSearch;
-  });
+  // const filteredCountries = COUNTRY_OPTIONS.filter((country) => {
+  //   const isAlreadySelected = geoblockingCountries.some(
+  //     (loc) => loc.value === country.code
+  //   );
+  //   const matchesSearch = 
+  //     country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+  //     country.code.toLowerCase().includes(countrySearch.toLowerCase());
+  //   return !isAlreadySelected && matchesSearch;
+  // });
 
-  const handleAddCountry = (country: typeof COUNTRY_OPTIONS[0]) => {
-    const newLocation: GeoblockingLocation = {
-      type: "country",
-      value: country.code,
-      name: country.name,
-    };
-    onChange({ 
-      geoblocking_countries: [...geoblockingCountries, newLocation] 
-    });
-    setCountrySearch("");
-    setIsDropdownOpen(false);
-  };
+  // const handleAddCountry = (country: typeof COUNTRY_OPTIONS[0]) => {
+  //   const newLocation: GeoblockingLocation = {
+  //     type: "country",
+  //     value: country.code,
+  //     name: country.name,
+  //   };
+  //   onChange({ 
+  //     geoblocking_countries: [...geoblockingCountries, newLocation] 
+  //   });
+  //   setCountrySearch("");
+  //   setIsDropdownOpen(false);
+  // };
 
-  const handleRemoveCountry = (index: number) => {
-    onChange({
-      geoblocking_countries: geoblockingCountries.filter((_, i) => i !== index),
-    });
-  };
+  // const handleRemoveCountry = (index: number) => {
+  //   onChange({
+  //     geoblocking_countries: geoblockingCountries.filter((_, i) => i !== index),
+  //   });
+  // };
 
-  const getCountryInfo = (code: string) => {
-    return COUNTRY_OPTIONS.find((c) => c.code === code);
-  };
+  // const getCountryInfo = (code: string) => {
+  //   return COUNTRY_OPTIONS.find((c) => c.code === code);
+  // };
 
   return (
     <div className="space-y-8">
@@ -137,30 +137,50 @@ export function SettingsSection({
         <div className="relative">
           <select
             value={formData.status}
-            onChange={(e) => onChange({ status: e.target.value as any })}
+            onChange={(e) => {
+              const newStatus = e.target.value as any;
+              // If trying to publish without plan, automatically set to draft
+              if ((newStatus === "published" || newStatus === "sold_out") && !canPublish) {
+                onChange({ status: "draft" });
+              } else {
+                onChange({ status: newStatus });
+              }
+            }}
             disabled={isReadOnly}
             className="w-full h-12 px-4 pr-10 bg-secondary border border-border text-foreground rounded-xl appearance-none cursor-pointer focus:border-foreground/50 focus:outline-none focus:ring-1 focus:ring-foreground/20"
           >
-            {STATUS_OPTIONS.map((status) => (
-              <option 
-                key={status.value} 
-                value={status.value}
-                className="bg-background text-foreground"
-              >
-                {status.label}
-              </option>
-            ))}
+            {STATUS_OPTIONS.map((status) => {
+              // Disable published/sold_out options if user doesn't have plan
+              const isPublishingStatus = status.value === "published" || status.value === "sold_out";
+              const isDisabled = !isReadOnly && isPublishingStatus && !canPublish;
+              
+              return (
+                <option 
+                  key={status.value} 
+                  value={status.value}
+                  disabled={isDisabled}
+                  className="bg-background text-foreground"
+                >
+                  {status.label} {isDisabled ? "(Plan Required)" : ""}
+                </option>
+              );
+            })}
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         </div>
         <p className="text-xs text-muted-foreground">
           Only published tickets are visible and available for purchase
+          {!canPublish && (
+            <span className="block mt-1 text-destructive/80">
+              You need an active plan and tickets in your wallet to publish tickets. You can save as draft and publish later.
+            </span>
+          )}
         </p>
       </div>
 
-      {/* Geoblocking Section */}
+      {/* Geoblocking Section - Commented out */}
+      {/*
       <div className="space-y-4">
-        {/* Geoblocking Toggle */}
         <label className={`flex items-center gap-4 p-4 rounded-xl bg-secondary border border-border ${
           !isReadOnly ? "cursor-pointer hover:border-foreground/30" : ""
         }`}>
@@ -189,7 +209,6 @@ export function SettingsSection({
           </div>
         </label>
 
-        {/* Country Selection (when enabled) */}
         {formData.geoblocking_enabled && (
           <div className="space-y-4 p-4 rounded-xl bg-secondary border border-border">
             <div className="flex items-center justify-between">
@@ -202,7 +221,6 @@ export function SettingsSection({
               </Badge>
             </div>
 
-            {/* Country Search */}
             {!isReadOnly && (
               <div className="relative">
                 <div className="relative">
@@ -219,7 +237,6 @@ export function SettingsSection({
                   />
                 </div>
 
-                {/* Dropdown */}
                 {isDropdownOpen && (
                   <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
                     {filteredCountries.length > 0 ? (
@@ -245,7 +262,6 @@ export function SettingsSection({
               </div>
             )}
 
-            {/* Selected Countries */}
             <div className="space-y-2">
               {geoblockingCountries.length === 0 ? (
                 <div className="text-center py-4">
@@ -291,7 +307,6 @@ export function SettingsSection({
               )}
             </div>
 
-            {/* Quick Add Popular Countries */}
             {!isReadOnly && geoblockingCountries.length < 5 && (
               <div className="pt-2 border-t border-border">
                 <p className="text-muted-foreground text-xs mb-2">Quick add:</p>
@@ -320,6 +335,7 @@ export function SettingsSection({
           </div>
         )}
       </div>
+      */}
     </div>
   );
 }

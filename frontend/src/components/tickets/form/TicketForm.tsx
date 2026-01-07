@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { Event } from "@/store/api";
 import { useToast } from "@/hooks/use-toast";
+import { usePlan } from "@/hooks/usePlan";
 import { BasicInfoSection } from "./BasicInfoSection";
 import { MediaSection } from "./MediaSection";
 import { EventsSelectionSection } from "./EventsSelectionSection";
@@ -63,6 +64,7 @@ export function TicketForm({
   onCancel,
 }: TicketFormProps) {
   const { toast } = useToast();
+  const { canPublish } = usePlan();
   
   // Form state
   const [formData, setFormData] = useState<TicketFormData>({
@@ -93,6 +95,11 @@ export function TicketForm({
   useEffect(() => {
     setHasInitialized(false);
   }, [ticketId]);
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentStep]);
 
   // Form change handler - memoized to prevent infinite loops in child useEffects
   const handleFormChange = useCallback((data: Partial<TicketFormData>) => {
@@ -198,6 +205,20 @@ export function TicketForm({
         variant: "destructive",
       });
       handleStepNavigation("settings");
+      return;
+    }
+
+    // Check if trying to publish without plan - automatically save as draft
+    const isPublishingStatus = formData.status === "published" || formData.status === "sold_out";
+    if (isPublishingStatus && !canPublish) {
+      toast({
+        title: "Saved as Draft",
+        description: "You need an active plan and tickets in your wallet to publish. Your ticket has been saved as draft. Please upgrade your plan to publish it.",
+        duration: 6000,
+      });
+      // Update form data to draft status
+      const draftFormData = { ...formData, status: "draft" as const };
+      onSubmit(draftFormData, mediaFiles);
       return;
     }
 

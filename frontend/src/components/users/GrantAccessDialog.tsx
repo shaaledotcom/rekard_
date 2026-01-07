@@ -174,23 +174,6 @@ export function GrantAccessDialog({
             </Button>
           </div>
 
-          {/* Expiration */}
-          <div className="space-y-2">
-            <Label className="text-foreground flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-violet-500" />
-              Expires At (Optional)
-            </Label>
-            <Input
-              type="datetime-local"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className="h-11 bg-secondary/50 border-border rounded-xl"
-            />
-            <p className="text-xs text-muted-foreground">
-              Leave empty for permanent access
-            </p>
-          </div>
-
           {/* Notify */}
           <div className="flex items-center gap-3">
             <input

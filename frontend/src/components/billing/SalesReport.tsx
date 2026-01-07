@@ -407,7 +407,7 @@ export function SalesReport() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Sales Report
+              Sales
             </CardTitle>
             <div className="flex items-center gap-3">
               <Badge variant="secondary" className="text-xs">

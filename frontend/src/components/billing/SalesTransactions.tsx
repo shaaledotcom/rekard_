@@ -270,7 +270,7 @@ export function SalesTransactions() {
           <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-secondary/30 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             <div className="col-span-3">Date</div>
             <div className="col-span-4">User Email</div>
-            <div className="col-span-2 text-right">Amount</div>
+            <div className="col-span-2 text-right">Transaction</div>
             <div className="col-span-3 text-right">Balance</div>
           </div>
 
@@ -328,7 +328,7 @@ export function SalesTransactions() {
                         : "text-rose-500"
                     }`}>
                       {entry.type === "credit" ? "+" : "-"}
-                      {formatCurrency(entry.amount, entry.currency)}
+                      {entry.amount}
                     </p>
                   </div>
 
@@ -336,7 +336,7 @@ export function SalesTransactions() {
                   <div className="col-span-3 text-right">
                     <p className="text-sm text-muted-foreground">
                       {entry.balance !== undefined
-                        ? formatCurrency(entry.balance, entry.currency)
+                        ? entry.balance
                         : "—"}
                     </p>
                   </div>

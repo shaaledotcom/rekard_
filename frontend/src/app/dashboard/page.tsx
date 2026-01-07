@@ -75,8 +75,8 @@ function DashboardContent() {
           {/* Tabs for Sales Report and Transactions */}
           <Tabs defaultValue="sales-report" className="w-full">
             <TabsList className="bg-secondary border-border">
-              <TabsTrigger value="sales-report">Sales Report</TabsTrigger>
-              <TabsTrigger value="transactions">Transactions</TabsTrigger>
+              <TabsTrigger value="sales-report">Sales</TabsTrigger>
+              <TabsTrigger value="transactions">Ticket Ledger</TabsTrigger>
             </TabsList>
             <TabsContent value="sales-report" className="mt-6">
               <SalesReport />

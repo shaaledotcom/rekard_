@@ -24,25 +24,18 @@ function AccessGrantRow({
   grant, 
   onRevoke, 
   onDelete,
+  isLastRow,
 }: { 
   grant: ViewerAccess; 
   onRevoke: (grant: ViewerAccess) => void;
   onDelete: (grant: ViewerAccess) => void;
+  isLastRow?: boolean;
 }) {
   const [showMenu, setShowMenu] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const status = statusConfig[grant.status];
 
   const handleMenuToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!showMenu && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 4,
-        right: window.innerWidth - rect.right,
-      });
-    }
     setShowMenu(!showMenu);
   };
 
@@ -83,72 +76,53 @@ function AccessGrantRow({
           </span>
         </div>
       </td>
-      <td className="px-4 py-4">
-        {grant.expires_at ? (
-          <span className="text-sm text-muted-foreground">
-            {new Date(grant.expires_at).toLocaleDateString()}
-          </span>
-        ) : (
-          <span className="text-sm text-muted-foreground">Never</span>
-        )}
-      </td>
-      <td className="px-4 py-4">
-        <>
-          <Button
-            ref={buttonRef}
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={handleMenuToggle}
-          >
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-          
-          {/* Dropdown Menu - positioned outside table */}
-          {showMenu && (
-            <>
-              <div 
-                className="fixed z-50 w-40 bg-popover border border-border rounded-lg shadow-lg py-1"
-                style={{
-                  top: `${dropdownPosition.top}px`,
-                  right: `${dropdownPosition.right}px`,
-                }}
-              >
-                {grant.status === "active" && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRevoke(grant);
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center gap-2 text-orange-500"
-                  >
-                    <Ban className="h-4 w-4" />
-                    Revoke Access
-                  </button>
-                )}
+      <td className="px-4 py-4 relative">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={handleMenuToggle}
+        >
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+        
+        {showMenu && (
+          <>
+            <div className={`absolute right-0 z-[9999] w-40 bg-popover border border-border rounded-lg shadow-lg py-1 ${isLastRow ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+              {grant.status === "active" && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDelete(grant);
+                    onRevoke(grant);
                     setShowMenu(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center gap-2 text-destructive"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center gap-2 text-orange-500"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
+                  <Ban className="h-4 w-4" />
+                  Revoke Access
                 </button>
-              </div>
-              <div 
-                className="fixed inset-0 z-40" 
+              )}
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  onDelete(grant);
                   setShowMenu(false);
                 }}
-              />
-            </>
-          )}
-        </>
+                className="w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center gap-2 text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </button>
+            </div>
+            <div 
+              className="fixed inset-0 z-[9998]" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+              }}
+            />
+          </>
+        )}
       </td>
     </tr>
   );
@@ -197,17 +171,17 @@ export function UsersTable({ accessGrants, isLoading, onRevoke, onDelete }: User
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Ticket</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Granted</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Expires</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {accessGrants.map((grant) => (
+            {accessGrants.map((grant, index) => (
               <AccessGrantRow 
                 key={grant.id} 
                 grant={grant} 
                 onRevoke={onRevoke}
                 onDelete={onDelete}
+                isLastRow={index === accessGrants.length - 1}
               />
             ))}
           </tbody>

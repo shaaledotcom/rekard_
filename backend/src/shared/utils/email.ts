@@ -398,8 +398,8 @@ export const sendPurchaseConfirmationEmail = async (
   }
 
   try {
-    const emailSubject = `Purchase Confirmation - Order ${data.orderNumber}`;
-    log.info(`[EMAIL] Sending purchase confirmation email - To: ${data.recipientEmail}, Subject: ${emailSubject}, Order: ${data.orderNumber}, Ticket: ${data.ticketTitle}`);
+    const emailSubject = `${data.ticketTitle} - Ticket confirmation`;
+    log.info(`[EMAIL] Sending purchase confirmation email - To: ${data.recipientEmail}, Subject: ${emailSubject}, Ticket: ${data.ticketTitle}`);
     
     const result = await client.emails.send({
       from: `${env.email.fromName} <${env.email.fromEmail}>`,

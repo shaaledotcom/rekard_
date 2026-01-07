@@ -41,10 +41,24 @@ export function PricingSection({
     return option ? option.label : currencyCode;
   };
 
-  const handlePriceChange = (index: number, value: number) => {
+  const handlePriceChange = (index: number, value: string) => {
     const newPricing = [...pricing];
-    newPricing[index] = { ...newPricing[index], price: value };
+    // Parse the value - if empty string, keep as 0 but allow input to show empty
+    // If valid number, use it; if invalid (NaN), keep current value
+    const numValue = value === "" 
+      ? 0 
+      : (isNaN(parseFloat(value)) ? newPricing[index].price : parseFloat(value));
+    newPricing[index] = { ...newPricing[index], price: numValue };
     onChange({ pricing: newPricing });
+  };
+
+  const handlePriceBlur = (index: number, value: string) => {
+    // On blur, ensure empty string becomes 0
+    if (value === "" || isNaN(parseFloat(value))) {
+      const newPricing = [...pricing];
+      newPricing[index] = { ...newPricing[index], price: 0 };
+      onChange({ pricing: newPricing });
+    }
   };
 
   const handleCurrencyChange = (index: number, currency: string) => {
@@ -120,8 +134,9 @@ export function PricingSection({
                 type="number"
                 min="0"
                 step="0.01"
-                value={item.price ?? ""}
-                onChange={(e) => handlePriceChange(index, parseFloat(e.target.value) || 0)}
+                value={item.price === 0 ? "" : item.price ?? ""}
+                onChange={(e) => handlePriceChange(index, e.target.value)}
+                onBlur={(e) => handlePriceBlur(index, e.target.value)}
                 placeholder="0.00"
                 disabled={isReadOnly}
                 className="h-12 bg-secondary border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:border-foreground/50"
