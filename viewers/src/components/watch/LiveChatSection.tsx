@@ -5,8 +5,6 @@ import {
   Send,
   Edit2,
   Trash2,
-  Pin,
-  PinOff,
   Check,
   X,
   Loader2,
@@ -62,7 +60,6 @@ const LiveChatSection: React.FC<LiveChatSectionProps> = ({
     handleEditSave,
     handleEditCancel,
     handleDelete,
-    handlePin,
     isOwnMessage,
     formatTimestamp,
   } = useLiveChat(ticketId, userId);
@@ -99,11 +96,6 @@ const LiveChatSection: React.FC<LiveChatSectionProps> = ({
                   <span className="text-xs text-muted-foreground">
                     {formatTimestamp(msg.created_at)}
                   </span>
-                  {msg.is_pinned && (
-                    <span className="ml-2 text-xs text-primary font-bold">
-                      PINNED
-                    </span>
-                  )}
                   <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {isOwnMessage(msg) && editingId !== msg.id && (
                       <Button
@@ -125,18 +117,6 @@ const LiveChatSection: React.FC<LiveChatSectionProps> = ({
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      onClick={() => handlePin(msg.id, msg.is_pinned)}
-                    >
-                      {msg.is_pinned ? (
-                        <PinOff className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Pin className="h-4 w-4" />
-                      )}
-                    </Button>
                   </div>
                 </div>
                 {editingId === msg.id ? (

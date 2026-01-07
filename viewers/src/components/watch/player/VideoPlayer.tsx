@@ -64,54 +64,68 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const hideControlsTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // Check if source is HLS stream
+  const isHlsStream = (source: string): boolean => {
+    if (!source) return false;
+    // Check if it's an HLS manifest file (.m3u8)
+    return source.includes('.m3u8') || source.includes('application/vnd.apple.mpegurl');
+  };
+
   // Initialize HLS
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src || !src.trim()) return;
 
     const initializeHls = () => {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-        });
+      // Only use HLS.js for HLS streams, use native player for MP4 and other formats
+      if (isHlsStream(src)) {
+        if (Hls.isSupported()) {
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+          });
 
-        hls.loadSource(src);
-        hls.attachMedia(video);
+          hls.loadSource(src);
+          hls.attachMedia(video);
 
-        hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
-          setIsLoading(false);
-          // Get available resolutions
-          const levels = data.levels.map((level) => `${level.height}p`);
-          setAvailableResolutions(levels);
-          if (levels.length > 0) {
-            setSelectedResolution(levels[0]);
-          }
-        });
-
-        hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_, data) => {
-          const tracks = data.subtitleTracks.map((track) => track.name);
-          setAvailableSubtitles(tracks);
-        });
-
-        hls.on(Hls.Events.ERROR, (_, data) => {
-          if (data.fatal) {
-            console.error("HLS fatal error:", data);
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                hls.startLoad();
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                hls.recoverMediaError();
-                break;
-              default:
-                break;
+          hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+            setIsLoading(false);
+            // Get available resolutions
+            const levels = data.levels.map((level) => `${level.height}p`);
+            setAvailableResolutions(levels);
+            if (levels.length > 0) {
+              setSelectedResolution(levels[0]);
             }
-          }
-        });
+          });
 
-        hlsRef.current = hls;
-      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_, data) => {
+            const tracks = data.subtitleTracks.map((track) => track.name);
+            setAvailableSubtitles(tracks);
+          });
+
+          hls.on(Hls.Events.ERROR, (_, data) => {
+            if (data.fatal) {
+              console.error("HLS fatal error:", data);
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  hls.recoverMediaError();
+                  break;
+                default:
+                  break;
+              }
+            }
+          });
+
+          hlsRef.current = hls;
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = src;
+          setIsLoading(false);
+        }
+      } else {
+        // Use native HTML5 video player for MP4 and other formats
         video.src = src;
         setIsLoading(false);
       }

@@ -25,14 +25,14 @@ const PAGE_SIZE = 30;
  * 
  * 2. MESSAGE STATE MANAGEMENT:
  *    - Syncs initial messages from API query
- *    - Appends new messages from WebSocket to top of list
+ *    - Appends new messages from WebSocket to end of list (newest at bottom)
  *    - Maintains cursor for pagination
  *    - Tracks pagination state (hasMore, loadingMore)
  * 
  * 3. PAGINATION:
  *    - Loads older messages when scrolling to top
  *    - Uses cursor-based pagination for efficient loading
- *    - Appends older messages to bottom of list
+ *    - Prepends older messages to beginning of list (preserves scroll position)
  *    - Prevents duplicate loads with loading state guard
  * 
  * 4. AUTO-SCROLL BEHAVIOR:
@@ -206,9 +206,12 @@ export function useLiveChat(ticketId: string, userId?: string) {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (autoScroll) {
+    if (autoScroll && messagesContainerRef.current) {
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        const container = messagesContainerRef.current;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
       }, 100);
     }
   }, [messages, autoScroll]);
@@ -219,15 +222,28 @@ export function useLiveChat(ticketId: string, userId?: string) {
     setLoadingMore(true);
 
     try {
+      const container = messagesContainerRef.current;
+      const previousScrollHeight = container?.scrollHeight || 0;
+      const previousScrollTop = container?.scrollTop || 0;
+
       const res = await fetch(
         `${config.apiUrl}/v1/viewer/chat/messages?ticket_id=${ticketId}&limit=${PAGE_SIZE}&cursor=${encodeURIComponent(cursor)}`
       );
       const json = await res.json();
       const older: ChatMessage[] = json.data || [];
-      // Append older messages to bottom
-      setMessages((prev) => [...prev, ...older]);
+      // Prepend older messages to top (they're older, so should appear before current messages)
+      setMessages((prev) => [...older, ...prev]);
       setCursor(older[older.length - 1]?.created_at);
       setHasMore(older.length === PAGE_SIZE);
+
+      // Preserve scroll position after prepending older messages
+      if (container) {
+        setTimeout(() => {
+          const newScrollHeight = container.scrollHeight;
+          const heightDifference = newScrollHeight - previousScrollHeight;
+          container.scrollTop = previousScrollTop + heightDifference;
+        }, 0);
+      }
     } catch (e) {
       // Silently handle errors
     }
@@ -378,9 +394,6 @@ export function useLiveChat(ticketId: string, userId?: string) {
     [formatRelativeTime]
   );
 
-  // Reverse messages for display (newest at bottom)
-  const orderedMessages = [...messages].reverse();
-
   return {
     // State
     newMessage,
@@ -390,7 +403,7 @@ export function useLiveChat(ticketId: string, userId?: string) {
     editingId,
     editingContent,
     setEditingContent,
-    messages: orderedMessages,
+    messages,
     isLoading,
     isSending,
     loadingMore,

@@ -660,7 +660,8 @@ export function EventFormDialog({
           <Button
             variant="ghost"
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground hover:bg-secondary"
+            disabled={isSubmitting}
+            className="text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-50"
           >
             Cancel
           </Button>
@@ -671,8 +672,8 @@ export function EventFormDialog({
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4" />
-                Saving...
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {isEditMode ? "Saving..." : "Creating..."}
               </span>
             ) : isEditMode ? (
               "Save Changes"

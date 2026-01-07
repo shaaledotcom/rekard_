@@ -50,6 +50,8 @@ function EventsContent() {
     isCreating,
     isUpdating,
     isDeleting,
+    isCreatingEvent,
+    isUpdatingEvent,
 
     // Actions
     handleCreateEvent,
@@ -131,7 +133,7 @@ function EventsContent() {
         isOpen={isCreateDialogOpen || isEditDialogOpen}
         isEditMode={isEditDialogOpen}
         formData={formData}
-        isSubmitting={isCreating || isUpdating}
+        isSubmitting={isCreatingEvent || isUpdatingEvent}
         onClose={closeFormDialog}
         onSubmit={isEditDialogOpen ? handleUpdateEvent : handleCreateEvent}
         onFormChange={setFormData}

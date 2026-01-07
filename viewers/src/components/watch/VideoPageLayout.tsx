@@ -20,6 +20,21 @@ interface VideoPageLayoutProps {
   ticketId?: string;
 }
 
+// Helper function to check if a string is a URL vs HTML embed code
+const isUrl = (str: string): boolean => {
+  if (!str || typeof str !== "string") return false;
+  const trimmed = str.trim();
+  // Check if it starts with http:// or https://
+  if (/^https?:\/\//i.test(trimmed)) {
+    // If it contains HTML tags, it's not a plain URL
+    if (/<[^>]+>/i.test(trimmed)) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+};
+
 const EmbedSection: React.FC<{ embed: string }> = ({ embed }) => {
   return (
     <div className="space-y-4">
@@ -60,7 +75,7 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
   onVideoEnded,
   ticketId,
 }) => {
-  const { formatDate } = useTimezoneFormat();
+  const { formatDate, formatTime, formatDateTime } = useTimezoneFormat();
 
   const {
     ticket,
@@ -205,6 +220,27 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
           ticketId={ticketId}
         />
 
+        {selectedEvent && (
+          <div className="mb-6 text-sm text-muted-foreground">
+            {selectedEvent.start_datetime && selectedEvent.end_datetime ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>
+                  {formatDateTime(selectedEvent.start_datetime)}
+                </span>
+                <span className="text-muted-foreground">•</span>
+                <span>
+                  {formatDateTime(selectedEvent.end_datetime)}
+                </span>
+              </div>
+            ) : selectedEvent.start_datetime ? (
+              <div>
+                <span className="font-medium text-foreground">Start:</span>{" "}
+                {formatDateTime(selectedEvent.start_datetime)}
+              </div>
+            ) : null}
+          </div>
+        )}
+
         <SecureVideoAccess ticketId={ticketId || ""} eventId={selectedEvent?.id}>
           <div
             className="grid grid-cols-1 lg:grid-cols-4 gap-6"
@@ -215,7 +251,13 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
             }
           >
             <div className="lg:col-span-3">
-              {currentEmbed ? (
+              {currentEmbed && isUrl(currentEmbed) ? (
+                <VideoPlayerSection
+                  src={currentEmbed}
+                  thumbnailSrc={currentThumbnailSrc}
+                  onEnded={onVideoEnded}
+                />
+              ) : currentEmbed ? (
                 <EmbedSection embed={currentEmbed} />
               ) : videoSrcToUse ? (
                 <VideoPlayerSection

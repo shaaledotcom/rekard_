@@ -40,6 +40,8 @@ export function useEventsPage() {
   const [formData, setFormData] = useState<CreateEventRequest>(defaultFormValues);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [isUpdatingEvent, setIsUpdatingEvent] = useState(false);
 
   // API hooks
   const { data: eventsData, isLoading } = useGetEventsQuery({
@@ -67,11 +69,13 @@ export function useEventsPage() {
 
   // Event handlers
   const handleCreateEvent = useCallback(async () => {
+    setIsCreatingEvent(true);
     try {
       let finalFormData = { ...formData };
       const accessToken = await getAccessToken();
       if (!accessToken) {
         toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
+        setIsCreatingEvent(false);
         return;
       }
 
@@ -86,6 +90,7 @@ export function useEventsPage() {
             description: uploadResult.error || "Failed to upload thumbnail image.", 
             variant: "destructive" 
           });
+          setIsCreatingEvent(false);
           return;
         }
       }
@@ -101,6 +106,7 @@ export function useEventsPage() {
             description: uploadResult.error || "Failed to upload video file.", 
             variant: "destructive" 
           });
+          setIsCreatingEvent(false);
           return;
         }
       }
@@ -114,16 +120,20 @@ export function useEventsPage() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       toast({ title: "Oops!", description: errorMessage, variant: "destructive" });
+    } finally {
+      setIsCreatingEvent(false);
     }
-  }, [createEvent, formData, videoFile, thumbnailFile, getAccessToken, uploadMedia, toast]);
+  }, [createEvent, formData, videoFile, thumbnailFile, getAccessToken, uploadMedia, uploadFile, toast]);
 
   const handleUpdateEvent = useCallback(async () => {
     if (!selectedEvent) return;
+    setIsUpdatingEvent(true);
     try {
       let finalFormData = { ...formData };
       const accessToken = await getAccessToken();
       if (!accessToken) {
         toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
+        setIsUpdatingEvent(false);
         return;
       }
 
@@ -138,6 +148,7 @@ export function useEventsPage() {
             description: uploadResult.error || "Failed to upload thumbnail image.", 
             variant: "destructive" 
           });
+          setIsUpdatingEvent(false);
           return;
         }
       }
@@ -153,6 +164,7 @@ export function useEventsPage() {
             description: uploadResult.error || "Failed to upload video file.", 
             variant: "destructive" 
           });
+          setIsUpdatingEvent(false);
           return;
         }
       }
@@ -167,8 +179,10 @@ export function useEventsPage() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Couldn't update the event. Please try again.";
       toast({ title: "Oops!", description: errorMessage, variant: "destructive" });
+    } finally {
+      setIsUpdatingEvent(false);
     }
-  }, [updateEvent, selectedEvent, formData, videoFile, thumbnailFile, getAccessToken, uploadMedia, toast]);
+  }, [updateEvent, selectedEvent, formData, videoFile, thumbnailFile, getAccessToken, uploadMedia, uploadFile, toast]);
 
   const handleDeleteEvent = useCallback(async () => {
     if (!selectedEvent) return;
@@ -322,6 +336,8 @@ export function useEventsPage() {
     isCreating,
     isUpdating,
     isDeleting,
+    isCreatingEvent,
+    isUpdatingEvent,
 
     // Actions
     handleCreateEvent,
