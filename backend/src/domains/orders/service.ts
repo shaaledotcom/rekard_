@@ -628,8 +628,6 @@ export const getWatchLink = async (
 // Checks purchases across all tenants (similar to watch link check)
 // Orders can be created from any domain (custom domain or watch.rekard.com)
 export const getMyPurchases = async (
-  appId: string,
-  tenantId: string,
   userId: string,
   pagination: PaginationParams = {},
   userEmail?: string

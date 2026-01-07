@@ -151,8 +151,6 @@ router.get('/my-purchases', asyncHandler(async (req: AppRequest, res: Response) 
   const userEmail = (req as any).user?.email;
 
   const result = await ordersService.getMyPurchases(
-    tenant.appId,
-    tenant.tenantId,
     tenant.userId,
     pagination,
     userEmail
