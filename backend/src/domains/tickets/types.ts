@@ -69,6 +69,7 @@ export type TicketSponsor = {
   ticket_id: number;
   title: string;
   image_url?: string;
+  link?: string;
   created_at: Date;
   updated_at: Date;
 };
@@ -107,6 +108,7 @@ export type PricingForm = {
 export type SponsorForm = {
   title: string;
   image_url?: string;
+  link?: string;
 };
 
 export type CreateTicketRequest = {

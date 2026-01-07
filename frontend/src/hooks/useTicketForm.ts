@@ -98,6 +98,7 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
       sponsors: ticket.sponsors?.map((s) => ({
         title: s.title,
         image_url: s.image_url,
+        link: s.link,
       })) || [],
       total_quantity: ticket.total_quantity || 100,
       status: ticket.status,
@@ -189,7 +190,7 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
         throw new Error("Not authenticated");
       }
 
-      const uploadedSponsors: Array<{ title: string; image_url?: string }> = [];
+      const uploadedSponsors: Array<{ title: string; image_url?: string; link?: string }> = [];
 
       for (const sponsor of sponsors) {
         if (sponsor.image_file) {
@@ -203,6 +204,7 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
             uploadedSponsors.push({
               title: sponsor.title,
               image_url: result.file.url,
+              link: sponsor.link,
             });
           } else {
             throw new Error(result.error || "Failed to upload sponsor image");
@@ -212,6 +214,7 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
           uploadedSponsors.push({
             title: sponsor.title,
             image_url: sponsor.image_url,
+            link: sponsor.link,
           });
         }
       }
@@ -242,9 +245,10 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
         featured_video: formData.featured_video,
       };
 
-      let uploadedSponsors: Array<{ title: string; image_url?: string }> = formData.sponsors.map((s) => ({
+      let uploadedSponsors: Array<{ title: string; image_url?: string; link?: string }> = formData.sponsors.map((s) => ({
         title: s.title,
         image_url: s.image_url,
+        link: s.link,
       }));
 
       // Upload media files if any

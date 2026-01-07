@@ -146,6 +146,7 @@ export const createTicket = async (
           ticketId: ticket.id,
           title: s.title,
           imageUrl: s.image_url,
+          link: s.link,
         }))
       );
     }
@@ -306,13 +307,14 @@ export const updateTicket = async (
     if (data.sponsors !== undefined) {
       await tx.delete(ticketSponsors).where(eq(ticketSponsors.ticketId, ticketId));
       if (data.sponsors.length > 0) {
-        await tx.insert(ticketSponsors).values(
-          data.sponsors.map((s) => ({
-            ticketId,
-            title: s.title,
-            imageUrl: s.image_url,
-          }))
-        );
+      await tx.insert(ticketSponsors).values(
+        data.sponsors.map((s) => ({
+          ticketId,
+          title: s.title,
+          imageUrl: s.image_url,
+          link: s.link,
+        }))
+      );
       }
     }
 
@@ -500,6 +502,7 @@ export const getTicketSponsors = async (ticketId: number): Promise<TicketSponsor
     ticket_id: s.ticketId,
     title: s.title ?? '',
     image_url: s.imageUrl ?? undefined,
+    link: s.link ?? undefined,
     created_at: s.createdAt,
     updated_at: s.updatedAt,
   }));

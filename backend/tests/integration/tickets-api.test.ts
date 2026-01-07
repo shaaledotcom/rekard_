@@ -68,6 +68,7 @@ interface TicketSponsor {
   ticket_id: number;
   title: string;
   image_url?: string;
+  link?: string;
   created_at: string;
   updated_at: string;
 }
@@ -127,6 +128,7 @@ interface PricingForm {
 interface SponsorForm {
   title: string;
   image_url?: string;
+  link?: string;
 }
 
 interface CreateTicketRequest {

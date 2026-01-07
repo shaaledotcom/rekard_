@@ -44,6 +44,7 @@ export interface TicketSponsor {
   ticket_id: number;
   title: string;
   image_url?: string;
+  link?: string;
 }
 
 export interface Ticket {
@@ -115,6 +116,7 @@ export interface PricingFormRequest {
 export interface SponsorFormRequest {
   title: string;
   image_url?: string;
+  link?: string;
 }
 
 export interface CreateTicketRequest {

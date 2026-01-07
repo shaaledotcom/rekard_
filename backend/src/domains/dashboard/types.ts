@@ -95,5 +95,6 @@ export type PublicTicketPricing = {
 export type PublicTicketSponsor = {
   title: string;
   image_url?: string;
+  link?: string;
 };
 

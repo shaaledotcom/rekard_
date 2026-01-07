@@ -48,6 +48,7 @@ export interface PublicTicketPricing {
 export interface PublicTicketSponsor {
   title: string;
   image_url?: string;
+  link?: string;
 }
 
 export interface PublicTicketDetails {

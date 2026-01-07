@@ -105,37 +105,39 @@ export function EventInformation({
         <div className="border-t pt-4 sm:pt-6">
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between gap-2 sm:gap-4">
-              <div className="flex flex-col">
-                <div className="font-bold text-primary text-sm sm:text-base">
-                  {discountAmount > 0 ? (
-                    <div className="flex items-center gap-2">
-                      <span className="line-through text-muted-foreground text-xs">
-                        {formatPrice(convertedPrice, convertedCurrency)}
-                      </span>
-                      <span>{formatPrice(finalPrice, convertedCurrency)}</span>
+              {!isPurchased && (
+                <div className="flex flex-col">
+                  <div className="font-bold text-primary text-sm sm:text-base">
+                    {discountAmount > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <span className="line-through text-muted-foreground text-xs">
+                          {formatPrice(convertedPrice, convertedCurrency)}
+                        </span>
+                        <span>{formatPrice(finalPrice, convertedCurrency)}</span>
+                      </div>
+                    ) : (
+                      formatPrice(finalPrice || convertedPrice, convertedCurrency)
+                    )}
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="text-xs text-green-600">
+                      You save {formatPrice(discountAmount, convertedCurrency)}
                     </div>
-                  ) : (
-                    formatPrice(finalPrice || convertedPrice, convertedCurrency)
                   )}
                 </div>
-                {discountAmount > 0 && (
-                  <div className="text-xs text-green-600">
-                    You save {formatPrice(discountAmount, convertedCurrency)}
+              )}
+              {isEventExpired &&
+                latestEndDate &&
+                isPurchased && (
+                  <div className="text-xs text-muted-foreground">
+                    This event ended on{" "}
+                    {formatDate(latestEndDate.toISOString(), {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
                   </div>
                 )}
-                {isEventExpired &&
-                  latestEndDate &&
-                  isPurchased && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      This event ended on{" "}
-                      {formatDate(latestEndDate.toISOString(), {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </div>
-                  )}
-              </div>
               <Button
                 className={`flex-1 h-10 sm:h-12 text-sm sm:text-base ${
                   buttonState.variant === "default" && isPurchased

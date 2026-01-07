@@ -74,6 +74,7 @@ export const ticketSponsors = pgTable('ticket_sponsors', {
   ticketId: integer('ticket_id').notNull().references(() => tickets.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 255 }),
   imageUrl: text('image_url'),
+  link: text('link'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({

@@ -9,7 +9,8 @@ import {
   Plus, 
   X, 
   Image as ImageIcon,
-  Upload
+  Upload,
+  Link as LinkIcon
 } from "lucide-react";
 import type { TicketFormData, SponsorFormData } from "./types";
 
@@ -29,7 +30,7 @@ export function SponsorsSection({
 
   const handleAddSponsor = () => {
     onChange({ 
-      sponsors: [...sponsors, { title: "", image_url: "" }] 
+      sponsors: [...sponsors, { title: "", image_url: "", link: "" }] 
     });
   };
 
@@ -151,6 +152,21 @@ export function SponsorsSection({
                     onChange={(e) => handleSponsorChange(index, "title", e.target.value)}
                     placeholder="Enter sponsor company name"
                     disabled={isReadOnly}
+                    className="h-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/50 rounded-lg"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground text-xs flex items-center gap-1">
+                    <LinkIcon className="h-3 w-3" />
+                    Link (Optional)
+                  </Label>
+                  <Input
+                    value={sponsor.link || ""}
+                    onChange={(e) => handleSponsorChange(index, "link", e.target.value)}
+                    placeholder="https://example.com"
+                    disabled={isReadOnly}
+                    type="url"
                     className="h-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/50 rounded-lg"
                   />
                 </div>

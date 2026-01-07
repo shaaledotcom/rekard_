@@ -36,6 +36,7 @@ export interface SponsorFormData {
   title: string;
   image_url?: string;
   image_file?: File;
+  link?: string;
 }
 
 // Main ticket form data

@@ -286,6 +286,7 @@ export const getTicketSponsors = async (ticketId: number): Promise<PublicTicketS
   return sponsors.map((s) => ({
     title: s.title || '',
     image_url: s.imageUrl || undefined,
+    link: s.link || undefined,
   }));
 };
 

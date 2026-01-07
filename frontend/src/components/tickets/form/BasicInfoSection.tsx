@@ -48,12 +48,19 @@ export function BasicInfoSection({
   const baseUrl = getBaseUrl();
   
   // On mount, if there's already a URL, consider it "manually edited" to preserve it
+  // Only set this once when component mounts with existing data, not when URL changes from auto-generation
   useEffect(() => {
-    if (initialUrlRef.current === null && formData.url) {
-      initialUrlRef.current = formData.url;
-      setUrlManuallyEdited(true);
+    if (initialUrlRef.current === null) {
+      if (formData.url) {
+        // If there's an existing URL on mount (editing existing ticket), preserve it
+        initialUrlRef.current = formData.url;
+        setUrlManuallyEdited(true);
+      } else {
+        // No existing URL, mark as initialized so we don't interfere with auto-generation
+        initialUrlRef.current = "";
+      }
     }
-  }, [formData.url]);
+  }, []); // Only run on mount, not when formData.url changes
 
   // Auto-generate URL slug from title
   const generateSlug = (title: string): string => {
@@ -77,6 +84,7 @@ export function BasicInfoSection({
   };
 
   const handleUrlChange = (value: string) => {
+    // User is manually editing the URL field, so mark it as manually edited
     setUrlManuallyEdited(true);
     onChange({ url: value });
   };
