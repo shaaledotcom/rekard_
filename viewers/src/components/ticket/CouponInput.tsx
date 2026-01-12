@@ -40,14 +40,14 @@ export function CouponInput({
   if (appliedCoupon) {
     return (
       <div className="mb-4">
-        <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-400 dark:border-green-800 rounded-lg">
+        <div className="flex items-center justify-between p-3  border border-green-400 dark:border-green-800 rounded-lg">
           <div className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-green-800 dark:text-green-500" />
+            <Check className="h-4 w-4" />
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-green-900 dark:text-green-400">
+              <span className="text-sm font-medium">
                 {appliedCoupon.code}
               </span>
-              <span className="text-xs text-green-800 dark:text-green-500">
+              <span className="text-xs">
                 You save {formatPrice(appliedCoupon.discountAmount, currency)}
               </span>
             </div>
@@ -56,7 +56,7 @@ export function CouponInput({
             variant="ghost"
             size="sm"
             onClick={handleRemoveCoupon}
-            className="h-8 w-8 p-0 text-green-800 hover:text-green-900 hover:bg-green-100 dark:hover:bg-green-900/40"
+            className="h-8 w-8 p-0"
           >
             <X className="h-4 w-4" />
           </Button>

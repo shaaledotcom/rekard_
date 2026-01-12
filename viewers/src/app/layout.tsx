@@ -21,7 +21,7 @@ const instrumentSans = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Watch Live Events | Rekard",
+  title: "Watch Live Events & Video on Demand",
   description: "Stream live events and watch on-demand content",
 };
 

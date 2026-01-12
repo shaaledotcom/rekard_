@@ -239,7 +239,7 @@ export function BillingPlans({
                         }
                       );
                     } else if (buttonLabel === "CONTACT US") {
-                      window.open("tel:+919741226060", "_self");
+                      window.open("https://watch.rekard.com/contact", "_blank");
                     }
                   }}
                 >

@@ -247,11 +247,6 @@ export function EventFormDialog({
           <DialogTitle className="text-2xl text-foreground">
             {isEditMode ? "Edit Event" : "Create New Event"}
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            {isEditMode
-              ? "Update your event details below"
-              : "Fill in the details to create your amazing event"}
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 px-6 pb-2">
@@ -297,6 +292,43 @@ export function EventFormDialog({
               </button>
             </div>
           </div>
+
+            {/* Live Event Fields - Only shown when NOT VOD */}
+            {!isVOD && (
+            <>
+              {/* Date & Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-foreground/70 text-sm font-medium">Start Date & Time *</Label>
+                  <Input
+                    type="datetime-local"
+                    value={formatDateTimeLocal(formData.start_datetime)}
+                    onChange={(e) =>
+                      onFormChange({
+                        ...formData,
+                        start_datetime: localToUTC(e.target.value),
+                      })
+                    }
+                    className="h-12 bg-secondary border-border text-foreground rounded-xl focus:border-foreground/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-foreground/70 text-sm font-medium">End Date & Time *</Label>
+                  <Input
+                    type="datetime-local"
+                    value={formatDateTimeLocal(formData.end_datetime)}
+                    onChange={(e) =>
+                      onFormChange({
+                        ...formData,
+                        end_datetime: localToUTC(e.target.value),
+                      })
+                    }
+                    className="h-12 bg-secondary border-border text-foreground rounded-xl focus:border-foreground/50"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Title */}
           <div className="space-y-2">
@@ -558,58 +590,6 @@ export function EventFormDialog({
             </div>
           )}
 
-          {/* Live Event Fields - Only shown when NOT VOD */}
-          {!isVOD && (
-            <>
-              {/* Date & Time */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-foreground/70 text-sm font-medium">Start Date & Time *</Label>
-                  <Input
-                    type="datetime-local"
-                    value={formatDateTimeLocal(formData.start_datetime)}
-                    onChange={(e) =>
-                      onFormChange({
-                        ...formData,
-                        start_datetime: localToUTC(e.target.value),
-                      })
-                    }
-                    className="h-12 bg-secondary border-border text-foreground rounded-xl focus:border-foreground/50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-foreground/70 text-sm font-medium">End Date & Time *</Label>
-                  <Input
-                    type="datetime-local"
-                    value={formatDateTimeLocal(formData.end_datetime)}
-                    onChange={(e) =>
-                      onFormChange({
-                        ...formData,
-                        end_datetime: localToUTC(e.target.value),
-                      })
-                    }
-                    className="h-12 bg-secondary border-border text-foreground rounded-xl focus:border-foreground/50"
-                  />
-                </div>
-              </div>
-
-              {/* Convert to VOD after event */}
-              <label className="flex items-center gap-3 p-4 rounded-xl bg-secondary border border-border cursor-pointer hover:border-foreground/30">
-                <input
-                  type="checkbox"
-                  checked={formData.convert_to_vod_after_event}
-                  onChange={(e) =>
-                    onFormChange({ ...formData, convert_to_vod_after_event: e.target.checked })
-                  }
-                  className="w-5 h-5 rounded border-border bg-background text-foreground focus:ring-foreground/50"
-                />
-                <div>
-                  <p className="text-foreground font-medium text-sm">Convert to VOD after event</p>
-                  <p className="text-muted-foreground text-xs">Make recording available for replay</p>
-                </div>
-              </label>
-            </>
-          )}
 
           {/* VOD Specific Fields - Only shown when IS VOD */}
           {isVOD && (
@@ -618,6 +598,81 @@ export function EventFormDialog({
                 <Film className="w-4 h-4" />
                 VOD Options
               </h4>
+
+              {/* Embed Code - First Priority for VOD */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-foreground/70 text-sm font-medium">Embed Code</Label>
+                  {embedCode.trim() && (
+                    <div className="flex items-center gap-2">
+                      {isValidEmbed ? (
+                        <span className="flex items-center gap-1 text-xs text-green-500">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Valid embed detected
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-yellow-500">
+                          <AlertCircle className="w-3 h-3" />
+                          Check embed format
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <Textarea
+                  value={formData.embed || ""}
+                  onChange={(e) => {
+                    const newEmbed = e.target.value;
+                    onFormChange({ ...formData, embed: newEmbed });
+                    // Clear video file when embed is set
+                    if (newEmbed.trim() && videoFile) {
+                      onVideoFileChange?.(null);
+                    }
+                  }}
+                  placeholder="Paste your embed code or iframe here...&#10;Example: <iframe src='https://player.example.com/...' width='100%' height='400'></iframe>"
+                  className="min-h-[100px] bg-background border-border text-foreground placeholder:text-muted-foreground rounded-xl focus:border-foreground/50 font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Embed code will be used as the first priority for video playback. If no embed is provided, the uploaded video file will be used.
+                </p>
+
+                {/* Embed Preview Toggle */}
+                {embedCode.trim() && (
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowEmbedPreview(!showEmbedPreview)}
+                      className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
+                    >
+                      {showEmbedPreview ? (
+                        <>
+                          <EyeOff className="w-4 h-4" />
+                          Hide Preview
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4" />
+                          Show Preview
+                        </>
+                      )}
+                    </button>
+
+                    {/* Embed Preview */}
+                    {showEmbedPreview && (
+                      <div className="rounded-xl border border-border overflow-hidden bg-black/50">
+                        <div className="px-3 py-2 bg-secondary/50 border-b border-border flex items-center gap-2">
+                          <Eye className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground font-medium">Embed Preview</span>
+                        </div>
+                        <div 
+                          className="p-4 min-h-[200px] flex items-center justify-center [&>iframe]:max-w-full [&>iframe]:rounded-lg [&>video]:max-w-full [&>video]:rounded-lg"
+                          dangerouslySetInnerHTML={{ __html: embedCode }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Watch Up To - Commented out for VOD */}
               {/* <div className="space-y-2">

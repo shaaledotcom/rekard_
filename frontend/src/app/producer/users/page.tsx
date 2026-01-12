@@ -94,15 +94,38 @@ function UsersContent() {
         expires_at: data.expires_at,
         notify: data.notify,
       }).unwrap();
-      toast({
-        title: "Access Granted",
-        description: `${result.total_granted} user(s) granted access to ${data.ticket_ids.length} ticket(s)${result.total_failed > 0 ? `, ${result.total_failed} failed` : ""}.`,
-      });
-      setIsGrantDialogOpen(false);
-    } catch {
+      
+      // If all grants failed, show the error message from the first failure
+      if (result.total_granted === 0 && result.failed.length > 0) {
+        const firstFailure = result.failed[0];
+        toast({
+          title: "Access Grant Failed",
+          description: firstFailure.reason || "Failed to grant access. Please check your ticket balance.",
+          variant: "destructive",
+        });
+      } else if (result.total_failed > 0) {
+        // Some succeeded, some failed - show partial success with failure details
+        const failureReasons = result.failed.map(f => f.reason).filter(Boolean);
+        const uniqueReasons = [...new Set(failureReasons)];
+        toast({
+          title: "Partial Success",
+          description: `${result.total_granted} user(s) granted access. ${result.total_failed} failed.${uniqueReasons.length > 0 ? ` ${uniqueReasons[0]}` : ""}`,
+          variant: result.total_granted > 0 ? "default" : "destructive",
+        });
+      } else {
+        // All succeeded
+        toast({
+          title: "Access Granted",
+          description: `${result.total_granted} user(s) granted access to ${data.ticket_ids.length} ticket(s).`,
+        });
+        setIsGrantDialogOpen(false);
+      }
+    } catch (error: any) {
+      // Handle API errors
+      const errorMessage = error?.data?.message || error?.message || "Failed to grant access. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to grant access. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -140,16 +163,41 @@ function UsersContent() {
   }) => {
     try {
       const result = await bulkImport(data).unwrap();
-      toast({
-        title: "Import Complete",
-        description: `${result.grant_result.total_granted} user(s) imported${result.grant_result.total_failed > 0 ? `, ${result.grant_result.total_failed} failed` : ""}.`,
-      });
-      setIsBulkImportOpen(false);
-      setValidationResult(null);
-    } catch {
+      
+      // If all grants failed, show the error message from the first failure
+      if (result.grant_result.total_granted === 0 && result.grant_result.failed.length > 0) {
+        const firstFailure = result.grant_result.failed[0];
+        toast({
+          title: "Import Failed",
+          description: firstFailure.reason || "Failed to import users. Please check your ticket balance.",
+          variant: "destructive",
+        });
+      } else if (result.grant_result.total_failed > 0) {
+        // Some succeeded, some failed - show partial success with failure details
+        const failureReasons = result.grant_result.failed.map(f => f.reason).filter(Boolean);
+        const uniqueReasons = [...new Set(failureReasons)];
+        toast({
+          title: "Import Complete (Partial)",
+          description: `${result.grant_result.total_granted} user(s) imported. ${result.grant_result.total_failed} failed.${uniqueReasons.length > 0 ? ` ${uniqueReasons[0]}` : ""}`,
+          variant: result.grant_result.total_granted > 0 ? "default" : "destructive",
+        });
+        setIsBulkImportOpen(false);
+        setValidationResult(null);
+      } else {
+        // All succeeded
+        toast({
+          title: "Import Complete",
+          description: `${result.grant_result.total_granted} user(s) imported successfully.`,
+        });
+        setIsBulkImportOpen(false);
+        setValidationResult(null);
+      }
+    } catch (error: any) {
+      // Handle API errors
+      const errorMessage = error?.data?.message || error?.message || "Failed to import users. Please try again.";
       toast({
         title: "Import Error",
-        description: "Failed to import users. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

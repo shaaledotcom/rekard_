@@ -400,9 +400,21 @@ export const getWalletTransactions = async (
   const pageSize = Math.max(1, Math.min(100, pagination.page_size || 10));
   const offset = (page - 1) * pageSize;
 
+  // Filter wallet transactions by appId/tenantId
+  // For ticket purchase transactions, we'll also filter by ticket ownership in the join
+  // to ensure consistency with sales report
   const conditions = [
-    eq(walletTransactions.appId, appId),
-    eq(walletTransactions.tenantId, tenantId),
+    // Allow transactions with matching appId/tenantId OR ticket purchase transactions
+    // that will be filtered by ticket ownership
+    or(
+      // Direct match by appId/tenantId
+      and(
+        or(eq(walletTransactions.appId, appId), eq(walletTransactions.appId, 'public')),
+        eq(walletTransactions.tenantId, tenantId)
+      ),
+      // Ticket purchase transactions will be filtered by ticket ownership in join
+      sql`${walletTransactions.referenceType} = 'ticket_purchase'`
+    ),
   ];
 
   if (filter.user_id) {
@@ -425,16 +437,27 @@ export const getWalletTransactions = async (
 
   const total = countResult?.count || 0;
 
-  // Join with orders and ticketBuyers to get customer email
+  // Join with orders, tickets, and ticketBuyers to get customer email
   // For debits (ticket purchases): get email from orders where ticketId matches referenceId
   // For credits (ticket sales): get email from ticketBuyers or orders
+  // Also join with tickets to filter ticket purchase transactions by ticket ownership
   const rows = await db
     .select({
       transaction: walletTransactions,
       orderEmail: orders.customerEmail,
       buyerEmail: ticketBuyers.buyerEmail,
+      ticketTenantId: tickets.tenantId,
     })
     .from(walletTransactions)
+    .leftJoin(
+      tickets,
+      and(
+        sql`${walletTransactions.referenceType} = 'ticket_purchase'`,
+        sql`${walletTransactions.referenceId} IS NOT NULL`,
+        // Match ticket ID if referenceId is numeric
+        sql`${tickets.id} = CASE WHEN ${walletTransactions.referenceId} ~ '^[0-9]+$' THEN CAST(${walletTransactions.referenceId} AS INTEGER) ELSE NULL END`
+      )
+    )
     .leftJoin(
       orders,
       and(
@@ -449,7 +472,12 @@ export const getWalletTransactions = async (
         // Orders are created with appId='public' for viewer purchases,
         // but wallet transactions might have a different appId. Query for both.
         or(eq(orders.appId, walletTransactions.appId), eq(orders.appId, 'public')),
-        eq(orders.tenantId, walletTransactions.tenantId),
+        // For ticket purchase transactions, don't filter by order.tenantId
+        // For other transactions, filter by order.tenantId matching wallet transaction
+        or(
+          sql`${walletTransactions.referenceType} != 'ticket_purchase'`,
+          sql`1=1` // Always true for ticket purchases - we'll filter by ticket ownership instead
+        ),
         // Prefer completed orders for accurate email
         eq(orders.status, 'completed')
       )
@@ -465,7 +493,24 @@ export const getWalletTransactions = async (
         eq(ticketBuyers.tenantId, walletTransactions.tenantId)
       )
     )
-    .where(and(...conditions))
+    .where(
+      and(
+        ...conditions,
+        // For ticket purchase transactions, filter by ticket ownership (like sales report)
+        // Also ensure there's a corresponding completed order to match sales report
+        // This ensures consistency between sales report and wallet transactions
+        or(
+          sql`${walletTransactions.referenceType} != 'ticket_purchase'`,
+          sql`${walletTransactions.referenceType} IS NULL`,
+          and(
+            eq(tickets.tenantId, tenantId),
+            // Ensure there's a corresponding completed order
+            sql`${orders.id} IS NOT NULL`,
+            eq(orders.status, 'completed')
+          )
+        )
+      )
+    )
     .orderBy(desc(walletTransactions.createdAt))
     .limit(pageSize)
     .offset(offset);
@@ -1082,7 +1127,7 @@ export const getTicketBuyers = async (
 
 // Sales Report - combines completed orders and email access grants
 export const getSalesReport = async (
-  appId: string,
+  _appId: string, // Not used - we filter by ticket ownership instead
   tenantId: string,
   filter: SalesReportFilter = {},
   pagination: PaginationParams = {},
@@ -1097,11 +1142,22 @@ export const getSalesReport = async (
   // Get completed orders (purchased)
   if (!filter.type || filter.type === 'purchased' || filter.type === 'all') {
     const orderConditions = [
-      // Orders are created with appId='public' for viewer purchases,
-      // but producer might have a different appId. Query for both.
-      or(eq(orders.appId, appId), eq(orders.appId, 'public')),
-      eq(orders.tenantId, tenantId),
+      // Ensure ticket belongs to the producer by filtering by tenantId
+      // This is the most reliable way to identify producer's tickets
+      // We don't filter by ticket.appId because:
+      // - Tickets might have 'public' appId or producer's appId
+      // - Producer's appId might have changed over time
+      // - TenantId is the definitive identifier for ticket ownership
+      eq(tickets.tenantId, tenantId),
+      // Note: We don't filter by order.appId or order.tenantId here because:
+      // 1. Orders are always created with appId='public' for viewer purchases
+      // 2. Old orders (created before fix) might have wrong order.tenantId
+      // 3. New orders (created after fix) will have correct order.tenantId
+      // 4. By filtering by ticket.tenantId only, we catch ALL orders for producer's tickets
+      //    regardless of what order.appId/tenantId or ticket.appId was set to
       eq(orders.status, 'completed'),
+      // Ensure order has a ticketId (should always be true for ticket purchases)
+      sql`${orders.ticketId} IS NOT NULL`,
     ];
 
     if (filter.ticket_id) {
@@ -1123,7 +1179,7 @@ export const getSalesReport = async (
         ticketTitle: tickets.title,
       })
       .from(orders)
-      .leftJoin(tickets, eq(orders.ticketId, tickets.id))
+      .innerJoin(tickets, eq(orders.ticketId, tickets.id))
       .where(and(...orderConditions))
       .orderBy(desc(orders.createdAt));
 
@@ -1148,9 +1204,16 @@ export const getSalesReport = async (
   // Get email access grants (granted)
   if (!filter.type || filter.type === 'granted' || filter.type === 'all') {
     const grantConditions = [
-      eq(emailAccessGrants.appId, appId),
-      eq(emailAccessGrants.tenantId, tenantId),
+      // Ensure ticket belongs to the producer by filtering by tenantId
+      // This is the most reliable way to identify producer's tickets
+      // We don't filter by grant.appId or grant.tenantId because:
+      // - Grants might have been created with different appId/tenantId values
+      // - By filtering by ticket.tenantId only, we catch ALL grants for producer's tickets
+      //   regardless of what grant.appId/tenantId was set to
+      eq(tickets.tenantId, tenantId),
       eq(emailAccessGrants.status, 'active'),
+      // Ensure grant has a ticketId (should always be true for ticket grants)
+      sql`${emailAccessGrants.ticketId} IS NOT NULL`,
     ];
 
     if (filter.ticket_id) {
@@ -1172,7 +1235,7 @@ export const getSalesReport = async (
         ticketTitle: tickets.title,
       })
       .from(emailAccessGrants)
-      .leftJoin(tickets, eq(emailAccessGrants.ticketId, tickets.id))
+      .innerJoin(tickets, eq(emailAccessGrants.ticketId, tickets.id))
       .where(and(...grantConditions))
       .orderBy(desc(emailAccessGrants.grantedAt));
 

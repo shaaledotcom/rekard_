@@ -168,7 +168,7 @@ export function SettingsSection({
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xl text-muted-foreground">
           Only published tickets are visible and available for purchase
           {!canPublish && (
             <span className="block mt-1 text-destructive/80">

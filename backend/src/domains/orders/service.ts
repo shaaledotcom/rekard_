@@ -49,6 +49,18 @@ export const createOrder = async (
     throw badRequest('Ticket is not available for purchase');
   }
 
+  // Get ticket owner's tenantId (producer's tenantId)
+  // This ensures orders are associated with the correct producer, even on shared domains
+  const ticketOwner = await dashboardRepo.getTicketByIdForPayment(data.ticket_id);
+  if (!ticketOwner) {
+    throw notFound('Ticket owner information not found');
+  }
+  
+  // Use ticket owner's tenantId instead of request tenantId
+  // This fixes the issue where orders created on shared domains (watch.rekard.com, localhost)
+  // were associated with wrong tenantId, causing them not to appear in sales reports
+  const ticketOwnerTenantId = ticketOwner.tenantId;
+
   // Check availability
   const remainingQuantity = ticket.total_quantity - ticket.sold_quantity;
   if (remainingQuantity < data.quantity) {
@@ -56,7 +68,8 @@ export const createOrder = async (
   }
 
   // Check max quantity per user - use public appId for viewer orders
-  const existingOrders = await repo.getUserTicketOrders('public', tenantId, userId, data.ticket_id);
+  // Use ticket owner's tenantId for consistency
+  const existingOrders = await repo.getUserTicketOrders('public', ticketOwnerTenantId, userId, data.ticket_id);
   const existingQuantity = existingOrders.reduce((sum, o) => sum + o.quantity, 0);
 
   const maxPerUser = 10; // Default max if not set on ticket
@@ -64,8 +77,9 @@ export const createOrder = async (
     throw badRequest(`Maximum ${maxPerUser} tickets allowed per user`);
   }
 
-  // Create order with public appId for viewer orders
-  const order = await repo.createOrder('public', tenantId, userId, data);
+  // Create order with public appId and ticket owner's tenantId
+  // This ensures orders are correctly associated with the producer for sales reporting
+  const order = await repo.createOrder('public', ticketOwnerTenantId, userId, data);
 
   // Increment sold quantity
   await ticketsRepo.incrementSoldQuantity(data.ticket_id, data.quantity);

@@ -13,6 +13,16 @@ export default function ContactPage() {
   const supportChannels = config?.support_channels || [];
   const legalName = config?.legal_name || "Rekard";
 
+  // Extract email and phone from support channels
+  const emailChannel = supportChannels.find(
+    (ch) => ch.type.toLowerCase() === "email"
+  );
+  const phoneChannel = supportChannels.find(
+    (ch) => ch.type.toLowerCase() === "phone"
+  );
+  const email = emailChannel?.value || "";
+  const phone = phoneChannel?.value || "";
+
   const getIcon = (type: string) => {
     switch (type.toLowerCase()) {
       case "email":
@@ -68,34 +78,94 @@ export default function ContactPage() {
           </p>
         </div>
 
-        {supportChannels.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {supportChannels.map((channel, index) => (
-              <Card key={index} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2">
+        {/* Email and Phone - Prominently Displayed */}
+        {(email || phone) && (
+          <div className="grid gap-4 md:grid-cols-2 mb-8">
+            {email && (
+              <Card className="hover:shadow-md transition-shadow border-primary/20">
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    {getIcon(channel.type)}
-                    {channel.label || channel.type}
+                    <Mail className="h-5 w-5 text-primary" />
+                    Email
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-4">{channel.value}</p>
+                  <p className="text-lg font-medium text-foreground mb-4">
+                    {email}
+                  </p>
                   <Button
-                    variant="outline"
-                    onClick={() => handleContact(channel)}
+                    variant="default"
+                    onClick={() => window.open(`mailto:${email}`, "_self")}
                     className="w-full"
                   >
-                    {channel.type.toLowerCase() === "phone"
-                      ? "Call Now"
-                      : channel.type.toLowerCase() === "whatsapp"
-                      ? "Message on WhatsApp"
-                      : "Send Email"}
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Email
                   </Button>
                 </CardContent>
               </Card>
-            ))}
+            )}
+
+            {phone && (
+              <Card className="hover:shadow-md transition-shadow border-primary/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Phone className="h-5 w-5 text-primary" />
+                    Phone
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg font-medium text-foreground mb-4">
+                    {phone}
+                  </p>
+                  <Button
+                    variant="default"
+                    onClick={() => window.open(`tel:${phone}`, "_self")}
+                    className="w-full"
+                  >
+                    <Phone className="h-4 w-4 mr-2" />
+                    Call Now
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
-        ) : (
+        )}
+
+        {/* Other Support Channels */}
+        {supportChannels.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {supportChannels
+              .filter(
+                (ch) =>
+                  ch.type.toLowerCase() !== "email" &&
+                  ch.type.toLowerCase() !== "phone"
+              )
+              .map((channel, index) => (
+                <Card key={index} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {getIcon(channel.type)}
+                      {channel.label || channel.type}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground mb-4">{channel.value}</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleContact(channel)}
+                      className="w-full"
+                    >
+                      {channel.type.toLowerCase() === "phone"
+                        ? "Call Now"
+                        : channel.type.toLowerCase() === "whatsapp"
+                        ? "Message on WhatsApp"
+                        : "Send Email"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        ) : !email && !phone ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -118,7 +188,7 @@ export default function ContactPage() {
               </Button>
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
         <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} {legalName}. All rights reserved.</p>

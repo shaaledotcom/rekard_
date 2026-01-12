@@ -66,6 +66,7 @@ export const parseCSV = (csvData: string): CSVParseResult => {
 };
 
 // Helper function to consume tickets from producer's wallet when access is granted
+// Note: This should only be called after verifying wallet balance upfront
 const consumeProducerWalletTicketsForGrant = async (
   appId: string,
   tenantId: string,
@@ -73,25 +74,20 @@ const consumeProducerWalletTicketsForGrant = async (
   ticketId: number,
   quantity: number
 ): Promise<void> => {
-  try {
-    // Consume tickets from producer's wallet
-    await billingService.consumeTickets(
-      appId,
-      tenantId,
-      userId,
-      {
-        quantity,
-        reference_type: 'access_grant',
-        reference_id: String(ticketId),
-        description: `Consumed ${quantity} tickets for access grant (ticket ${ticketId})`,
-      }
-    );
-    log.info(`Consumed ${quantity} tickets from producer ${userId}'s wallet for access grant on ticket ${ticketId}`);
-  } catch (error) {
-    // If wallet doesn't have enough tickets, log warning but don't fail the grant
-    // This allows grants to complete even if producer's wallet is empty
-    log.warn(`Failed to consume tickets from producer ${userId}'s wallet for access grant on ticket ${ticketId}:`, error);
-  }
+  // Consume tickets from producer's wallet
+  // This will throw an error if insufficient tickets (shouldn't happen if checked upfront)
+  await billingService.consumeTickets(
+    appId,
+    tenantId,
+    userId,
+    {
+      quantity,
+      reference_type: 'access_grant',
+      reference_id: String(ticketId),
+      description: `Consumed ${quantity} tickets for access grant (ticket ${ticketId})`,
+    }
+  );
+  log.info(`Consumed ${quantity} tickets from producer ${userId}'s wallet for access grant on ticket ${ticketId}`);
 };
 
 // ===== Access Grant Operations =====
@@ -122,6 +118,79 @@ export const grantAccess = async (
       total_granted: 0,
       total_failed: request.emails.length,
     };
+  }
+
+  // Validate emails first
+  const validEmails = request.emails.filter(email => {
+    const trimmed = email.toLowerCase().trim();
+    return trimmed && emailRegex.test(trimmed);
+  });
+
+  if (validEmails.length === 0) {
+    return {
+      success: [],
+      failed: request.emails.map(email => ({ email, reason: 'Invalid email format' })),
+      total_granted: 0,
+      total_failed: request.emails.length,
+    };
+  }
+
+  // Check ticket availability BEFORE granting access
+  // Calculate how many NEW grants we need (excluding already granted access)
+  let totalTicketsNeeded = 0;
+  const emailToTicketMap = new Map<string, number[]>(); // Track which emails need which tickets
+
+  for (const rawEmail of validEmails) {
+    const email = rawEmail.toLowerCase().trim();
+    const neededTickets: number[] = [];
+
+    for (const ticketId of ticketIds) {
+      // Check if grant already exists
+      const existing = await repo.getAccessGrantByEmail(appId, tenantId, ticketId, email);
+      
+      // Only count tickets that need NEW grants (not already granted or revoked)
+      if (!existing || existing.status === 'revoked') {
+        neededTickets.push(ticketId);
+        totalTicketsNeeded++;
+      }
+    }
+
+    if (neededTickets.length > 0) {
+      emailToTicketMap.set(email, neededTickets);
+    }
+  }
+
+  // Check wallet balance if we need any tickets
+  if (totalTicketsNeeded > 0) {
+    try {
+      const wallet = await billingService.getWallet(appId, tenantId, userId);
+      const availableTickets = wallet.ticket_balance || 0;
+
+      if (availableTickets < totalTicketsNeeded) {
+        // Not enough tickets - return error for all emails
+        return {
+          success: [],
+          failed: validEmails.map(email => ({
+            email,
+            reason: `Not enough tickets available. You have ${availableTickets} ticket(s) but need ${totalTicketsNeeded} ticket(s) to grant access. Please purchase more tickets.`
+          })),
+          total_granted: 0,
+          total_failed: validEmails.length,
+        };
+      }
+    } catch (error) {
+      log.error(`Failed to check wallet balance for user ${userId}:`, error);
+      // If we can't check wallet, fail the request
+      return {
+        success: [],
+        failed: validEmails.map(email => ({
+          email,
+          reason: 'Unable to verify ticket availability. Please try again.'
+        })),
+        total_granted: 0,
+        total_failed: validEmails.length,
+      };
+    }
   }
 
   // Get ticket details for all tickets (for order creation)
@@ -185,10 +254,15 @@ export const grantAccess = async (
               expiresAt: request.expires_at || null,
             });
             
-            // Consume tickets from producer's wallet (non-blocking)
-            consumeProducerWalletTicketsForGrant(appId, tenantId, userId, ticketId, 1).catch((error) => {
+            // Consume tickets from producer's wallet
+            // Note: We've already checked wallet balance, but need to account for re-activations
+            try {
+              await consumeProducerWalletTicketsForGrant(appId, tenantId, userId, ticketId, 1);
+            } catch (error) {
               log.error(`Failed to consume producer wallet tickets for re-activated access grant (ticket ${ticketId}, email ${email}):`, error);
-            });
+              emailFailedReasons.push(`Ticket ${ticketId}: Insufficient tickets for re-activation`);
+              continue;
+            }
             
             emailSuccess = true;
             successfullyGrantedTicketIds.push(ticketId);
@@ -238,10 +312,24 @@ export const grantAccess = async (
             request.expires_at
           );
           
-          // Consume tickets from producer's wallet (non-blocking)
-          consumeProducerWalletTicketsForGrant(appId, tenantId, userId, ticketId, 1).catch((error) => {
+          // Consume tickets from producer's wallet
+          // We've already checked wallet balance upfront, so this should succeed
+          try {
+            await consumeProducerWalletTicketsForGrant(appId, tenantId, userId, ticketId, 1);
+          } catch (error) {
             log.error(`Failed to consume producer wallet tickets for access grant (ticket ${ticketId}, email ${email}):`, error);
-          });
+            // Rollback: delete the grant we just created
+            try {
+              const grant = await repo.getAccessGrantByEmail(appId, tenantId, ticketId, email);
+              if (grant) {
+                await repo.deleteAccessGrant(appId, tenantId, grant.id);
+              }
+            } catch (rollbackError) {
+              log.error(`Failed to rollback access grant for ${email} ticket ${ticketId}:`, rollbackError);
+            }
+            emailFailedReasons.push(`Ticket ${ticketId}: Failed to consume tickets`);
+            continue;
+          }
           
           emailSuccess = true;
           successfullyGrantedTicketIds.push(ticketId);
