@@ -35,7 +35,7 @@ import * as tenantRepo from '../tenant/repository.js';
 // Create order with validation
 export const createOrder = async (
   _appId: string,
-  tenantId: string,
+  _tenantId: string,
   userId: string,
   data: CreateOrderRequest
 ): Promise<Order> => {
