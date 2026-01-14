@@ -41,7 +41,7 @@ export function BasicInfoSection({
     if (hasProFeatures && domainSettingsData?.data?.domain) {
       return domainSettingsData.data.domain;
     }
-    // Default to watch.rekard.com
+    // Default to watch.rekard.com (IP: 147.93.153.29)
     return "watch.rekard.com";
   };
   

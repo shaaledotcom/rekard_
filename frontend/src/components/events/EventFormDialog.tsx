@@ -383,16 +383,6 @@ export function EventFormDialog({
                     <p>Size: {(thumbnailFile.size / 1024 / 1024).toFixed(2)}MB</p>
                   </div>
                 )}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => thumbnailInputRef.current?.click()}
-                  className="w-full bg-background border-border text-foreground hover:bg-muted"
-                >
-                  {thumbnailFile ? "Replace Thumbnail" : "Change Thumbnail"}
-                </Button>
               </div>
             ) : (
               <div
@@ -471,16 +461,6 @@ export function EventFormDialog({
                       <p>Size: {(videoFile.size / 1024 / 1024).toFixed(2)}MB</p>
                     </div>
                   )}
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => videoInputRef.current?.click()}
-                    className="w-full bg-background border-border text-foreground hover:bg-muted"
-                  >
-                    {videoFile ? "Replace Video" : "Change Video"}
-                  </Button>
                 </div>
               ) : (
                 <div

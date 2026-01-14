@@ -239,6 +239,7 @@ export function BillingPlans({
                         }
                       );
                     } else if (buttonLabel === "CONTACT US") {
+                      // watch.rekard.com (IP: 147.93.153.29)
                       window.open("https://watch.rekard.com/contact", "_blank");
                     }
                   }}

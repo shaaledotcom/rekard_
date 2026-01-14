@@ -317,18 +317,6 @@ export function MediaSection({
                   </div>
                   
                   {getFileInfo(field)}
-
-                  {!isReadOnly && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRefs.current[field.key]?.click()}
-                      className="w-full bg-background border-border text-foreground hover:bg-muted"
-                    >
-                      Replace File
-                    </Button>
-                  )}
                 </div>
               )}
             </div>
