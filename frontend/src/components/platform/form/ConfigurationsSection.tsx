@@ -169,7 +169,7 @@ function DomainCard({ formData, onChange, onDelete, isDeleting, hasExistingData 
               <div className="space-y-1 text-xs text-muted-foreground">
                 <div><strong>Type:</strong> A Record</div>
                 <div><strong>Host:</strong> @ or subdomain</div>
-                <div><strong>Value:</strong> 94.136.185.171</div>
+                <div><strong>Value:</strong>147.93.153.29</div>
               </div>
             </div>
           </div>
