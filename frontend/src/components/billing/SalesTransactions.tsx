@@ -56,7 +56,10 @@ export function SalesTransactions() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const { data: transactionsData, isLoading: transactionsLoading } = useGetWalletTransactionsQuery();
+  const { data: transactionsData, isLoading: transactionsLoading } = useGetWalletTransactionsQuery({
+    page: currentPage,
+    page_size: itemsPerPage,
+  });
 
   const isLoading = transactionsLoading;
 
@@ -128,12 +131,14 @@ export function SalesTransactions() {
     return entries;
   }, [filteredByTime, filter, searchQuery]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
-  const paginatedEntries = filteredEntries.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Use server-side pagination from API
+  const totalPages = transactionsData?.total_pages || 1;
+  const totalEntries = transactionsData?.total || 0;
+  
+  // Note: Client-side filtering (time range, type, search) happens on the current page's data
+  // For full filtering across all pages, we'd need to fetch all data or add API filters
+  // For now, we show the filtered entries from the current page
+  const paginatedEntries = filteredEntries;
 
   // Summary stats
   const stats = useMemo(() => {
@@ -428,8 +433,13 @@ export function SalesTransactions() {
             <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-secondary/30">
               <p className="text-xs text-muted-foreground">
                 Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                {Math.min(currentPage * itemsPerPage, filteredEntries.length)} of{" "}
-                {filteredEntries.length} entries
+                {Math.min(currentPage * itemsPerPage, totalEntries)} of{" "}
+                {totalEntries} entries
+                {filteredEntries.length !== paginatedEntries.length && (
+                  <span className="ml-2 text-muted-foreground/70">
+                    ({filteredEntries.length} on this page after filters)
+                  </span>
+                )}
               </p>
               <div className="flex items-center gap-2">
                 <Button
