@@ -192,20 +192,9 @@ export function generateGoogleCalendarUrl(
 
   const startDate = formatUrlDate(event.start_datetime);
   const endDate = formatUrlDate(event.end_datetime);
-  const title = encodeURIComponent(event.title);
-  const description = event.description
-    ? encodeURIComponent(stripHtml(event.description))
-    : "";
-  const location = "Online";
+  const description = event.description ? stripHtml(event.description) : "";
 
-  const params = new URLSearchParams({
-    action: "TEMPLATE",
-    text: title,
-    dates: `${startDate}/${endDate}`,
-    details: description,
-    location: location,
-  });
-
+  let details = description;
   if (ticketUrl) {
     const absoluteUrl =
       ticketUrl.startsWith("http://") || ticketUrl.startsWith("https://")
@@ -213,12 +202,18 @@ export function generateGoogleCalendarUrl(
         : typeof window !== "undefined"
           ? `${window.location.origin}${ticketUrl.startsWith("/") ? ticketUrl : `/${ticketUrl}`}`
           : ticketUrl;
-    params.append("ctz", "UTC");
-    // Add URL in details if not already there
-    if (!description.includes(absoluteUrl)) {
-      params.set("details", description ? `${description}\n\n${absoluteUrl}` : absoluteUrl);
-    }
+    details = details ? `${details}\n\n${absoluteUrl}` : absoluteUrl;
   }
+
+  // URLSearchParams handles encoding — do NOT pre-encode values
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.title,
+    dates: `${startDate}Z/${endDate}Z`,
+    details: details,
+    location: "Online",
+    ctz: "UTC",
+  });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
