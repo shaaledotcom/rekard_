@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { CalendarPlus, Mail, Download } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Calendar, CalendarPlus, Mail, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
   downloadICalFile,
@@ -21,7 +22,27 @@ export function AddToCalendarButton({
   ticketUrl,
   className,
 }: AddToCalendarButtonProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
 
   const isDisabled =
     !event.start_datetime || !event.end_datetime || !event.title;
@@ -52,6 +73,8 @@ export function AddToCalendarButton({
           downloadICalFile(event, ticketUrl);
           break;
       }
+
+      setIsOpen(false);
     } catch (error) {
       console.error("Failed to add to calendar:", error);
       toast({
@@ -64,49 +87,62 @@ export function AddToCalendarButton({
 
   if (isDisabled) return null;
 
-  const iconBtn =
-    "flex flex-col items-center gap-1.5 group disabled:opacity-40 disabled:cursor-not-allowed";
-  const circle =
-    "flex items-center justify-center h-10 w-10 rounded-lg border border-border bg-background group-hover:bg-muted transition-colors";
-  const icon =
-    "h-5 w-5 text-foreground/70 group-hover:text-foreground transition-colors";
-  const label =
-    "text-[11px] text-muted-foreground group-hover:text-foreground transition-colors";
-
   return (
-    <div className={`flex items-center gap-4 ${className || ""}`}>
-      <button
-        onClick={() => handleAction("google")}
-        className={iconBtn}
-        title="Google Calendar"
+    <div className={`relative ${className || ""}`} ref={dropdownRef}>
+      <Button
+        onClick={() => setIsOpen(!isOpen)}
+        variant="outline"
+        size="sm"
+        className="w-full"
       >
-        <span className={circle}>
-          <CalendarPlus className={icon} />
-        </span>
-        <span className={label}>Google</span>
-      </button>
+        <Calendar className="h-4 w-4" />
+        <span>Add to Calendar</span>
+      </Button>
 
-      <button
-        onClick={() => handleAction("microsoft")}
-        className={iconBtn}
-        title="Outlook Calendar"
-      >
-        <span className={circle}>
-          <Mail className={icon} />
-        </span>
-        <span className={label}>Outlook</span>
-      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 bg-card border rounded-lg shadow-lg z-50 p-3">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => handleAction("google")}
+              className="flex flex-col items-center gap-1.5 group"
+              title="Google Calendar"
+            >
+              <span className="flex items-center justify-center h-10 w-10 rounded-full border border-border bg-background group-hover:bg-muted transition-colors">
+                <CalendarPlus className="h-5 w-5 text-foreground/70 group-hover:text-foreground transition-colors" />
+              </span>
+              <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors">
+                Google
+              </span>
+            </button>
 
-      <button
-        onClick={() => handleAction("ical")}
-        className={iconBtn}
-        title="Download .ics file"
-      >
-        <span className={circle}>
-          <Download className={icon} />
-        </span>
-        <span className={label}>iCal</span>
-      </button>
+            <button
+              onClick={() => handleAction("microsoft")}
+              className="flex flex-col items-center gap-1.5 group"
+              title="Outlook Calendar"
+            >
+              <span className="flex items-center justify-center h-10 w-10 rounded-full border border-border bg-background group-hover:bg-muted transition-colors">
+                <Mail className="h-5 w-5 text-foreground/70 group-hover:text-foreground transition-colors" />
+              </span>
+              <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors">
+                Outlook
+              </span>
+            </button>
+
+            <button
+              onClick={() => handleAction("ical")}
+              className="flex flex-col items-center gap-1.5 group"
+              title="Download .ics file"
+            >
+              <span className="flex items-center justify-center h-10 w-10 rounded-full border border-border bg-background group-hover:bg-muted transition-colors">
+                <Download className="h-5 w-5 text-foreground/70 group-hover:text-foreground transition-colors" />
+              </span>
+              <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors">
+                iCal
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
