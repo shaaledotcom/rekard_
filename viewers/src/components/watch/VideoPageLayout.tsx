@@ -225,7 +225,7 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
         />
 
         {selectedEvent && (
-          <div className="mb-6 space-y-3">
+          <div className="mb-6 flex items-center justify-between gap-4">
             <div className="text-sm text-muted-foreground">
               {selectedEvent.start_datetime && selectedEvent.end_datetime ? (
                 <div className="flex flex-wrap items-center gap-2">
