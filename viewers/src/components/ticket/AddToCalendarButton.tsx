@@ -1,14 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import { Calendar, CalendarPlus, Mail, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import {
-  downloadICalFile,
-  generateGoogleCalendarUrl,
-  generateMicrosoftCalendarUrl,
-} from "@/lib/ical";
+import { useAddToCalendar } from "@/hooks/useAddToCalendar";
 import type { PublicEventDetails } from "@/store/api/dashboardApi";
 
 interface AddToCalendarButtonProps {
@@ -22,78 +17,17 @@ export function AddToCalendarButton({
   ticketUrl,
   className,
 }: AddToCalendarButtonProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const isDisabled =
-    !event.start_datetime || !event.end_datetime || !event.title;
-
-  const handleAction = (action: "google" | "microsoft" | "ical") => {
-    try {
-      if (!event.start_datetime || !event.end_datetime) {
-        toast({
-          title: "Error",
-          description: "Event dates are missing.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      switch (action) {
-        case "google": {
-          const url = generateGoogleCalendarUrl(event, ticketUrl);
-          window.open(url, "_blank");
-          break;
-        }
-        case "microsoft": {
-          const url = generateMicrosoftCalendarUrl(event, ticketUrl);
-          window.open(url, "_blank");
-          break;
-        }
-        case "ical":
-          downloadICalFile(event, ticketUrl);
-          break;
-      }
-
-      setIsOpen(false);
-    } catch (error) {
-      console.error("Failed to add to calendar:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add event to calendar.",
-        variant: "destructive",
-      });
-    }
-  };
+  const { isOpen, isDisabled, dropdownRef, toggleOpen, handleAction } =
+    useAddToCalendar(event, ticketUrl);
 
   if (isDisabled) return null;
 
   return (
     <div className={`relative ${className || ""}`} ref={dropdownRef}>
       <Button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         variant="outline"
         size="sm"
-        className="w-full"
       >
         <Calendar className="h-4 w-4" />
         <span>Add to Calendar</span>
