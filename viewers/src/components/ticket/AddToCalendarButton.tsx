@@ -67,7 +67,7 @@ export function AddToCalendarButton({
   const iconBtn =
     "flex flex-col items-center gap-1.5 group disabled:opacity-40 disabled:cursor-not-allowed";
   const circle =
-    "flex items-center justify-center h-10 w-10 rounded-full border border-border bg-background group-hover:bg-muted transition-colors";
+    "flex items-center justify-center h-10 w-10 rounded-lg border border-border bg-background group-hover:bg-muted transition-colors";
   const icon =
     "h-5 w-5 text-foreground/70 group-hover:text-foreground transition-colors";
   const label =
