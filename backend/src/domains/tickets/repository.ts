@@ -83,6 +83,7 @@ export const createTicket = async (
         featuredImage: data.featured_image,
         featuredVideo: data.featured_video,
         purchaseWithoutLogin: data.purchase_without_login ?? false,
+        isFundraiser: data.is_fundraiser ?? false,
         price: data.price?.toString(),
         currency: data.currency || 'INR',
         totalQuantity: data.total_quantity,
@@ -168,6 +169,7 @@ const transformTicket = (ticket: typeof tickets.$inferSelect): Ticket => {
     featured_image: ticket.featuredImage ?? undefined,
     featured_video: ticket.featuredVideo ?? undefined,
     purchase_without_login: ticket.purchaseWithoutLogin ?? false,
+    is_fundraiser: ticket.isFundraiser ?? false,
     price: ticket.price ? parseFloat(ticket.price) : 0,
     currency: ticket.currency ?? 'INR',
     total_quantity: ticket.totalQuantity ?? 0,
@@ -229,6 +231,7 @@ export const updateTicket = async (
     if (data.featured_image !== undefined) updates.featuredImage = data.featured_image;
     if (data.featured_video !== undefined) updates.featuredVideo = data.featured_video;
     if (data.purchase_without_login !== undefined) updates.purchaseWithoutLogin = data.purchase_without_login;
+    if (data.is_fundraiser !== undefined) updates.isFundraiser = data.is_fundraiser;
     if (data.price !== undefined) updates.price = data.price?.toString();
     if (data.currency !== undefined) updates.currency = data.currency;
     if (data.total_quantity !== undefined) updates.totalQuantity = data.total_quantity;

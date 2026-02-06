@@ -61,6 +61,7 @@ export type PublicTicketDetails = {
   thumbnail_image_portrait?: string;
   featured_image?: string;
   featured_video?: string;
+  is_fundraiser: boolean;
   price: number;
   currency: string;
   total_quantity: number;

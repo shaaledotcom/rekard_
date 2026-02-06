@@ -182,6 +182,7 @@ export const getPublicTicketById = async (ticketId: number): Promise<PublicTicke
     thumbnail_image_portrait: ticket.thumbnailImagePortrait || undefined,
     featured_image: ticket.featuredImage || undefined,
     featured_video: ticket.featuredVideo || undefined,
+    is_fundraiser: ticket.isFundraiser ?? false,
     price: ticket.price ? parseFloat(ticket.price) : 0,
     currency: ticket.currency || 'INR',
     total_quantity: ticket.totalQuantity || 0,

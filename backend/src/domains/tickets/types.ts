@@ -20,6 +20,7 @@ export type Ticket = {
   featured_image?: string;
   featured_video?: string;
   purchase_without_login: boolean;
+  is_fundraiser: boolean;
   price: number;
   currency: string;
   total_quantity: number;
@@ -119,6 +120,7 @@ export type CreateTicketRequest = {
   featured_image?: string;
   featured_video?: string;
   purchase_without_login?: boolean;
+  is_fundraiser?: boolean;
   price: number;
   currency?: string;
   total_quantity: number;
@@ -140,6 +142,7 @@ export type UpdateTicketRequest = {
   featured_image?: string;
   featured_video?: string;
   purchase_without_login?: boolean;
+  is_fundraiser?: boolean;
   price?: number;
   currency?: string;
   total_quantity?: number;
