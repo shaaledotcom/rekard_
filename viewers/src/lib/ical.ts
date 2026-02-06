@@ -205,7 +205,7 @@ export function generateGoogleCalendarUrl(
     details = details ? `${details}\n\n${absoluteUrl}` : absoluteUrl;
   }
 
-  // URLSearchParams handles encoding — do NOT pre-encode values
+  // URLSearchParams handles encoding do NOT pre-encode values
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: event.title,
