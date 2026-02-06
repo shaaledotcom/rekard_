@@ -47,6 +47,7 @@ export interface TicketFormData {
   thumbnail_image_portrait?: string;
   featured_image?: string;
   featured_video?: string;
+  is_fundraiser: boolean;
   event_ids: number[];
   pricing: PricingFormData[];
   coupons: CouponFormData[];
@@ -94,6 +95,7 @@ export const DEFAULT_TICKET_FORM_VALUES: TicketFormData = {
   title: "",
   url: "",
   description: "",
+  is_fundraiser: false,
   event_ids: [],
   pricing: [{ currency: "INR", price: 0 }],
   coupons: [],
