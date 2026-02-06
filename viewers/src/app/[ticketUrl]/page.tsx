@@ -108,6 +108,7 @@ export default function TicketDetailPage() {
               ticketId={ticket.id.toString()}
               ticketUrl={ticketUrl}
               events={ticket.events || []}
+              fullEvents={ticket.events || []}
               ticketPrice={ticket.price}
               ticketCurrency={ticket.currency}
               ticketPricing={ticket.pricing}
