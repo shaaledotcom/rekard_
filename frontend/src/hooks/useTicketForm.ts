@@ -85,6 +85,7 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
       thumbnail_image_portrait: ticket.thumbnail_image_portrait,
       featured_image: ticket.featured_image,
       featured_video: ticket.featured_video,
+      is_fundraiser: ticket.is_fundraiser ?? false,
       event_ids: ticket.events?.map((e) => e.id) || [],
       pricing: pricingData,
       coupons: ticket.coupons?.map((c) => ({
@@ -300,6 +301,7 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
         thumbnail_image_portrait: mediaUrls.thumbnail_image_portrait || undefined,
         featured_image: mediaUrls.featured_image || undefined,
         featured_video: mediaUrls.featured_video || undefined,
+        is_fundraiser: formData.is_fundraiser,
         price: mainPricing.price,
         currency: mainPricing.currency,
         total_quantity: formData.total_quantity,

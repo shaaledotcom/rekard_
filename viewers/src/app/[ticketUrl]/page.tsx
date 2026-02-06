@@ -112,6 +112,7 @@ export default function TicketDetailPage() {
               ticketPrice={ticket.price}
               ticketCurrency={ticket.currency}
               ticketPricing={ticket.pricing}
+              isFundraiser={ticket.is_fundraiser}
             />
           </div>
         </div>
