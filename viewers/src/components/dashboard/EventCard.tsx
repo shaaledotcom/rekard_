@@ -32,20 +32,20 @@ export function EventCard({
   );
 
   return (
-    <div className="relative w-full sm:w-auto">
+    <div className="relative w-[42%] max-w-[190px] sm:w-[225px]">
       <div
-        className="w-full sm:h-auto p-0 shadow-none rounded-lg cursor-pointer relative"
+        className="w-full sm:h-auto p-0 shadow-none group rounded-lg cursor-pointer relative"
         onClick={handleClick}
       >
-        <div className="p-0 m-0 h-auto flex flex-col shadow-none border-none w-fit">
+        <div className="relative aspect-[3/5] w-full overflow-hidden rounded-lg bg-muted">
           {thumbnailUrl ? (
             <Image
               src={thumbnailUrl}
               alt={title}
-              className="rounded-lg h-auto"
+              fill
               loading="lazy"
-              width={225}
-              height={380}
+              className="rounded-lg object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              sizes="(max-width: 640px) 42vw, 225px"
             />
           ) : (
             <div className="w-[225px] h-[380px] rounded-lg bg-muted flex items-center justify-center">

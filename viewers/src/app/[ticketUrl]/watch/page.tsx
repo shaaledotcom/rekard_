@@ -85,6 +85,7 @@ export default function WatchPage() {
       thumbnailSrc=""
       onVideoEnded={handleVideoEnded}
       ticketId={ticketId!.toString()}
+      ticketUrl={ticketUrl}
     />
   );
 }

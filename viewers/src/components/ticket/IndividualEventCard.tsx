@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
+import { useRouter } from "next/navigation";
 
 interface IndividualEventCardProps {
   event: {
@@ -15,26 +16,38 @@ interface IndividualEventCardProps {
     thumbnail_image_portrait?: string;
     featured_image?: string;
   };
+  ticketUrl: string;
 }
 
-export function IndividualEventCard({ event }: IndividualEventCardProps) {
+export function IndividualEventCard({ event, ticketUrl }: IndividualEventCardProps) {
   const { formatDate, formatTime } = useTimezoneFormat();
+  const router = useRouter();
 
   const imageUrl =
     event.thumbnail_image_portrait ||
     event.featured_image ||
     "/placeholder-event.jpg";
 
+  const watchPath = `/${ticketUrl}/watch`;
+  const handleClick = () => {
+    router.push(`${watchPath}?eventId=${event.id}`);
+  };
+
   return (
-    <div className="w-full h-auto p-0 m-0 shadow-none rounded-lg">
-      <div className="p-0 m-0 w-full aspect-[2/3] flex flex-col shadow-none border-none">
+    <div
+      onClick={handleClick}
+      className="cursor-pointer group w-full"
+    >
+      <div className="relative w-full aspect-[3/5] rounded-lg overflow-hidden bg-muted">
         <Image
           src={imageUrl}
           alt={event.title}
-          className="w-full h-full object-cover rounded-lg"
+          fill
           loading="lazy"
-          width={300}
-          height={400}
+          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          sizes="(max-width: 640px) 45vw,
+                 (max-width: 1024px) 30vw,
+                 225px"
         />
       </div>
       <div className="flex mt-3">

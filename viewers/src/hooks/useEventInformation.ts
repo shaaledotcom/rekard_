@@ -172,8 +172,9 @@ export function useEventInformation(
   const handleWatch = useCallback(() => {
     if (isPurchased || purchaseStatus?.has_purchased) {
       const currentTitle = ticketUrl || ticketId;
+      const query = currentTitle ? `?eventId=${ticketId}` : "";
       if (currentTitle) {
-        router.push(`/${currentTitle}/watch`);
+        router.push(`/${currentTitle}/watch${query}`);
       } else {
         toast({
           title: "Error",

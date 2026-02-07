@@ -21,7 +21,7 @@ export function EventDetailsSection({ description }: EventDetailsSectionProps) {
     <section className="rounded-lg mt-8">
       <div className="space-y-4">
         <div
-          className="text-foreground/90 leading-relaxed prose prose-sm max-w-none dark:prose-invert prose-p:text-foreground/90 prose-headings:text-foreground prose-strong:text-foreground prose-a:text-primary"
+          className="text-foreground/90 leading-relaxed prose prose-sm max-w-none dark:prose-invert prose-p:text-foreground/90 prose-headings:text-foreground prose-strong:text-foreground prose-a:text-primary space-y-5"
           dangerouslySetInnerHTML={{
             __html: displayHtml,
           }}

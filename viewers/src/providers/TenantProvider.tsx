@@ -41,6 +41,9 @@ export function TenantProvider({ children }: TenantProviderProps) {
   const currentDomain =
     typeof window !== "undefined" ? window.location.host : "";
 
+  // Temp domain for testing
+  // const currentDomain = "events.arohy.com";
+
   // Fetch tenant config
   const {
     data: tenantConfig,

@@ -96,7 +96,7 @@ export default function TicketDetailPage() {
           {ticket.events && ticket.events.length > 0 && (
             <>
               <div className="mt-4 sm:mt-8"></div>
-              <EventsList events={ticket.events} title="Events" />
+              <EventsList events={ticket.events} title="Events" ticketUrl={ticketUrl} />
             </>
           )}
         </div>

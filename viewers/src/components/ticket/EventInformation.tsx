@@ -139,11 +139,10 @@ export function EventInformation({
                   </div>
                 )}
               <Button
-                className={`flex-1 h-10 sm:h-12 text-sm sm:text-base ${
-                  buttonState.variant === "default" && isPurchased
+                className={`flex-1 h-10 sm:h-12 text-sm sm:text-base ${buttonState.variant === "default" && isPurchased
                     ? "bg-blue-500 text-white hover:bg-blue-600"
                     : ""
-                }`}
+                  }`}
                 size="lg"
                 variant={buttonState.variant}
                 onClick={buttonState.onClick}

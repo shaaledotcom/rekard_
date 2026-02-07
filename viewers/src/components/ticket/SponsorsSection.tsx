@@ -26,8 +26,8 @@ export function SponsorsSection({ sponsors = [] }: SponsorsSectionProps) {
         {sponsors.map((sponsor, index) => {
           const SponsorContent = (
             <>
-              <Avatar className="h-32 w-32 mx-auto mb-3">
-                <AvatarImage src={sponsor.image_url} alt={sponsor.title} />
+              <Avatar className="h-32 w-32 mx-auto mb-3 group">
+                <AvatarImage src={sponsor.image_url} alt={sponsor.title} className="object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
                 <AvatarFallback>{sponsor.title.charAt(0)}</AvatarFallback>
               </Avatar>
               <h3 className="font-medium text-sm text-center capitalize">

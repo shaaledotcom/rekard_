@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,13 @@ export function HomeSection({
   // Create a ref map for file inputs
   const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
+  const REQUIRED_WIDTH = 1920;
+  const REQUIRED_HEIGHT = 600;
+  const REQUIRED_RATIO = REQUIRED_WIDTH / REQUIRED_HEIGHT;
+  const RATIO_TOLERANCE = 0.02; // 2%
+
+  const [imageErrors, setImageErrors] = useState<Record<string, string>>({});
+
   // Featured image handlers
   const handleAddFeaturedImage = () => {
     const newImage: FeaturedImageFormData = {
@@ -52,20 +59,47 @@ export function HomeSection({
 
   const handleImageUpload = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+
+    if (!file) return;
+
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const width = img.width;
+      const height = img.height;
+      const ratio = width / height;
+
+      const isValidRatio = Math.abs(ratio - REQUIRED_RATIO) <= RATIO_TOLERANCE;
+
+      if (!isValidRatio) {
+        setImageErrors((prev) => ({
+          ...prev,
+          [id]: `Invalid image size. Required: ${REQUIRED_WIDTH}×${REQUIRED_HEIGHT}px (16:5 ratio).`,
+        }));
+        return;
+      }
+
+      setImageErrors((prev) => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
+
       onChange({
-        featured_images: formData.featured_images.map((img) =>
-          img.id === id
+        featured_images: formData.featured_images.map((imgData) =>
+          imgData.id === id
             ? {
-                ...img,
-                file,
-                url: URL.createObjectURL(file),
-                isExisting: false,
-              }
-            : img
+              ...imgData,
+              file,
+              url: URL.createObjectURL(file),
+              isExisting: false,
+            }
+            : imgData
         ),
       });
-    }
+
+    };
   };
 
   const handleImageLinkChange = (id: string, link: string) => {
@@ -108,7 +142,7 @@ export function HomeSection({
               Banner Images
             </Label>
             <Badge variant="secondary" className="text-xs">
-              1920×1080px
+              1920x600px (16:5)
             </Badge>
           </div>
           {!isReadOnly && (
@@ -126,8 +160,8 @@ export function HomeSection({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Add landscape images (1920px × 1080px) to display on your home page carousel.
-          You can optionally add a link for each image.
+          Upload banner images with resolution <strong>1920×600px</strong> (16:5 aspect ratio).
+          Other image sizes are not supported.
         </p>
 
         {formData.featured_images.length === 0 ? (
@@ -178,9 +212,8 @@ export function HomeSection({
                   {/* Image Preview / Upload */}
                   <div
                     onClick={() => !isReadOnly && triggerFileInput(image.id)}
-                    className={`relative w-40 h-24 rounded-lg border-2 border-dashed border-border bg-background flex items-center justify-center overflow-hidden ${
-                      !isReadOnly ? "cursor-pointer hover:border-foreground/50 hover:bg-muted/50" : ""
-                    }`}
+                    className={`relative w-48 h-24 rounded-lg border-2 border-dashed border-border bg-background flex items-center justify-center overflow-hidden ${!isReadOnly ? "cursor-pointer hover:border-foreground/50 hover:bg-muted/50" : ""
+                      }`}
                   >
                     {image.url ? (
                       <img
@@ -222,6 +255,11 @@ export function HomeSection({
                     </p>
                   </div>
                 </div>
+                {imageErrors[image.id] && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {imageErrors[image.id]}
+                  </p>
+                )}
               </div>
             ))}
           </div>

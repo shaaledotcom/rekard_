@@ -37,6 +37,13 @@ const MAX_VIDEO_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const THUMBNAIL_RULES = {
+  minWidth: 1080,
+  minHeight: 1920,
+  ratio: 9 / 16,
+};
+
+const RATIO_TOLERANCE = 0.02;
 
 export function EventFormDialog({
   isOpen,
@@ -57,6 +64,7 @@ export function EventFormDialog({
   const [thumbnailDragOver, setThumbnailDragOver] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const [thumbnailError, setThumbnailError] = useState<string | null>(null);
 
   // Check if embed code looks valid (contains iframe or common embed patterns)
   const embedCode = formData.embed || "";
@@ -78,6 +86,35 @@ export function EventFormDialog({
     return null;
   };
 
+  const validateThumbnailResolution = (file: File): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+
+      img.onload = () => {
+        const { width, height } = img;
+        const ratio = width / height;
+
+        URL.revokeObjectURL(img.src);
+
+        const validRatio =
+          Math.abs(ratio - THUMBNAIL_RULES.ratio) <= RATIO_TOLERANCE;
+
+        const validSize =
+          width >= THUMBNAIL_RULES.minWidth &&
+          height >= THUMBNAIL_RULES.minHeight;
+
+        if (!validRatio || !validSize) {
+          resolve(
+            "Invalid thumbnail image. Required: Portrait 9:16 (minimum 1080×1920px)."
+          );
+        } else {
+          resolve(null);
+        }
+      };
+    });
+  };
+
   const handleVideoFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -95,7 +132,7 @@ export function EventFormDialog({
     onVideoFileChange?.(file);
     // Clear embed when video file is selected
     onFormChange({ ...formData, embed: undefined });
-    
+
     // Reset input value to allow selecting the same file again
     if (videoInputRef.current) {
       videoInputRef.current.value = "";
@@ -147,31 +184,37 @@ export function EventFormDialog({
     return null;
   };
 
-  const handleThumbnailFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThumbnailFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const error = validateImageFile(file);
     if (error) {
-      alert(error);
+      setThumbnailError(error);
       // Reset input value even on error so user can try again
       if (thumbnailInputRef.current) {
         thumbnailInputRef.current.value = "";
       }
       return;
     }
+    const resolutionError = await validateThumbnailResolution(file);
+    if (resolutionError) {
+      setThumbnailError(resolutionError);
+      return;
+    }
+    setThumbnailError(null);
 
     onThumbnailFileChange?.(file);
     // Clear existing URL when new file is selected
     onFormChange({ ...formData, thumbnail_image_portrait: undefined });
-    
+
     // Reset input value to allow selecting the same file again
     if (thumbnailInputRef.current) {
       thumbnailInputRef.current.value = "";
     }
   }, [formData, onFormChange, onThumbnailFileChange]);
 
-  const handleThumbnailDrop = useCallback((e: React.DragEvent) => {
+  const handleThumbnailDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     setThumbnailDragOver(false);
 
@@ -180,9 +223,17 @@ export function EventFormDialog({
 
     const error = validateImageFile(file);
     if (error) {
-      alert(error);
+      setThumbnailError(error);
       return;
     }
+
+    const resolutionError = await validateThumbnailResolution(file);
+    if (resolutionError) {
+      setThumbnailError(resolutionError);
+      return;
+    }
+
+    setThumbnailError(null);
 
     onThumbnailFileChange?.(file);
     onFormChange({ ...formData, thumbnail_image_portrait: undefined });
@@ -263,11 +314,10 @@ export function EventFormDialog({
                     onVideoFileChange?.(null);
                   }
                 }}
-                className={`flex items-center gap-3 p-4 rounded-xl border ${
-                  !isVOD
-                    ? "bg-foreground/10 border-foreground text-foreground"
-                    : "bg-secondary border-border text-muted-foreground hover:border-foreground/30"
-                }`}
+                className={`flex items-center gap-3 p-4 rounded-xl border ${!isVOD
+                  ? "bg-foreground/10 border-foreground text-foreground"
+                  : "bg-secondary border-border text-muted-foreground hover:border-foreground/30"
+                  }`}
               >
                 <Radio className="w-5 h-5" />
                 <div className="text-left">
@@ -278,11 +328,10 @@ export function EventFormDialog({
               <button
                 type="button"
                 onClick={() => onFormChange({ ...formData, is_vod: true })}
-                className={`flex items-center gap-3 p-4 rounded-xl border ${
-                  isVOD
-                    ? "bg-foreground/10 border-foreground text-foreground"
-                    : "bg-secondary border-border text-muted-foreground hover:border-foreground/30"
-                }`}
+                className={`flex items-center gap-3 p-4 rounded-xl border ${isVOD
+                  ? "bg-foreground/10 border-foreground text-foreground"
+                  : "bg-secondary border-border text-muted-foreground hover:border-foreground/30"
+                  }`}
               >
                 <Film className="w-5 h-5" />
                 <div className="text-left">
@@ -293,8 +342,8 @@ export function EventFormDialog({
             </div>
           </div>
 
-            {/* Live Event Fields - Only shown when NOT VOD */}
-            {!isVOD && (
+          {/* Live Event Fields - Only shown when NOT VOD */}
+          {!isVOD && (
             <>
               {/* Date & Time */}
               <div className="grid grid-cols-2 gap-4">
@@ -357,7 +406,7 @@ export function EventFormDialog({
               <FileImage className="w-4 h-4" />
               Thumbnail Image
             </Label>
-            
+
             {getThumbnailPreview() ? (
               <div className="space-y-3 p-4 rounded-xl bg-secondary border border-border">
                 <div className="relative">
@@ -376,7 +425,7 @@ export function EventFormDialog({
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 {thumbnailFile && (
                   <div className="text-xs text-muted-foreground text-center">
                     <p>{thumbnailFile.name}</p>
@@ -386,11 +435,10 @@ export function EventFormDialog({
               </div>
             ) : (
               <div
-                className={`relative border-2 border-dashed rounded-xl p-6 text-center ${
-                  thumbnailDragOver
-                    ? "border-foreground bg-secondary"
-                    : "border-border hover:border-foreground/50 bg-secondary"
-                }`}
+                className={`relative border-2 border-dashed rounded-xl p-6 text-center ${thumbnailDragOver
+                  ? "border-foreground bg-secondary"
+                  : "border-border hover:border-foreground/50 bg-secondary"
+                  }`}
                 onDragOver={handleThumbnailDragOver}
                 onDragLeave={handleThumbnailDragLeave}
                 onDrop={handleThumbnailDrop}
@@ -404,7 +452,7 @@ export function EventFormDialog({
                   <br />
                   <span className="text-muted-foreground/70">Portrait orientation (9:16) recommended</span>
                 </p>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -422,6 +470,11 @@ export function EventFormDialog({
                   onChange={handleThumbnailFileChange}
                   className="hidden"
                 />
+                {thumbnailError && (
+                  <p className="text-xs text-red-500 mt-2 text-center">
+                    {thumbnailError}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -433,7 +486,7 @@ export function EventFormDialog({
                 <Video className="w-4 h-4" />
                 Video File
               </Label>
-              
+
               {videoFile || (formData.embed && formData.embed.startsWith("http")) ? (
                 <div className="space-y-3 p-4 rounded-xl bg-secondary border border-border">
                   <div className="relative">
@@ -454,7 +507,7 @@ export function EventFormDialog({
                       </Button>
                     )}
                   </div>
-                  
+
                   {videoFile && (
                     <div className="text-xs text-muted-foreground">
                       <p>{videoFile.name}</p>
@@ -464,11 +517,10 @@ export function EventFormDialog({
                 </div>
               ) : (
                 <div
-                  className={`relative border-2 border-dashed rounded-xl p-6 text-center ${
-                    dragOver
-                      ? "border-foreground bg-secondary"
-                      : "border-border hover:border-foreground/50 bg-secondary"
-                  }`}
+                  className={`relative border-2 border-dashed rounded-xl p-6 text-center ${dragOver
+                    ? "border-foreground bg-secondary"
+                    : "border-border hover:border-foreground/50 bg-secondary"
+                    }`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleVideoDrop}
@@ -480,7 +532,7 @@ export function EventFormDialog({
                   <p className="text-xs text-muted-foreground mb-4">
                     Upload your video file (MP4, WebM, OGG, QuickTime up to 5GB)
                   </p>
-                  
+
                   <Button
                     type="button"
                     variant="outline"
@@ -559,7 +611,7 @@ export function EventFormDialog({
                         <Eye className="w-4 h-4 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground font-medium">Embed Preview</span>
                       </div>
-                      <div 
+                      <div
                         className="p-4 min-h-[200px] flex items-center justify-center [&>iframe]:max-w-full [&>iframe]:rounded-lg [&>video]:max-w-full [&>video]:rounded-lg"
                         dangerouslySetInnerHTML={{ __html: embedCode }}
                       />
@@ -644,7 +696,7 @@ export function EventFormDialog({
                           <Eye className="w-4 h-4 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground font-medium">Embed Preview</span>
                         </div>
-                        <div 
+                        <div
                           className="p-4 min-h-[200px] flex items-center justify-center [&>iframe]:max-w-full [&>iframe]:rounded-lg [&>video]:max-w-full [&>video]:rounded-lg"
                           dangerouslySetInnerHTML={{ __html: embedCode }}
                         />
@@ -714,7 +766,7 @@ export function EventFormDialog({
               "Save Changes"
             ) : (
               "Create Event"
-            )}
+            )}.
           </Button>
         </DialogFooter>
       </DialogContent>
