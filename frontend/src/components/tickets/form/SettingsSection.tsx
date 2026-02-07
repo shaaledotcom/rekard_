@@ -15,7 +15,9 @@ import {
   X,
   Search,
   Plus,
-  AlertTriangle
+  Navigation,
+  Hash,
+  Map,
 } from "lucide-react";
 import type { TicketFormData } from "./types";
 import { STATUS_OPTIONS } from "./types";
@@ -27,78 +29,152 @@ interface SettingsSectionProps {
   isReadOnly?: boolean;
 }
 
-// Common countries for music events
+type RuleTab = "country" | "city" | "state" | "pincode" | "coordinates";
+
+// Common countries for events
 const COUNTRY_OPTIONS = [
-  { code: "IN", name: "India", flag: "🇮🇳" },
-  { code: "US", name: "United States", flag: "🇺🇸" },
-  { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
-  { code: "CA", name: "Canada", flag: "🇨🇦" },
-  { code: "AU", name: "Australia", flag: "🇦🇺" },
-  { code: "DE", name: "Germany", flag: "🇩🇪" },
-  { code: "FR", name: "France", flag: "🇫🇷" },
-  { code: "JP", name: "Japan", flag: "🇯🇵" },
-  { code: "SG", name: "Singapore", flag: "🇸🇬" },
-  { code: "AE", name: "United Arab Emirates", flag: "🇦🇪" },
-  { code: "NL", name: "Netherlands", flag: "🇳🇱" },
-  { code: "BR", name: "Brazil", flag: "🇧🇷" },
-  { code: "MX", name: "Mexico", flag: "🇲🇽" },
-  { code: "ES", name: "Spain", flag: "🇪🇸" },
-  { code: "IT", name: "Italy", flag: "🇮🇹" },
-  { code: "SE", name: "Sweden", flag: "🇸🇪" },
-  { code: "KR", name: "South Korea", flag: "🇰🇷" },
-  { code: "NZ", name: "New Zealand", flag: "🇳🇿" },
-  { code: "ZA", name: "South Africa", flag: "🇿🇦" },
-  { code: "ID", name: "Indonesia", flag: "🇮🇩" },
+  { code: "IN", name: "India", flag: "\u{1F1EE}\u{1F1F3}" },
+  { code: "US", name: "United States", flag: "\u{1F1FA}\u{1F1F8}" },
+  { code: "GB", name: "United Kingdom", flag: "\u{1F1EC}\u{1F1E7}" },
+  { code: "CA", name: "Canada", flag: "\u{1F1E8}\u{1F1E6}" },
+  { code: "AU", name: "Australia", flag: "\u{1F1E6}\u{1F1FA}" },
+  { code: "DE", name: "Germany", flag: "\u{1F1E9}\u{1F1EA}" },
+  { code: "FR", name: "France", flag: "\u{1F1EB}\u{1F1F7}" },
+  { code: "JP", name: "Japan", flag: "\u{1F1EF}\u{1F1F5}" },
+  { code: "SG", name: "Singapore", flag: "\u{1F1F8}\u{1F1EC}" },
+  { code: "AE", name: "United Arab Emirates", flag: "\u{1F1E6}\u{1F1EA}" },
+  { code: "NL", name: "Netherlands", flag: "\u{1F1F3}\u{1F1F1}" },
+  { code: "BR", name: "Brazil", flag: "\u{1F1E7}\u{1F1F7}" },
+  { code: "MX", name: "Mexico", flag: "\u{1F1F2}\u{1F1FD}" },
+  { code: "ES", name: "Spain", flag: "\u{1F1EA}\u{1F1F8}" },
+  { code: "IT", name: "Italy", flag: "\u{1F1EE}\u{1F1F9}" },
+  { code: "SE", name: "Sweden", flag: "\u{1F1F8}\u{1F1EA}" },
+  { code: "KR", name: "South Korea", flag: "\u{1F1F0}\u{1F1F7}" },
+  { code: "NZ", name: "New Zealand", flag: "\u{1F1F3}\u{1F1FF}" },
+  { code: "ZA", name: "South Africa", flag: "\u{1F1FF}\u{1F1E6}" },
+  { code: "ID", name: "Indonesia", flag: "\u{1F1EE}\u{1F1E9}" },
 ];
+
+const RULE_TAB_CONFIG: { key: RuleTab; label: string; icon: React.ReactNode }[] = [
+  { key: "country", label: "Country", icon: <Globe2 className="h-3.5 w-3.5" /> },
+  { key: "state", label: "State", icon: <Map className="h-3.5 w-3.5" /> },
+  { key: "city", label: "City", icon: <MapPin className="h-3.5 w-3.5" /> },
+  { key: "pincode", label: "Pincode", icon: <Hash className="h-3.5 w-3.5" /> },
+  { key: "coordinates", label: "Coordinates", icon: <Navigation className="h-3.5 w-3.5" /> },
+];
+
+function getRuleDisplayLabel(rule: GeoblockingLocation): string {
+  if (rule.type === "coordinates" && Array.isArray(rule.value)) {
+    return rule.name || `(${rule.value[0]}, ${rule.value[1]}) r=${rule.radius_km}km`;
+  }
+  return rule.name || String(rule.value);
+}
+
+function getRuleTypeIcon(type: string): string {
+  switch (type) {
+    case "country": return "\u{1F30D}";
+    case "state": return "\u{1F5FA}\u{FE0F}";
+    case "city": return "\u{1F3D9}\u{FE0F}";
+    case "pincode": return "\u{1F4EC}";
+    case "coordinates": return "\u{1F4CD}";
+    default: return "\u{1F30D}";
+  }
+}
 
 export function SettingsSection({
   formData,
   onChange,
   isReadOnly = false,
 }: SettingsSectionProps) {
-  // const [countrySearch, setCountrySearch] = useState("");
-  // const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { canPublish, hasActivePlan, hasTickets } = usePlan();
+  const [countrySearch, setCountrySearch] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [activeRuleTab, setActiveRuleTab] = useState<RuleTab>("country");
+  const { canPublish } = usePlan();
 
-  // const geoblockingCountries = formData.geoblocking_countries || [];
+  // State for non-country rule inputs
+  const [ruleCountryCode, setRuleCountryCode] = useState("IN");
+  const [ruleValue, setRuleValue] = useState("");
+  const [ruleName, setRuleName] = useState("");
+  const [coordLat, setCoordLat] = useState("");
+  const [coordLng, setCoordLng] = useState("");
+  const [coordRadius, setCoordRadius] = useState("50");
+
+  const geoblockingRules = formData.geoblocking_countries || [];
   
-  // Check if we should show publishing warning (when trying to set status to published but can't)
+  // Check if we should show publishing warning
   const isAttemptingPublish = formData.status === "published" || formData.status === "sold_out";
   const showPublishingWarning = !canPublish && isAttemptingPublish;
 
   // Filter countries based on search and already selected
-  // const filteredCountries = COUNTRY_OPTIONS.filter((country) => {
-  //   const isAlreadySelected = geoblockingCountries.some(
-  //     (loc) => loc.value === country.code
-  //   );
-  //   const matchesSearch = 
-  //     country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-  //     country.code.toLowerCase().includes(countrySearch.toLowerCase());
-  //   return !isAlreadySelected && matchesSearch;
-  // });
+  const filteredCountries = COUNTRY_OPTIONS.filter((country) => {
+    const isAlreadySelected = geoblockingRules.some(
+      (loc) => loc.type === "country" && loc.value === country.code
+    );
+    const matchesSearch = 
+      country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      country.code.toLowerCase().includes(countrySearch.toLowerCase());
+    return !isAlreadySelected && matchesSearch;
+  });
 
-  // const handleAddCountry = (country: typeof COUNTRY_OPTIONS[0]) => {
-  //   const newLocation: GeoblockingLocation = {
-  //     type: "country",
-  //     value: country.code,
-  //     name: country.name,
-  //   };
-  //   onChange({ 
-  //     geoblocking_countries: [...geoblockingCountries, newLocation] 
-  //   });
-  //   setCountrySearch("");
-  //   setIsDropdownOpen(false);
-  // };
+  const handleAddCountry = (country: typeof COUNTRY_OPTIONS[0]) => {
+    const newRule: GeoblockingLocation = {
+      type: "country",
+      value: country.code,
+      name: country.name,
+    };
+    onChange({ 
+      geoblocking_countries: [...geoblockingRules, newRule] 
+    });
+    setCountrySearch("");
+    setIsDropdownOpen(false);
+  };
 
-  // const handleRemoveCountry = (index: number) => {
-  //   onChange({
-  //     geoblocking_countries: geoblockingCountries.filter((_, i) => i !== index),
-  //   });
-  // };
+  const handleAddRule = () => {
+    if (activeRuleTab === "country") return; // Countries use the dropdown
 
-  // const getCountryInfo = (code: string) => {
-  //   return COUNTRY_OPTIONS.find((c) => c.code === code);
-  // };
+    if (activeRuleTab === "coordinates") {
+      const lat = parseFloat(coordLat);
+      const lng = parseFloat(coordLng);
+      const radius = parseFloat(coordRadius);
+      if (isNaN(lat) || isNaN(lng) || isNaN(radius) || radius <= 0) return;
+
+      const newRule: GeoblockingLocation = {
+        type: "coordinates",
+        value: [lat, lng],
+        radius_km: radius,
+        name: ruleName || `(${lat.toFixed(4)}, ${lng.toFixed(4)}) r=${radius}km`,
+      };
+      onChange({ geoblocking_countries: [...geoblockingRules, newRule] });
+      setCoordLat("");
+      setCoordLng("");
+      setCoordRadius("50");
+      setRuleName("");
+      return;
+    }
+
+    // city / state / pincode
+    if (!ruleValue.trim()) return;
+
+    const newRule: GeoblockingLocation = {
+      type: activeRuleTab,
+      value: ruleValue.trim(),
+      country_code: (activeRuleTab === "city" || activeRuleTab === "state") ? ruleCountryCode : undefined,
+      name: ruleName || ruleValue.trim(),
+    };
+    onChange({ geoblocking_countries: [...geoblockingRules, newRule] });
+    setRuleValue("");
+    setRuleName("");
+  };
+
+  const handleRemoveRule = (index: number) => {
+    onChange({
+      geoblocking_countries: geoblockingRules.filter((_, i) => i !== index),
+    });
+  };
+
+  const getCountryInfo = (code: string) => {
+    return COUNTRY_OPTIONS.find((c) => c.code === code);
+  };
 
   return (
     <div className="space-y-8">
@@ -139,7 +215,6 @@ export function SettingsSection({
             value={formData.status}
             onChange={(e) => {
               const newStatus = e.target.value as any;
-              // If trying to publish without plan, automatically set to draft
               if ((newStatus === "published" || newStatus === "sold_out") && !canPublish) {
                 onChange({ status: "draft" });
               } else {
@@ -150,7 +225,6 @@ export function SettingsSection({
             className="w-full h-12 px-4 pr-10 bg-secondary border border-border text-foreground rounded-xl appearance-none cursor-pointer focus:border-foreground/50 focus:outline-none focus:ring-1 focus:ring-foreground/20"
           >
             {STATUS_OPTIONS.map((status) => {
-              // Disable published/sold_out options if user doesn't have plan
               const isPublishingStatus = status.value === "published" || status.value === "sold_out";
               const isDisabled = !isReadOnly && isPublishingStatus && !canPublish;
               
@@ -178,16 +252,15 @@ export function SettingsSection({
         </p>
       </div>
 
-      {/* Geoblocking Section - Commented out */}
-      {/*
+      {/* Geoblocking Section */}
       <div className="space-y-4">
         <label className={`flex items-center gap-4 p-4 rounded-xl bg-secondary border border-border ${
           !isReadOnly ? "cursor-pointer hover:border-foreground/30" : ""
         }`}>
-          <div className={`w-12 h-7 rounded-full p-1 ${
+          <div className={`w-12 h-7 rounded-full p-1 transition-colors ${
             formData.geoblocking_enabled ? "bg-foreground" : "bg-muted"
           }`}>
-            <div className={`w-5 h-5 rounded-full bg-background shadow ${
+            <div className={`w-5 h-5 rounded-full bg-background shadow transition-transform ${
               formData.geoblocking_enabled ? "translate-x-5" : "translate-x-0"
             }`} />
           </div>
@@ -204,7 +277,7 @@ export function SettingsSection({
               <p className="text-foreground font-medium text-sm">Enable Geo-blocking</p>
             </div>
             <p className="text-muted-foreground text-xs mt-1">
-              Restrict ticket purchases to specific countries only
+              Block ticket purchases and viewing from specific locations
             </p>
           </div>
         </label>
@@ -214,79 +287,230 @@ export function SettingsSection({
             <div className="flex items-center justify-between">
               <Label className="text-foreground text-sm font-medium flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                Allowed Countries
+                Blocked Locations
               </Label>
               <Badge variant="secondary" className="text-xs">
-                {geoblockingCountries.length} selected
+                {geoblockingRules.length} rule{geoblockingRules.length !== 1 ? "s" : ""}
               </Badge>
             </div>
 
+            {/* Rule Type Tabs */}
             {!isReadOnly && (
-              <div className="relative">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={countrySearch}
-                    onChange={(e) => {
-                      setCountrySearch(e.target.value);
-                      setIsDropdownOpen(true);
-                    }}
-                    onFocus={() => setIsDropdownOpen(true)}
-                    placeholder="Search countries to allow..."
-                    className="pl-10 h-10 bg-background border-border text-foreground placeholder:text-muted-foreground rounded-lg"
-                  />
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {RULE_TAB_CONFIG.map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setActiveRuleTab(tab.key)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        activeRuleTab === tab.key
+                          ? "bg-foreground text-background"
+                          : "bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
 
-                {isDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                    {filteredCountries.length > 0 ? (
-                      filteredCountries.slice(0, 8).map((country) => (
-                        <button
-                          key={country.code}
-                          type="button"
-                          onClick={() => handleAddCountry(country)}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-secondary"
-                        >
-                          <span className="text-lg">{country.flag}</span>
-                          <span className="text-foreground text-sm">{country.name}</span>
-                          <span className="text-muted-foreground text-xs ml-auto">{country.code}</span>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-3 py-4 text-muted-foreground text-sm text-center">
-                        {countrySearch ? "No countries found" : "Type to search"}
+                {/* Country tab - searchable dropdown */}
+                {activeRuleTab === "country" && (
+                  <div className="relative">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={countrySearch}
+                        onChange={(e) => {
+                          setCountrySearch(e.target.value);
+                          setIsDropdownOpen(true);
+                        }}
+                        onFocus={() => setIsDropdownOpen(true)}
+                        placeholder="Search countries to block..."
+                        className="pl-10 h-10 bg-background border-border text-foreground placeholder:text-muted-foreground rounded-lg"
+                      />
+                    </div>
+
+                    {isDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                        {filteredCountries.length > 0 ? (
+                          filteredCountries.slice(0, 8).map((country) => (
+                            <button
+                              key={country.code}
+                              type="button"
+                              onClick={() => handleAddCountry(country)}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-secondary"
+                            >
+                              <span className="text-lg">{country.flag}</span>
+                              <span className="text-foreground text-sm">{country.name}</span>
+                              <span className="text-muted-foreground text-xs ml-auto">{country.code}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-3 py-4 text-muted-foreground text-sm text-center">
+                            {countrySearch ? "No countries found" : "Type to search"}
+                          </div>
+                        )}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* State / City tab */}
+                {(activeRuleTab === "state" || activeRuleTab === "city") && (
+                  <div className="flex gap-2">
+                    <select
+                      value={ruleCountryCode}
+                      onChange={(e) => setRuleCountryCode(e.target.value)}
+                      className="h-10 px-3 bg-background border border-border text-foreground rounded-lg text-sm w-24"
+                    >
+                      {COUNTRY_OPTIONS.map((c) => (
+                        <option key={c.code} value={c.code}>{c.code}</option>
+                      ))}
+                    </select>
+                    <Input
+                      value={ruleValue}
+                      onChange={(e) => setRuleValue(e.target.value)}
+                      placeholder={activeRuleTab === "state" ? "e.g. Karnataka" : "e.g. Bangalore"}
+                      className="h-10 flex-1 bg-background border-border text-foreground placeholder:text-muted-foreground rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddRule}
+                      disabled={!ruleValue.trim()}
+                      className="h-10 px-3"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Pincode tab */}
+                {activeRuleTab === "pincode" && (
+                  <div className="flex gap-2">
+                    <Input
+                      value={ruleValue}
+                      onChange={(e) => setRuleValue(e.target.value)}
+                      placeholder="e.g. 560001"
+                      className="h-10 flex-1 bg-background border-border text-foreground placeholder:text-muted-foreground rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddRule}
+                      disabled={!ruleValue.trim()}
+                      className="h-10 px-3"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Coordinates tab */}
+                {activeRuleTab === "coordinates" && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        value={coordLat}
+                        onChange={(e) => setCoordLat(e.target.value)}
+                        placeholder="Latitude"
+                        type="number"
+                        step="any"
+                        className="h-10 flex-1 bg-background border-border text-foreground placeholder:text-muted-foreground rounded-lg"
+                      />
+                      <Input
+                        value={coordLng}
+                        onChange={(e) => setCoordLng(e.target.value)}
+                        placeholder="Longitude"
+                        type="number"
+                        step="any"
+                        className="h-10 flex-1 bg-background border-border text-foreground placeholder:text-muted-foreground rounded-lg"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={coordRadius}
+                        onChange={(e) => setCoordRadius(e.target.value)}
+                        placeholder="Radius (km)"
+                        type="number"
+                        min="1"
+                        className="h-10 flex-1 bg-background border-border text-foreground placeholder:text-muted-foreground rounded-lg"
+                      />
+                      <Input
+                        value={ruleName}
+                        onChange={(e) => setRuleName(e.target.value)}
+                        placeholder="Label (optional)"
+                        className="h-10 flex-1 bg-background border-border text-foreground placeholder:text-muted-foreground rounded-lg"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddRule}
+                        disabled={!coordLat || !coordLng || !coordRadius}
+                        className="h-10 px-3"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick add for countries */}
+                {activeRuleTab === "country" && geoblockingRules.filter(r => r.type === "country").length < 10 && (
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-muted-foreground text-xs mb-2">Quick add:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {COUNTRY_OPTIONS.slice(0, 5)
+                        .filter((c) => !geoblockingRules.some((loc) => loc.type === "country" && loc.value === c.code))
+                        .map((country) => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => handleAddCountry(country)}
+                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-background hover:bg-muted text-foreground/70 hover:text-foreground text-xs"
+                          >
+                            <Plus className="h-3 w-3" />
+                            <span>{country.flag}</span>
+                            <span>{country.code}</span>
+                          </button>
+                        ))}
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
+            {/* Current rules list */}
             <div className="space-y-2">
-              {geoblockingCountries.length === 0 ? (
+              {geoblockingRules.length === 0 ? (
                 <div className="text-center py-4">
                   <Globe2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground text-sm">No countries selected</p>
+                  <p className="text-muted-foreground text-sm">No locations blocked</p>
                   <p className="text-muted-foreground text-xs mt-1">
-                    Add countries where viewers can purchase this ticket
+                    Add locations to block viewers from purchasing or watching
                   </p>
                 </div>
               ) : (
-                geoblockingCountries.map((location, index) => {
-                  const countryInfo = getCountryInfo(location.value as string);
+                geoblockingRules.map((rule, index) => {
+                  const countryInfo = rule.type === "country" ? getCountryInfo(rule.value as string) : null;
                   return (
                     <div
                       key={index}
                       className="flex items-center justify-between p-3 bg-background rounded-lg"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-lg">{countryInfo?.flag || "🌍"}</span>
+                        <span className="text-lg">{countryInfo?.flag || getRuleTypeIcon(rule.type)}</span>
                         <div>
                           <span className="text-foreground text-sm font-medium">
-                            {location.name || countryInfo?.name || location.value}
+                            {countryInfo?.name || getRuleDisplayLabel(rule)}
                           </span>
                           <span className="text-muted-foreground text-xs ml-2">
-                            {location.value}
+                            {rule.type}{rule.country_code ? ` (${rule.country_code})` : ""}
                           </span>
                         </div>
                       </div>
@@ -295,7 +519,7 @@ export function SettingsSection({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleRemoveCountry(index)}
+                          onClick={() => handleRemoveRule(index)}
                           className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary"
                         >
                           <X className="h-4 w-4" />
@@ -307,35 +531,12 @@ export function SettingsSection({
               )}
             </div>
 
-            {!isReadOnly && geoblockingCountries.length < 5 && (
-              <div className="pt-2 border-t border-border">
-                <p className="text-muted-foreground text-xs mb-2">Quick add:</p>
-                <div className="flex flex-wrap gap-2">
-                  {COUNTRY_OPTIONS.slice(0, 5)
-                    .filter((c) => !geoblockingCountries.some((loc) => loc.value === c.code))
-                    .map((country) => (
-                      <button
-                        key={country.code}
-                        type="button"
-                        onClick={() => handleAddCountry(country)}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-background hover:bg-muted text-foreground/70 hover:text-foreground text-xs"
-                      >
-                        <Plus className="h-3 w-3" />
-                        <span>{country.flag}</span>
-                        <span>{country.code}</span>
-                      </button>
-                    ))}
-                </div>
-              </div>
-            )}
-
             <p className="text-xs text-muted-foreground">
-              Only viewers from selected countries will be able to purchase this ticket
+              Viewers from blocked locations will not be able to purchase or watch this ticket
             </p>
           </div>
         )}
       </div>
-      */}
     </div>
   );
 }

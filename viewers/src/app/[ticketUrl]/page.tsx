@@ -113,6 +113,8 @@ export default function TicketDetailPage() {
               ticketCurrency={ticket.currency}
               ticketPricing={ticket.pricing}
               isFundraiser={ticket.is_fundraiser}
+              geoblockingEnabled={ticket.geoblocking_enabled}
+              geoblockingCountries={ticket.geoblocking_countries}
             />
           </div>
         </div>
