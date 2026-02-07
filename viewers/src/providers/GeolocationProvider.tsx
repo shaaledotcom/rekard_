@@ -10,6 +10,9 @@ export interface GeolocationData {
   ip: string;
   city: string;
   region: string;
+  postal_code: string;
+  latitude: number;
+  longitude: number;
   timezone: string;
 }
 
@@ -97,6 +100,9 @@ export function GeolocationProvider({ children }: { children: React.ReactNode })
         ip: data.ip || "",
         city: data.city || "",
         region: data.region || "",
+        postal_code: data.postal || "",
+        latitude: typeof data.latitude === "number" ? data.latitude : 0,
+        longitude: typeof data.longitude === "number" ? data.longitude : 0,
         timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
 
@@ -119,6 +125,9 @@ export function GeolocationProvider({ children }: { children: React.ReactNode })
           ip: "",
           city: "",
           region: "",
+          postal_code: "",
+          latitude: 0,
+          longitude: 0,
           timezone: timezone,
         };
         
@@ -133,6 +142,9 @@ export function GeolocationProvider({ children }: { children: React.ReactNode })
           ip: "",
           city: "",
           region: "",
+          postal_code: "",
+          latitude: 0,
+          longitude: 0,
           timezone: "America/New_York",
         });
       }
@@ -185,21 +197,98 @@ export function useGeolocation() {
   return context;
 }
 
-// Utility function for checking if a location is blocked
+// ---------------------------------------------------------------------------
+// Geoblocking rule types (mirrors backend GeoblockingRule)
+// ---------------------------------------------------------------------------
+
+export interface GeoblockingRule {
+  type: "country" | "city" | "state" | "pincode" | "coordinates";
+  value: string | [number, number];
+  country_code?: string;
+  radius_km?: number;
+  name?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Haversine distance (km)
+// ---------------------------------------------------------------------------
+
+function toRad(deg: number): number {
+  return deg * (Math.PI / 180);
+}
+
+function haversineDistanceKm(
+  lat1: number, lon1: number,
+  lat2: number, lon2: number
+): number {
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ---------------------------------------------------------------------------
+// Rule matching
+// ---------------------------------------------------------------------------
+
+function normalize(str: string): string {
+  return str.trim().toLowerCase();
+}
+
+function matchesRule(geo: GeolocationData, rule: GeoblockingRule): boolean {
+  switch (rule.type) {
+    case "country":
+      return typeof rule.value === "string" &&
+        normalize(geo.country_code) === normalize(rule.value);
+
+    case "state":
+      if (typeof rule.value !== "string") return false;
+      if (rule.country_code && normalize(geo.country_code) !== normalize(rule.country_code)) return false;
+      return normalize(geo.region) === normalize(rule.value);
+
+    case "city":
+      if (typeof rule.value !== "string") return false;
+      if (rule.country_code && normalize(geo.country_code) !== normalize(rule.country_code)) return false;
+      return normalize(geo.city) === normalize(rule.value);
+
+    case "pincode":
+      return typeof rule.value === "string" &&
+        normalize(geo.postal_code) === normalize(rule.value);
+
+    case "coordinates": {
+      if (!Array.isArray(rule.value) || rule.value.length !== 2) return false;
+      if (!rule.radius_km || rule.radius_km <= 0) return false;
+      if (!geo.latitude && !geo.longitude) return false;
+      const [ruleLat, ruleLng] = rule.value;
+      return haversineDistanceKm(geo.latitude, geo.longitude, ruleLat, ruleLng) <= rule.radius_km;
+    }
+
+    default:
+      return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Check whether the user's location is blocked by any of the geoblocking rules.
+ * Blocklist model: if ANY rule matches, the user is blocked.
+ * Fails open (returns false) when location cannot be determined.
+ */
 export function isLocationBlocked(
   geoblockingEnabled: boolean,
-  geoblockingCountries: string[] | null | undefined,
+  rules: GeoblockingRule[] | null | undefined,
   geolocation: GeolocationData | null
 ): boolean {
-  if (!geoblockingEnabled || !geoblockingCountries || geoblockingCountries.length === 0) {
-    return false;
-  }
+  if (!geoblockingEnabled) return false;
+  if (!rules || rules.length === 0) return false;
+  if (!geolocation || !geolocation.country_code) return false;
 
-  if (!geolocation || !geolocation.country_code) {
-    return false; // Don't block if we can't determine location
-  }
-
-  // Check if user's country is in the blocked list
-  return geoblockingCountries.includes(geolocation.country_code);
+  return rules.some((rule) => matchesRule(geolocation, rule));
 }
 
