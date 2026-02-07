@@ -188,6 +188,8 @@ export const getPublicTicketById = async (ticketId: number): Promise<PublicTicke
     total_quantity: ticket.totalQuantity || 0,
     sold_quantity: ticket.soldQuantity || 0,
     status: ticket.status || 'draft',
+    geoblocking_enabled: ticket.geoblockingEnabled ?? false,
+    geoblocking_countries: (ticket.geoblockingCountries as import('../geolocation/types.js').GeoblockingRule[]) ?? undefined,
     events: eventsList,
     pricing,
     sponsors,
