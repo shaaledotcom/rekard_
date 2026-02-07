@@ -271,10 +271,6 @@ function matchesRule(geo: GeolocationData, rule: GeoblockingRule): boolean {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 /**
  * Check whether the user's location is blocked by any of the geoblocking rules.
  * Blocklist model: if ANY rule matches, the user is blocked.
