@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { Calendar, Clock, Hourglass } from "lucide-react";
+import React, { useCallback } from "react";
+import { Calendar, Clock, Hourglass, Heart } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCurrencyFormat, TicketPricing } from "@/hooks/useCurrencyFormat";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
@@ -38,6 +39,7 @@ interface EventInformationProps {
   ticketCurrency?: string;
   ticketPricing?: TicketPricing[];
   fullEvents?: PublicEventDetails[]; // Full event details for calendar button
+  isFundraiser?: boolean;
 }
 
 export function EventInformation({
@@ -49,6 +51,7 @@ export function EventInformation({
   ticketCurrency = "USD",
   ticketPricing,
   fullEvents = [],
+  isFundraiser = false,
 }: EventInformationProps) {
   const { formatPrice } = useCurrencyFormat();
   const { formatDate } = useTimezoneFormat();
@@ -64,6 +67,8 @@ export function EventInformation({
     isEventExpired,
     latestEndDate,
     orderId,
+    customPrice,
+    setCustomPrice,
     handleCouponApplied,
     handleCouponRemoved,
     buttonState,
@@ -75,7 +80,23 @@ export function EventInformation({
     ticketPrice,
     ticketCurrency,
     ticketPricing,
-    eventInfo.title || ""
+    eventInfo.title || "",
+    isFundraiser
+  );
+
+  const handleCustomPriceChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      if (value === "") {
+        setCustomPrice(null);
+      } else {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue)) {
+          setCustomPrice(numValue);
+        }
+      }
+    },
+    [setCustomPrice]
   );
 
   return (
@@ -116,8 +137,30 @@ export function EventInformation({
 
         <div className="border-t pt-4 sm:pt-6">
           <div className="space-y-3 sm:space-y-4">
+            {/* Fundraiser variable price input */}
+            {isFundraiser && !isPurchased && !isEventExpired && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Heart className="h-4 w-4 text-pink-500" />
+                  <span>Support with your price</span>
+                </div>
+                <Input
+                  type="number"
+                  min={convertedPrice}
+                  step="0.01"
+                  value={customPrice ?? ""}
+                  onChange={handleCustomPriceChange}
+                  placeholder={`${convertedPrice}`}
+                  className="h-12 text-lg font-semibold"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Minimum: {formatPrice(convertedPrice, convertedCurrency)}
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-2 sm:gap-4">
-              {!isPurchased && (
+              {!isPurchased && !isFundraiser && (
                 <div className="flex flex-col">
                   <div className="font-bold text-primary text-sm sm:text-base">
                     {discountAmount > 0 ? (

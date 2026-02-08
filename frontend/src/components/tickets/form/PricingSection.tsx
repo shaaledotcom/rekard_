@@ -8,7 +8,9 @@ import {
   DollarSign, 
   Plus, 
   Minus,
-  ChevronDown 
+  ChevronDown,
+  Heart,
+  Check
 } from "lucide-react";
 import type { TicketFormData, PricingFormData, CurrencyOption } from "./types";
 import { CURRENCY_OPTIONS } from "./types";
@@ -100,6 +102,26 @@ export function PricingSection({
         </p>
       </div>
 
+      {/* Fundraiser Toggle */}
+      <button
+        type="button"
+        onClick={() => !isReadOnly && onChange({ is_fundraiser: !formData.is_fundraiser })}
+        disabled={isReadOnly}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left ${
+          formData.is_fundraiser ? "bg-secondary" : "hover:bg-secondary"
+        } ${isReadOnly ? "cursor-default" : "cursor-pointer"}`}
+      >
+        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
+          formData.is_fundraiser
+            ? "bg-foreground border-foreground"
+            : "border-muted-foreground"
+        }`}>
+          {formData.is_fundraiser && <Check className="h-3 w-3 text-background" />}
+        </div>
+        <Heart className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <span className="text-sm text-foreground/80">Fundraiser : Buyers can pay above base price</span>
+      </button>
+
       {/* Pricing Rows */}
       <div className="space-y-3">
         {pricing.map((item, index) => (
@@ -174,9 +196,15 @@ export function PricingSection({
       )}
 
       {/* Info */}
-      <p className="text-xs text-muted-foreground">
-        Tip: Adding multiple currencies helps international viewers purchase tickets in their preferred currency.
-      </p>
+      {formData.is_fundraiser ? (
+        <p className="text-xs text-muted-foreground">
+          This price will be the minimum amount buyers can pay. Buyers can choose to pay more to support your cause.
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Tip: Adding multiple currencies helps international viewers purchase tickets in their preferred currency.
+        </p>
+      )}
     </div>
   );
 }

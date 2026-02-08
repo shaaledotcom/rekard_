@@ -61,6 +61,11 @@ export const createOrder = async (
   // were associated with wrong tenantId, causing them not to appear in sales reports
   const ticketOwnerTenantId = ticketOwner.tenantId;
 
+  // Validate fundraiser pricing: buyer must pay at least the base price
+  if (ticket.is_fundraiser && data.unit_price < ticket.price) {
+    throw badRequest(`Minimum price for this fundraiser ticket is ${ticket.price} ${ticket.currency}`);
+  }
+
   // Check availability
   const remainingQuantity = ticket.total_quantity - ticket.sold_quantity;
   if (remainingQuantity < data.quantity) {
