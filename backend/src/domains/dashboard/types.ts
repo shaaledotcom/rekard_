@@ -67,6 +67,8 @@ export type PublicTicketDetails = {
   total_quantity: number;
   sold_quantity: number;
   status: string;
+  geoblocking_enabled: boolean;
+  geoblocking_countries?: import('../geolocation/types.js').GeoblockingRule[];
   events?: PublicEventDetails[];
   pricing?: PublicTicketPricing[];
   sponsors?: PublicTicketSponsor[];

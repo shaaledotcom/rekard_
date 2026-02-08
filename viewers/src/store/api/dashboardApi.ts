@@ -51,6 +51,14 @@ export interface PublicTicketSponsor {
   link?: string;
 }
 
+export interface GeoblockingRule {
+  type: "country" | "city" | "state" | "pincode" | "coordinates";
+  value: string | [number, number];
+  country_code?: string;
+  radius_km?: number;
+  name?: string;
+}
+
 export interface PublicTicketDetails {
   id: number;
   title: string;
@@ -65,6 +73,8 @@ export interface PublicTicketDetails {
   total_quantity: number;
   sold_quantity: number;
   status: string;
+  geoblocking_enabled: boolean;
+  geoblocking_countries?: GeoblockingRule[];
   events: PublicEventDetails[];
   pricing: PublicTicketPricing[];
   sponsors: PublicTicketSponsor[];

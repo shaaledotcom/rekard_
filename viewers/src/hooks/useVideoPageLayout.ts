@@ -20,7 +20,7 @@ import type { PublicEventDetails } from "@/store/api/dashboardApi";
  * 3. EVENT STATUS CHECKS:
  *    - Expired: All events have ended (end_datetime < now)
  *    - Archived: VOD event has passed archive_after date
- *    - Blocked: Geolocation blocking (currently simplified, can be enhanced)
+ *    - Blocked: Geolocation blocking (enforced at purchase time only; not on watch page)
  * 
  * 4. MEDIA SOURCE SELECTION:
  *    - Priority: Event embed > Event watch_link > Default videoSrc
@@ -65,14 +65,9 @@ export function useVideoPageLayout(
     return sortedEvents.find((event) => event.id === eventId) || null;
   }, [selectedDay, sortedEvents, ticketId]);
 
-  // Check if ticket is geoblocked (simplified - can be enhanced)
-  const isTicketBlocked = useMemo(() => {
-    if (!ticket) {
-      return false;
-    }
-    // TODO: Implement full geolocation check if needed
-    return false;
-  }, [ticket]);
+  // Geoblocking is enforced at purchase time only (not during watch)
+  // Viewers who already purchased can watch from anywhere
+  const isTicketBlocked = false;
 
   // Check if all events have expired
   const isEventExpired = useMemo(() => {

@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { Calendar, Clock, Hourglass, Heart } from "lucide-react";
+import { Calendar, Clock, Hourglass, Heart, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCurrencyFormat, TicketPricing } from "@/hooks/useCurrencyFormat";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
 import { useEventInformation } from "@/hooks/useEventInformation";
+import { useGeolocation, isLocationBlocked } from "@/providers/GeolocationProvider";
 import { PaymentSuccessPopup } from "./PaymentSuccessPopup";
 import { CouponInput } from "./CouponInput";
 import { AddToCalendarButton } from "./AddToCalendarButton";
-import type { PublicEventDetails } from "@/store/api/dashboardApi";
+import type { PublicEventDetails, GeoblockingRule } from "@/store/api/dashboardApi";
 
 interface EventInfo {
   title: string;
@@ -40,6 +41,8 @@ interface EventInformationProps {
   ticketPricing?: TicketPricing[];
   fullEvents?: PublicEventDetails[]; // Full event details for calendar button
   isFundraiser?: boolean;
+  geoblockingEnabled?: boolean;
+  geoblockingCountries?: GeoblockingRule[];
 }
 
 export function EventInformation({
@@ -52,9 +55,19 @@ export function EventInformation({
   ticketPricing,
   fullEvents = [],
   isFundraiser = false,
+  geoblockingEnabled = false,
+  geoblockingCountries,
 }: EventInformationProps) {
   const { formatPrice } = useCurrencyFormat();
   const { formatDate } = useTimezoneFormat();
+  const { geolocation } = useGeolocation();
+
+  // Check if user's location is blocked
+  const isGeoBlocked = isLocationBlocked(
+    geoblockingEnabled,
+    geoblockingCountries ?? null,
+    geolocation
+  );
 
   const {
     showSuccessPopup,
@@ -137,8 +150,21 @@ export function EventInformation({
 
         <div className="border-t pt-4 sm:pt-6">
           <div className="space-y-3 sm:space-y-4">
+            {/* Geoblocking notice */}
+            {isGeoBlocked && (
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-destructive">Not available in your region</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This ticket is not available for purchase in your current location.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Fundraiser variable price input */}
-            {isFundraiser && !isPurchased && !isEventExpired && (
+            {isFundraiser && !isPurchased && !isEventExpired && !isGeoBlocked && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <Heart className="h-4 w-4 text-pink-500" />
@@ -194,17 +220,21 @@ export function EventInformation({
                   </div>
                 )}
               <Button
-                className={`flex-1 h-10 sm:h-12 text-sm sm:text-base ${
-                  buttonState.variant === "default" && isPurchased
-                    ? "bg-blue-500 text-white hover:bg-blue-600"
-                    : ""
-                }`}
+                className={`flex-1 h-10 sm:h-12 text-sm sm:text-base
+                  whitespace-nowrap overflow-hidden text-ellipsis
+                  ${
+                    isGeoBlocked
+                      ? "bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed opacity-100"
+                      : buttonState.variant === "default" && isPurchased
+                      ? "bg-blue-500 text-white hover:bg-blue-600"
+                      : ""
+                  }`}
                 size="lg"
-                variant={buttonState.variant}
-                onClick={buttonState.onClick}
-                disabled={buttonState.disabled}
+                variant={isGeoBlocked ? "outline" : buttonState.variant}
+                onClick={isGeoBlocked ? undefined : buttonState.onClick}
+                disabled={isGeoBlocked || buttonState.disabled}
               >
-                {buttonState.text}
+                {isGeoBlocked ? "UNAVAILABLE" : buttonState.text}
               </Button>
             </div>
           </div>

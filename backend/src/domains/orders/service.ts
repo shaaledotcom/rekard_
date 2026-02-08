@@ -31,13 +31,16 @@ import { badRequest, notFound } from '../../shared/errors/app-error.js';
 import { sendPurchaseConfirmationEmail } from '../../shared/utils/email.js';
 import * as billingService from '../billing/service.js';
 import * as tenantRepo from '../tenant/repository.js';
+import { isLocationBlocked } from '../geolocation/index.js';
+import type { ResolvedLocation } from '../geolocation/index.js';
 
 // Create order with validation
 export const createOrder = async (
   _appId: string,
   _tenantId: string,
   userId: string,
-  data: CreateOrderRequest
+  data: CreateOrderRequest,
+  userLocation?: ResolvedLocation | null
 ): Promise<Order> => {
   // Validate ticket exists and is available (use public lookup - no tenant filter)
   const ticket = await dashboardRepo.getPublicTicketById(data.ticket_id);
@@ -47,6 +50,11 @@ export const createOrder = async (
 
   if (ticket.status !== 'published') {
     throw badRequest('Ticket is not available for purchase');
+  }
+
+  // Check geoblocking restrictions
+  if (isLocationBlocked(ticket.geoblocking_enabled, ticket.geoblocking_countries, userLocation ?? null)) {
+    throw badRequest('This ticket is not available in your region');
   }
 
   // Get ticket owner's tenantId (producer's tenantId)
@@ -315,7 +323,8 @@ export const getUserOrder = async (
 export const createUserAndOrder = async (
   appId: string,
   tenantId: string,
-  data: CreateUserAndOrderRequest
+  data: CreateUserAndOrderRequest,
+  userLocation?: ResolvedLocation | null
 ): Promise<CreateUserAndOrderResponse> => {
   // Create or get existing user via passwordless
   const userResult = await createUser({
@@ -339,7 +348,7 @@ export const createUserAndOrder = async (
     customer_phone: data.phone,
   };
 
-  const order = await createOrder(appId, tenantId, userResult.userId, orderData);
+  const order = await createOrder(appId, tenantId, userResult.userId, orderData, userLocation);
 
   log.info(`Created user and order: user=${userResult.userId}, order=${order.order_number}`);
 
