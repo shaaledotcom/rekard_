@@ -290,8 +290,11 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
         : undefined;
 
       // Transform sponsors for API with uploaded URLs
-      const sponsorsForApi = uploadedSponsors.length > 0
-        ? uploadedSponsors.filter((s) => s.title) // Only include sponsors with titles
+      // Always send an array (empty or populated) when updating to allow deletion
+      const sponsorsForApi = ticketId 
+        ? uploadedSponsors.filter((s) => s.title) // Filter out sponsors without titles
+        : uploadedSponsors.length > 0
+        ? uploadedSponsors.filter((s) => s.title) // Only include sponsors with titles for new tickets
         : undefined;
       
       const requestData = {
