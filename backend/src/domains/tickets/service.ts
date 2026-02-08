@@ -40,6 +40,10 @@ const validateTicketRequest = (data: CreateTicketRequest): void => {
   if (!data.total_quantity || data.total_quantity <= 0) {
     throw badRequest('Total quantity must be greater than 0');
   }
+  // Validate geoblocking configuration
+  if (data.geoblocking_enabled && (!data.geoblocking_countries || data.geoblocking_countries.length === 0)) {
+    throw badRequest('Geo-blocking is enabled but no locations are blocked. Please add at least one location or disable geo-blocking');
+  }
 };
 
 // CRUD operations
@@ -84,6 +88,23 @@ export const updateTicket = async (
   }
   if (data.total_quantity !== undefined && data.total_quantity <= 0) {
     throw badRequest('Total quantity must be greater than 0');
+  }
+
+  // Validate geoblocking configuration
+  // Case 1: Explicitly enabling geoblocking without rules
+  if (data.geoblocking_enabled === true && (!data.geoblocking_countries || data.geoblocking_countries.length === 0)) {
+    throw badRequest('Geo-blocking is enabled but no locations are blocked. Please add at least one location or disable geo-blocking');
+  }
+
+  // Case 2: Clearing rules while geoblocking might still be enabled
+  // Fetch current ticket to check its geoblocking state
+  if (data.geoblocking_countries !== undefined && 
+      data.geoblocking_countries.length === 0 && 
+      data.geoblocking_enabled !== false) {
+    const currentTicket = await repo.getTicketById(appId, tenantId, ticketId, false);
+    if (currentTicket && currentTicket.geoblocking_enabled) {
+      throw badRequest('Cannot remove all geo-blocking rules while geo-blocking is enabled. Please disable geo-blocking first');
+    }
   }
 
   // Normalize URL slug
