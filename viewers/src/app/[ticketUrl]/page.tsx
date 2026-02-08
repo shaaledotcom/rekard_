@@ -108,9 +108,13 @@ export default function TicketDetailPage() {
               ticketId={ticket.id.toString()}
               ticketUrl={ticketUrl}
               events={ticket.events || []}
+              fullEvents={ticket.events || []}
               ticketPrice={ticket.price}
               ticketCurrency={ticket.currency}
               ticketPricing={ticket.pricing}
+              isFundraiser={ticket.is_fundraiser}
+              geoblockingEnabled={ticket.geoblocking_enabled}
+              geoblockingCountries={ticket.geoblocking_countries}
             />
           </div>
         </div>

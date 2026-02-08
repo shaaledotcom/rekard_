@@ -13,6 +13,7 @@ export const tickets = pgTable('tickets', {
   featuredImage: text('featured_image'),
   featuredVideo: text('featured_video'),
   purchaseWithoutLogin: boolean('purchase_without_login').default(false),
+  isFundraiser: boolean('is_fundraiser').default(false),
   price: decimal('price', { precision: 10, scale: 2 }),
   currency: varchar('currency', { length: 10 }).default('INR'),
   totalQuantity: integer('total_quantity'),

@@ -391,30 +391,24 @@ export const updateWalletBalance = async (
 };
 
 export const getWalletTransactions = async (
-  appId: string,
+  _appId: string, // Not used - we filter by tenantId instead for custom domain compatibility
   tenantId: string,
   filter: WalletTransactionFilter = {},
   pagination: PaginationParams = {}
 ): Promise<ListResponse<WalletTransaction>> => {
   const page = Math.max(1, pagination.page || 1);
   const pageSize = Math.max(1, Math.min(100, pagination.page_size || 10));
-  const offset = (page - 1) * pageSize;
 
-  // Filter wallet transactions by appId/tenantId
+  // Filter wallet transactions by tenantId (primary identifier)
   // For ticket purchase transactions, we'll also filter by ticket ownership in the join
   // to ensure consistency with sales report
+  // Note: We filter by tenantId primarily because:
+  // - For custom domains, appId might be UUID (different from 'public')
+  // - Transactions might have been created with different appIds over time
+  // - tenantId is the definitive identifier for ownership
   const conditions = [
-    // Allow transactions with matching appId/tenantId OR ticket purchase transactions
-    // that will be filtered by ticket ownership
-    or(
-      // Direct match by appId/tenantId
-      and(
-        or(eq(walletTransactions.appId, appId), eq(walletTransactions.appId, 'public')),
-        eq(walletTransactions.tenantId, tenantId)
-      ),
-      // Ticket purchase transactions will be filtered by ticket ownership in join
-      sql`${walletTransactions.referenceType} = 'ticket_purchase'`
-    ),
+    // All transactions must belong to this tenant
+    eq(walletTransactions.tenantId, tenantId),
   ];
 
   if (filter.user_id) {
@@ -430,30 +424,23 @@ export const getWalletTransactions = async (
     conditions.push(lte(walletTransactions.createdAt, filter.end_date));
   }
 
-  const [countResult] = await db
-    .select({ count: count() })
-    .from(walletTransactions)
-    .where(and(...conditions));
-
-  const total = countResult?.count || 0;
-
-  // Join with orders, tickets, and ticketBuyers to get customer email
-  // For debits (ticket purchases): get email from orders where ticketId matches referenceId
-  // For credits (ticket sales): get email from ticketBuyers or orders
-  // Also join with tickets to filter ticket purchase transactions by ticket ownership
+  // Fetch all transactions for tenant, then filter in code
+  // Note: We don't use the count query since we filter in code and need accurate filtered count
   const rows = await db
     .select({
       transaction: walletTransactions,
       orderEmail: orders.customerEmail,
       buyerEmail: ticketBuyers.buyerEmail,
       ticketTenantId: tickets.tenantId,
+      orderId: orders.id,
+      orderStatus: orders.status,
     })
     .from(walletTransactions)
     .leftJoin(
       tickets,
       and(
         sql`${walletTransactions.referenceType} = 'ticket_purchase'`,
-        sql`${walletTransactions.referenceId} IS NOT NULL`,
+        sql`${walletTransactions.referenceId} IS NOT NULL AND ${walletTransactions.referenceId} != ''`,
         // Match ticket ID if referenceId is numeric
         sql`${tickets.id} = CASE WHEN ${walletTransactions.referenceId} ~ '^[0-9]+$' THEN CAST(${walletTransactions.referenceId} AS INTEGER) ELSE NULL END`
       )
@@ -461,7 +448,14 @@ export const getWalletTransactions = async (
     .leftJoin(
       orders,
       and(
-        sql`${walletTransactions.referenceId} IS NOT NULL`,
+        // Only try to match orders for ticket_purchase transactions or when referenceType suggests it's an order
+        // This prevents matching subscription IDs or other non-order referenceIds to orders
+        sql`(
+          ${walletTransactions.referenceType} = 'ticket_purchase' 
+          OR ${walletTransactions.referenceType} IS NULL
+        )`,
+        // Only try to match orders if referenceId is not null and not empty
+        sql`${walletTransactions.referenceId} IS NOT NULL AND ${walletTransactions.referenceId} != ''`,
         // Try to match by order ID first, then by ticket ID
         or(
           // Match by order ID if referenceId is numeric
@@ -471,21 +465,13 @@ export const getWalletTransactions = async (
         ),
         // Orders are created with appId='public' for viewer purchases,
         // but wallet transactions might have a different appId. Query for both.
-        or(eq(orders.appId, walletTransactions.appId), eq(orders.appId, 'public')),
-        // For ticket purchase transactions, don't filter by order.tenantId
-        // For other transactions, filter by order.tenantId matching wallet transaction
-        or(
-          sql`${walletTransactions.referenceType} != 'ticket_purchase'`,
-          sql`1=1` // Always true for ticket purchases - we'll filter by ticket ownership instead
-        ),
-        // Prefer completed orders for accurate email
-        eq(orders.status, 'completed')
+        or(eq(orders.appId, walletTransactions.appId), eq(orders.appId, 'public'))
       )
     )
     .leftJoin(
       ticketBuyers,
       and(
-        sql`${walletTransactions.referenceId} IS NOT NULL`,
+        sql`${walletTransactions.referenceId} IS NOT NULL AND ${walletTransactions.referenceId} != ''`,
         // Try to match ticketId when referenceId is numeric (using safe cast)
         sql`${ticketBuyers.ticketId} = CASE WHEN ${walletTransactions.referenceId} ~ '^[0-9]+$' THEN CAST(${walletTransactions.referenceId} AS INTEGER) ELSE NULL END`,
         // Ticket buyers might have appId='public' or match wallet transaction's appId
@@ -493,55 +479,91 @@ export const getWalletTransactions = async (
         eq(ticketBuyers.tenantId, walletTransactions.tenantId)
       )
     )
-    .where(
-      and(
-        ...conditions,
-        // For ticket purchase transactions, filter by ticket ownership (like sales report)
-        // Also ensure there's a corresponding completed order to match sales report
-        // This ensures consistency between sales report and wallet transactions
-        or(
-          sql`${walletTransactions.referenceType} != 'ticket_purchase'`,
-          sql`${walletTransactions.referenceType} IS NULL`,
-          and(
-            eq(tickets.tenantId, tenantId),
-            // Ensure there's a corresponding completed order
-            sql`${orders.id} IS NOT NULL`,
-            eq(orders.status, 'completed')
-          )
-        )
-      )
-    )
-    .orderBy(desc(walletTransactions.createdAt))
-    .limit(pageSize)
-    .offset(offset);
+    .where(and(...conditions))
+    .orderBy(desc(walletTransactions.createdAt));
 
   // Deduplicate transactions (in case join matches multiple orders)
-  // Use a Map to keep the first occurrence of each transaction
-  const transactionMap = new Map<number, { transaction: typeof walletTransactions.$inferSelect; email?: string }>();
+  const transactionMap = new Map<number, { 
+    transaction: typeof walletTransactions.$inferSelect; 
+    email?: string;
+    ticketTenantId?: string | null;
+    orderId?: number | null;
+    orderStatus?: string | null;
+  }>();
   
   rows.forEach((row) => {
     const txId = row.transaction.id;
     if (!transactionMap.has(txId)) {
-      // Prefer order email, fallback to buyer email
       const userEmail = row.orderEmail || row.buyerEmail || undefined;
-      transactionMap.set(txId, { transaction: row.transaction, email: userEmail });
+      transactionMap.set(txId, { 
+        transaction: row.transaction, 
+        email: userEmail,
+        ticketTenantId: row.ticketTenantId,
+        orderId: row.orderId,
+        orderStatus: row.orderStatus,
+      });
     } else {
-      // If we already have this transaction, prefer non-null email if current one is null
       const existing = transactionMap.get(txId)!;
-      if (!existing.email && (row.orderEmail || row.buyerEmail)) {
-        existing.email = row.orderEmail || row.buyerEmail || undefined;
+      // Prefer completed orders over pending orders for ticket_purchase transactions
+      if (row.transaction.referenceType === 'ticket_purchase') {
+        const currentIsCompleted = existing.orderStatus === 'completed';
+        const newIsCompleted = row.orderStatus === 'completed';
+        
+        // If new row has completed order and current doesn't, replace it
+        if (newIsCompleted && !currentIsCompleted) {
+          existing.orderId = row.orderId;
+          existing.orderStatus = row.orderStatus;
+          if (row.orderEmail || row.buyerEmail) {
+            existing.email = row.orderEmail || row.buyerEmail || undefined;
+          }
+        }
+        // If both are completed or both are pending, prefer the one with email
+        else if (newIsCompleted === currentIsCompleted) {
+          if (!existing.email && (row.orderEmail || row.buyerEmail)) {
+            existing.email = row.orderEmail || row.buyerEmail || undefined;
+          }
+        }
+      } else {
+        // For non-ticket_purchase transactions, just prefer non-null email
+        if (!existing.email && (row.orderEmail || row.buyerEmail)) {
+          existing.email = row.orderEmail || row.buyerEmail || undefined;
+        }
       }
     }
   });
 
+  // Filter transactions in code
+  const filteredTransactions = Array.from(transactionMap.values()).filter(({ transaction, ticketTenantId, orderId, orderStatus }) => {
+    const refType = transaction.referenceType;
+    
+    // Include all non-ticket_purchase transactions
+    if (!refType || refType !== 'ticket_purchase') {
+      return true;
+    }
+    
+    // For ticket_purchase transactions, filter by ticket ownership and completed order
+    if (refType === 'ticket_purchase') {
+      const hasTicket = ticketTenantId !== null && ticketTenantId === tenantId;
+      const hasCompletedOrder = orderId !== null && orderStatus === 'completed';
+      return hasTicket && hasCompletedOrder;
+    }
+    
+    return false;
+  });
+
+  // Apply pagination after filtering
+  const filteredTotal = filteredTransactions.length;
+  const filteredOffset = (page - 1) * pageSize;
+  const paginatedTransactions = filteredTransactions.slice(filteredOffset, filteredOffset + pageSize);
+
   return {
-    data: Array.from(transactionMap.values()).map(({ transaction, email }) => {
+    data: paginatedTransactions.map(({ transaction, email }) => {
       return transformWalletTransaction(transaction, email);
     }),
-    total,
+    total: filteredTotal, // Use filtered count, not raw count
     page,
     page_size: pageSize,
-    total_pages: Math.ceil(total / pageSize),
+    total_pages: Math.ceil(filteredTotal / pageSize),
   };
 };
 

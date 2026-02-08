@@ -34,7 +34,7 @@ router.post('/create', viewerTenantMiddleware, asyncHandler(async (req: AppReque
     return badRequest(res, 'Unit price is required');
   }
 
-  const result = await ordersService.createUserAndOrder(tenant.appId, tenant.tenantId, data);
+  const result = await ordersService.createUserAndOrder(tenant.appId, tenant.tenantId, data, req.geolocation);
   created(res, result, 'User and order created successfully');
 }));
 
@@ -223,7 +223,8 @@ router.post('/', asyncHandler(async (req: AppRequest, res: Response) => {
     tenant.appId,
     tenant.tenantId,
     tenant.userId,
-    data
+    data,
+    req.geolocation
   );
   created(res, order, 'Order created successfully');
 }));

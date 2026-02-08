@@ -23,4 +23,5 @@ export {
   PRO_FEATURES,
   PREMIUM_FEATURES,
 } from './plan.js';
+export { geolocationMiddleware } from './geolocation.js';
 

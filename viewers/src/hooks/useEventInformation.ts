@@ -62,7 +62,8 @@ export function useEventInformation(
   ticketPrice: number,
   ticketCurrency: string,
   ticketPricing: TicketPricing[] | undefined,
-  eventTitle: string
+  eventTitle: string,
+  isFundraiser: boolean = false
 ) {
   const router = useRouter();
   const pathname = usePathname();
@@ -81,6 +82,7 @@ export function useEventInformation(
   const [hasTriggeredPurchase, setHasTriggeredPurchase] = useState(false);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [finalPrice, setFinalPrice] = useState(0);
+  const [customPrice, setCustomPrice] = useState<number | null>(null);
   const orderDataRef = useRef<{
     orderId?: number;
     paymentId?: string;
@@ -234,10 +236,24 @@ export function useEventInformation(
       return;
     }
 
+    // Validate fundraiser custom price
+    if (isFundraiser) {
+      const effectiveCustomPrice = customPrice ?? convertedPrice;
+      if (effectiveCustomPrice < convertedPrice) {
+        toast({
+          title: "Invalid amount",
+          description: `Minimum amount is ${formatPrice(convertedPrice, convertedCurrency)}`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setHasTriggeredPurchase(true);
 
     try {
-      const priceValue = finalPrice;
+      // For fundraiser tickets, use the custom price; otherwise use final price
+      const priceValue = isFundraiser && customPrice !== null ? customPrice : finalPrice;
       const currency = convertedCurrency;
 
       // Create order
@@ -333,7 +349,10 @@ export function useEventInformation(
     isAuthenticated,
     user,
     finalPrice,
+    convertedPrice,
     convertedCurrency,
+    customPrice,
+    isFundraiser,
     createOrder,
     completeOrder,
     paymentConfig,
@@ -345,6 +364,7 @@ export function useEventInformation(
     toast,
     pathname,
     loadRazorpayScript,
+    formatPrice,
   ]);
 
   // Determine button state and text
@@ -411,6 +431,8 @@ export function useEventInformation(
     isEventExpired,
     latestEndDate,
     orderId: orderDataRef.current.orderId,
+    customPrice,
+    setCustomPrice,
 
     // Loading states
     isPurchaseStatusLoading,

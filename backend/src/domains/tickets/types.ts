@@ -1,13 +1,11 @@
-// Tickets domain types
 
-export type LocationType = 'country' | 'city' | 'state' | 'pincode' | 'coordinates';
 
-export type GeoblockingLocation = {
-  type: LocationType;
-  value: string | [number, number]; // string for country/city/state/pincode, [lat,lng] for coordinates
-  radius_km?: number;
-  name?: string;
-};
+import type { LocationType as _LocationType, GeoblockingRule as _GeoblockingRule } from '../geolocation/types.js';
+
+// Re-export for backward compatibility
+export type LocationType = _LocationType;
+export type GeoblockingRule = _GeoblockingRule;
+export type GeoblockingLocation = _GeoblockingRule;
 
 export type Ticket = {
   id: number;
@@ -20,6 +18,7 @@ export type Ticket = {
   featured_image?: string;
   featured_video?: string;
   purchase_without_login: boolean;
+  is_fundraiser: boolean;
   price: number;
   currency: string;
   total_quantity: number;
@@ -119,6 +118,7 @@ export type CreateTicketRequest = {
   featured_image?: string;
   featured_video?: string;
   purchase_without_login?: boolean;
+  is_fundraiser?: boolean;
   price: number;
   currency?: string;
   total_quantity: number;
@@ -140,6 +140,7 @@ export type UpdateTicketRequest = {
   featured_image?: string;
   featured_video?: string;
   purchase_without_login?: boolean;
+  is_fundraiser?: boolean;
   price?: number;
   currency?: string;
   total_quantity?: number;

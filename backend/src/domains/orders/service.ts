@@ -31,13 +31,16 @@ import { badRequest, notFound } from '../../shared/errors/app-error.js';
 import { sendPurchaseConfirmationEmail } from '../../shared/utils/email.js';
 import * as billingService from '../billing/service.js';
 import * as tenantRepo from '../tenant/repository.js';
+import { isLocationBlocked } from '../geolocation/index.js';
+import type { ResolvedLocation } from '../geolocation/index.js';
 
 // Create order with validation
 export const createOrder = async (
   _appId: string,
   _tenantId: string,
   userId: string,
-  data: CreateOrderRequest
+  data: CreateOrderRequest,
+  userLocation?: ResolvedLocation | null
 ): Promise<Order> => {
   // Validate ticket exists and is available (use public lookup - no tenant filter)
   const ticket = await dashboardRepo.getPublicTicketById(data.ticket_id);
@@ -47,6 +50,11 @@ export const createOrder = async (
 
   if (ticket.status !== 'published') {
     throw badRequest('Ticket is not available for purchase');
+  }
+
+  // Check geoblocking restrictions
+  if (isLocationBlocked(ticket.geoblocking_enabled, ticket.geoblocking_countries, userLocation ?? null)) {
+    throw badRequest('This ticket is not available in your region');
   }
 
   // Get ticket owner's tenantId (producer's tenantId)
@@ -60,6 +68,11 @@ export const createOrder = async (
   // This fixes the issue where orders created on shared domains (watch.rekard.com, localhost)
   // were associated with wrong tenantId, causing them not to appear in sales reports
   const ticketOwnerTenantId = ticketOwner.tenantId;
+
+  // Validate fundraiser pricing: buyer must pay at least the base price
+  if (ticket.is_fundraiser && data.unit_price < ticket.price) {
+    throw badRequest(`Minimum price for this fundraiser ticket is ${ticket.price} ${ticket.currency}`);
+  }
 
   // Check availability
   const remainingQuantity = ticket.total_quantity - ticket.sold_quantity;
@@ -310,7 +323,8 @@ export const getUserOrder = async (
 export const createUserAndOrder = async (
   appId: string,
   tenantId: string,
-  data: CreateUserAndOrderRequest
+  data: CreateUserAndOrderRequest,
+  userLocation?: ResolvedLocation | null
 ): Promise<CreateUserAndOrderResponse> => {
   // Create or get existing user via passwordless
   const userResult = await createUser({
@@ -334,7 +348,7 @@ export const createUserAndOrder = async (
     customer_phone: data.phone,
   };
 
-  const order = await createOrder(appId, tenantId, userResult.userId, orderData);
+  const order = await createOrder(appId, tenantId, userResult.userId, orderData, userLocation);
 
   log.info(`Created user and order: user=${userResult.userId}, order=${order.order_number}`);
 

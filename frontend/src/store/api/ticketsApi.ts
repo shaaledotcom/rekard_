@@ -6,8 +6,9 @@ export type TicketStatus = "draft" | "published" | "sold_out" | "archived";
 export interface GeoblockingLocation {
   type: "country" | "city" | "state" | "pincode" | "coordinates";
   value: string | [number, number];
-  radius_km?: number;
-  name?: string;
+  country_code?: string;  // context for city/state/pincode (which country)
+  radius_km?: number;     // only for coordinates
+  name?: string;          // human-readable label for UI
 }
 
 export interface TicketEvent {
@@ -58,6 +59,7 @@ export interface Ticket {
   featured_image?: string;
   featured_video?: string;
   purchase_without_login: boolean;
+  is_fundraiser: boolean;
   price: number;
   currency: string;
   total_quantity: number;
@@ -127,6 +129,7 @@ export interface CreateTicketRequest {
   featured_image?: string;
   featured_video?: string;
   purchase_without_login?: boolean;
+  is_fundraiser?: boolean;
   price: number;
   currency?: string;
   total_quantity: number;
@@ -148,6 +151,7 @@ export interface UpdateTicketRequest {
   featured_image?: string;
   featured_video?: string;
   purchase_without_login?: boolean;
+  is_fundraiser?: boolean;
   price?: number;
   currency?: string;
   total_quantity?: number;

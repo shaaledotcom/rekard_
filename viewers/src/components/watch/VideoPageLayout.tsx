@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Calendar, Loader2, Archive } from "lucide-react";
+import { useParams } from "next/navigation";
 import { MainLayout } from "../layout";
 import DaySelector from "./DaySelector";
 import VideoPlayerSection from "./VideoPlayerSection";
@@ -13,6 +14,7 @@ import { SecureVideoAccess } from "./SecureVideoAccess";
 import { useVideoPageLayout } from "@/hooks/useVideoPageLayout";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
 import { EventsList } from "../ticket";
+import { AddToCalendarButton } from "@/components/ticket/AddToCalendarButton";
 
 interface VideoPageLayoutProps {
   videoSrc: string;
@@ -78,6 +80,8 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
   ticketId,
   ticketUrl,
 }) => {
+  const params = useParams();
+  const ticketUrl = params.ticketUrl as string;
   const { formatDate, formatTime, formatDateTime } = useTimezoneFormat();
 
   const {
@@ -231,23 +235,29 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
         </div>
 
         {selectedEvent && (
-          <div className="mb-6 text-sm text-muted-foreground">
-            {selectedEvent.start_datetime && selectedEvent.end_datetime ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <span>
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <div className="text-sm text-muted-foreground">
+              {selectedEvent.start_datetime && selectedEvent.end_datetime ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>
+                    {formatDateTime(selectedEvent.start_datetime)}
+                  </span>
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    {formatDateTime(selectedEvent.end_datetime)}
+                  </span>
+                </div>
+              ) : selectedEvent.start_datetime ? (
+                <div>
+                  <span className="font-medium text-foreground">Start:</span>{" "}
                   {formatDateTime(selectedEvent.start_datetime)}
-                </span>
-                <span className="text-muted-foreground">•</span>
-                <span>
-                  {formatDateTime(selectedEvent.end_datetime)}
-                </span>
-              </div>
-            ) : selectedEvent.start_datetime ? (
-              <div>
-                <span className="font-medium text-foreground">Start:</span>{" "}
-                {formatDateTime(selectedEvent.start_datetime)}
-              </div>
-            ) : null}
+                </div>
+              ) : null}
+            </div>
+            <AddToCalendarButton
+              event={selectedEvent}
+              ticketUrl={ticketUrl ? `/${ticketUrl}/watch` : undefined}
+            />
           </div>
         )}
 
