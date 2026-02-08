@@ -8,8 +8,6 @@ import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
 import { useEventInformation } from "@/hooks/useEventInformation";
 import { PaymentSuccessPopup } from "./PaymentSuccessPopup";
 import { CouponInput } from "./CouponInput";
-import { AddToCalendarButton } from "./AddToCalendarButton";
-import type { PublicEventDetails } from "@/store/api/dashboardApi";
 
 interface EventInfo {
   title: string;
@@ -37,7 +35,6 @@ interface EventInformationProps {
   ticketPrice?: number;
   ticketCurrency?: string;
   ticketPricing?: TicketPricing[];
-  fullEvents?: PublicEventDetails[]; // Full event details for calendar button
 }
 
 export function EventInformation({
@@ -48,7 +45,6 @@ export function EventInformation({
   ticketPrice = 0,
   ticketCurrency = "USD",
   ticketPricing,
-  fullEvents = [],
 }: EventInformationProps) {
   const { formatPrice } = useCurrencyFormat();
   const { formatDate } = useTimezoneFormat();
@@ -94,14 +90,6 @@ export function EventInformation({
             <Hourglass className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             <span className="text-xs sm:text-sm">Duration: {eventInfo.duration}</span>
           </div>
-          {fullEvents.length > 0 && fullEvents[0] && (
-            <div className="pt-2">
-              <AddToCalendarButton
-                event={fullEvents[0]}
-                ticketUrl={ticketUrl ? `/${ticketUrl}` : undefined}
-              />
-            </div>
-          )}
         </div>
 
         {showCouponInput && ticketId && (

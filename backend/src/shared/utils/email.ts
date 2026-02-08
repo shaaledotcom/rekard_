@@ -3,7 +3,6 @@ import { Resend } from 'resend';
 import { env } from '../../config/env.js';
 import { log } from '../middleware/logger.js';
 import * as tenantService from '../../domains/tenant/service.js';
-import { generateICalContent } from './ical.js';
 
 let resend: Resend | null = null;
 
@@ -401,39 +400,12 @@ export const sendPurchaseConfirmationEmail = async (
   try {
     const emailSubject = `${data.ticketTitle} - Ticket confirmation`;
     log.info(`[EMAIL] Sending purchase confirmation email - To: ${data.recipientEmail}, Subject: ${emailSubject}, Ticket: ${data.ticketTitle}`);
-
-    // Build iCal attachment if event dates are available
-    const attachments: Array<{ filename: string; content: Buffer }> = [];
-    if (data.eventStartDatetime && data.eventEndDatetime) {
-      try {
-        const watchUrl = data.watchLink
-          ? await makeAbsoluteWatchLink(data.watchLink, data.tenantId)
-          : undefined;
-
-        const icalContent = generateICalContent({
-          title: data.eventTitle || data.ticketTitle,
-          description: data.ticketDescription,
-          startDatetime: data.eventStartDatetime,
-          endDatetime: data.eventEndDatetime,
-          url: watchUrl || undefined,
-          uid: `rekard-order-${data.orderNumber}@rekard.app`,
-        });
-
-        attachments.push({
-          filename: 'event.ics',
-          content: Buffer.from(icalContent, 'utf-8'),
-        });
-      } catch (err) {
-        log.warn(`[EMAIL] Failed to generate iCal attachment for order ${data.orderNumber}:`, err);
-      }
-    }
-
+    
     const result = await client.emails.send({
       from: `${env.email.fromName} <${env.email.fromEmail}>`,
       to: [data.recipientEmail],
       subject: emailSubject,
       html: await generatePurchaseConfirmationHTML(data),
-      attachments,
     });
 
     if (result.error) {
@@ -464,39 +436,12 @@ export const sendAccessGrantEmail = async (
   try {
     const emailSubject = `${data.ticketTitle} - Ticket confirmation`;
     log.info(`[EMAIL] Sending access grant email - To: ${data.recipientEmail}, Subject: ${emailSubject}, Ticket: ${data.ticketTitle}`);
-
-    // Build iCal attachment if event dates are available
-    const attachments: Array<{ filename: string; content: Buffer }> = [];
-    if (data.eventStartDatetime && data.eventEndDatetime) {
-      try {
-        const watchUrl = data.watchLink
-          ? await makeAbsoluteWatchLink(data.watchLink, data.tenantId)
-          : undefined;
-
-        const icalContent = generateICalContent({
-          title: data.eventTitle || data.ticketTitle,
-          description: data.ticketDescription,
-          startDatetime: data.eventStartDatetime,
-          endDatetime: data.eventEndDatetime,
-          url: watchUrl || undefined,
-          uid: `rekard-access-${data.recipientEmail}-${Date.now()}@rekard.app`,
-        });
-
-        attachments.push({
-          filename: 'event.ics',
-          content: Buffer.from(icalContent, 'utf-8'),
-        });
-      } catch (err) {
-        log.warn(`[EMAIL] Failed to generate iCal attachment for access grant to ${data.recipientEmail}:`, err);
-      }
-    }
-
+    
     const result = await client.emails.send({
       from: `${env.email.fromName} <${env.email.fromEmail}>`,
       to: [data.recipientEmail],
       subject: emailSubject,
       html: await generateAccessGrantHTML(data),
-      attachments,
     });
 
     if (result.error) {
