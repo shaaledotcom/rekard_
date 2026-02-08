@@ -37,13 +37,13 @@ export function FeaturedCarousel() {
     <section className="w-full mb-8">
       <div className="relative">
         <div className="relative rounded-xl overflow-hidden bg-muted">
-          <div className="aspect-[16/9] sm:aspect-[16/5] relative">
+          <div className="aspect-[16/5] relative w-full bg-muted">
             <Image
               src={currentImage?.url || ""}
               alt={currentImage?.alt || `Featured ${currentIndex + 1}`}
               fill
               className={cn(
-                "object-cover transition-opacity duration-500",
+                "object-contain transition-opacity duration-500 bg-black",
                 hasLink && "cursor-pointer hover:opacity-90"
               )}
               onClick={() => handleImageClick(currentImage)}

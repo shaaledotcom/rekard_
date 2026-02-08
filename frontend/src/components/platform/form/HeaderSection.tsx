@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -29,15 +29,63 @@ export function HeaderSection({
   isReadOnly = false,
 }: HeaderSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+
+
+  const validateLogoImage = (file: File): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const ratio = width / height;
+
+        // Ideal ratio ≈ 3.5
+        const MIN_RATIO = 3;
+        const MAX_RATIO = 4;
+
+        if (ratio < MIN_RATIO || ratio > MAX_RATIO) {
+          reject(
+            `Invalid logo ratio (${width}×${height}). Please upload a horizontal logo close to 250×70 px.`
+          );
+        } else {
+          resolve();
+        }
+
+        URL.revokeObjectURL(url);
+      };
+
+      img.onerror = () => {
+        reject("Unable to read image file.");
+        URL.revokeObjectURL(url);
+      };
+
+      img.src = url;
+    });
+  };
+
 
   // Logo handlers
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    setLogoError(null);
+
+    try {
+      await validateLogoImage(file);
+
       onChange({
         logo_file: file,
         logo_url: URL.createObjectURL(file),
       });
+    } catch (err) {
+      setLogoError(err as string);
+      event.target.value = "";
     }
   };
 
@@ -101,7 +149,7 @@ export function HeaderSection({
             Platform Logo
           </Label>
           <Badge variant="secondary" className="text-xs">
-            PNG Recommended
+            PNG Recommended (size: 250x70px)
           </Badge>
         </div>
 
@@ -109,9 +157,8 @@ export function HeaderSection({
           {/* Logo Preview */}
           <div
             onClick={handleLogoClick}
-            className={`relative w-24 h-24 rounded-xl border-2 border-dashed border-border bg-secondary flex items-center justify-center overflow-hidden ${
-              !isReadOnly ? "cursor-pointer hover:border-foreground/50 hover:bg-secondary/80" : ""
-            }`}
+            className={`relative w-64 aspect-[25/9] rounded-xl border-2 border-dashed border-border bg-secondary flex items-center justify-center overflow-hidden ${!isReadOnly ? "cursor-pointer hover:border-foreground/50 hover:bg-secondary/80" : ""
+              }`}
           >
             {formData.logo_url ? (
               <img
@@ -134,7 +181,7 @@ export function HeaderSection({
               className="hidden"
             />
             <p className="text-sm text-muted-foreground">
-              Upload a square transparent PNG logo <br /> for best results. Recommended size: 250x70px
+              Upload a transparent PNG logo <br /> for best results. Recommended size: <strong>250x70px</strong>
             </p>
             {!isReadOnly && (
               <Button
@@ -150,6 +197,11 @@ export function HeaderSection({
             )}
           </div>
         </div>
+        {logoError && (
+          <p className="text-sm text-destructive">
+            {logoError}
+          </p>
+        )}
       </div>
 
       {/* Cart Toggle - Hidden */}
@@ -173,14 +225,12 @@ export function HeaderSection({
               type="button"
               onClick={() => !isReadOnly && onChange({ enable_cart: !formData.enable_cart })}
               disabled={isReadOnly}
-              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
-                formData.enable_cart ? "bg-primary" : "bg-muted"
-              } ${isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${formData.enable_cart ? "bg-primary" : "bg-muted"
+                } ${isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             >
               <span
-                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ${
-                  formData.enable_cart ? "translate-x-5" : "translate-x-0.5"
-                }`}
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ${formData.enable_cart ? "translate-x-5" : "translate-x-0.5"
+                  }`}
               />
             </button>
           </div>
@@ -405,14 +455,12 @@ export function HeaderSection({
                             handleCouponChange(coupon.id, "is_active", !coupon.is_active)
                           }
                           disabled={isReadOnly}
-                          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
-                            coupon.is_active ? "bg-primary" : "bg-muted"
-                          } ${isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${coupon.is_active ? "bg-primary" : "bg-muted"
+                            } ${isReadOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                         >
                           <span
-                            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ${
-                              coupon.is_active ? "translate-x-4" : "translate-x-0.5"
-                            }`}
+                            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ${coupon.is_active ? "translate-x-4" : "translate-x-0.5"
+                              }`}
                           />
                         </button>
                         <span className="text-xs text-muted-foreground">Active</span>

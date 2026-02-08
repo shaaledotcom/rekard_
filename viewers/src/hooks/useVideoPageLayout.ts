@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTenant } from "@/hooks/useTenant";
 import { useGetTicketByIdQuery } from "@/store/api";
 import type { PublicEventDetails } from "@/store/api/dashboardApi";
+import { useSearchParams } from "next/navigation";
 
 /**
  * Custom hook for VideoPageLayout business logic
@@ -38,6 +39,15 @@ export function useVideoPageLayout(
 ) {
   const [selectedDay, setSelectedDay] = useState("");
   const { config, isLoading: isSettingsLoading } = useTenant();
+
+  const searchParams = useSearchParams();
+  const eventIdFromUrl = searchParams.get("eventId");
+
+  useEffect(() => {
+    if (eventIdFromUrl) {
+      setSelectedDay(`event-${eventIdFromUrl}`);
+    }
+  }, [eventIdFromUrl]);
 
   // Fetch ticket data
   const { data: ticket, isLoading: isTicketLoading } = useGetTicketByIdQuery(

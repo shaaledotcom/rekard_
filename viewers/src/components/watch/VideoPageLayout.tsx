@@ -13,6 +13,7 @@ import { GeolocationBlockedMessage } from "./GeolocationBlockedMessage";
 import { SecureVideoAccess } from "./SecureVideoAccess";
 import { useVideoPageLayout } from "@/hooks/useVideoPageLayout";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
+import { EventsList } from "../ticket";
 import { AddToCalendarButton } from "@/components/ticket/AddToCalendarButton";
 
 interface VideoPageLayoutProps {
@@ -20,6 +21,7 @@ interface VideoPageLayoutProps {
   thumbnailSrc: string;
   onVideoEnded: () => void;
   ticketId?: string;
+  ticketUrl: string;
 }
 
 // Helper function to check if a string is a URL vs HTML embed code
@@ -76,6 +78,7 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
   thumbnailSrc,
   onVideoEnded,
   ticketId,
+  ticketUrl,
 }) => {
   const params = useParams();
   const ticketUrl = params.ticketUrl as string;
@@ -218,11 +221,18 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
   return (
     <MainLayout>
       <div className="max-w-7xl mx-auto">
-        <DaySelector
-          selectedDay={selectedDay}
-          setSelectedDay={setSelectedDay}
-          ticketId={ticketId}
-        />
+        <div
+          className="grid grid-cols-1 lg:grid-cols-4 gap-6"
+        >
+          <div className="lg:col-span-3">
+            <DaySelector
+              selectedDay={selectedDay}
+              setSelectedDay={setSelectedDay}
+              ticketId={ticketId}
+              ticketUrl={ticketUrl}
+            />
+          </div>
+        </div>
 
         {selectedEvent && (
           <div className="mb-6 flex items-center justify-between gap-4">
@@ -290,6 +300,13 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
                   <SponsorsSection sponsors={ticket.sponsors} />
                 )}
               </div>
+
+              {ticket?.events && ticket?.events?.length > 0 && (
+                <>
+                  <div className="mt-8 sm:mt-8 space-y-8"></div>
+                  <EventsList events={ticket.events} title="Events" ticketUrl={ticketUrl} />
+                </>
+              )}
             </div>
 
             {enableLiveChat && (

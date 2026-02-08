@@ -4,11 +4,11 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Upload, 
-  X, 
-  Image as ImageIcon, 
-  Video, 
+import {
+  Upload,
+  X,
+  Image as ImageIcon,
+  Video,
   FileImage,
   Info,
 } from "lucide-react";
@@ -38,6 +38,23 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
+
+const IMAGE_RULES = {
+  thumbnailImagePortrait: {
+    minWidth: 1080,
+    minHeight: 1920,
+    ratio: 9 / 16,
+    label: "Portrait image must be 9:16 (min 1080×1920px)",
+  },
+  featuredImage: {
+    minWidth: 1920,
+    minHeight: 1080,
+    ratio: 16 / 9,
+    label: "Featured image must be 16:9 (min 1920×1080px)",
+  },
+};
+
+const RATIO_TOLERANCE = 0.02;
 
 const MEDIA_FIELDS: MediaField[] = [
   {
@@ -81,6 +98,7 @@ export function MediaSection({
 }: MediaSectionProps) {
   const [dragOver, setDragOver] = useState<string | null>(null);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const [imageErrors, setImageErrors] = useState<Record<string, string>>({});
 
   const validateFile = (file: File, allowedTypes: string[], maxSize: number): string | null => {
     if (!allowedTypes.includes(file.type)) {
@@ -92,7 +110,36 @@ export function MediaSection({
     return null;
   };
 
-  const handleFileChange = useCallback((
+  const validateImageResolution = (
+    file: File,
+    fieldKey: string
+  ): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const rule = IMAGE_RULES[fieldKey as keyof typeof IMAGE_RULES];
+      if (!rule) return resolve(null); // videos or unsupported fields
+
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+
+      img.onload = () => {
+        const { width, height } = img;
+        const ratio = width / height;
+
+        const validRatio = Math.abs(ratio - rule.ratio) <= RATIO_TOLERANCE;
+        const validSize = width >= rule.minWidth && height >= rule.minHeight;
+
+        URL.revokeObjectURL(img.src);
+
+        if (!validRatio || !validSize) {
+          resolve(rule.label);
+        } else {
+          resolve(null);
+        }
+      };
+    });
+  };
+
+  const handleFileChange = useCallback(async (
     event: React.ChangeEvent<HTMLInputElement>,
     field: MediaField
   ) => {
@@ -103,13 +150,31 @@ export function MediaSection({
     const error = validateFile(file, allowedTypes, field.maxSize);
 
     if (error) {
-      alert(error);
+      setImageErrors((prev) => ({ ...prev, [field.key]: error }));
       // Reset input value even on error so user can try again
       if (fileInputRefs.current[field.key]) {
         fileInputRefs.current[field.key]!.value = "";
       }
       return;
     }
+
+    if (!field.isVideo) {
+      const resolutionError = await validateImageResolution(file, field.key);
+      if (resolutionError) {
+        setImageErrors((prev) => ({
+          ...prev,
+          [field.key]: resolutionError,
+        }));
+        return;
+      }
+    }
+
+    // clear error
+    setImageErrors((prev) => {
+      const copy = { ...prev };
+      delete copy[field.key];
+      return copy;
+    });
 
     // Update media files
     const newMediaFiles = {
@@ -120,7 +185,7 @@ export function MediaSection({
 
     // Clear existing URL
     onChange({ [field.formKey]: undefined });
-    
+
     // Reset input value to allow selecting the same file again
     if (fileInputRefs.current[field.key]) {
       fileInputRefs.current[field.key]!.value = "";
@@ -133,6 +198,12 @@ export function MediaSection({
     onMediaFilesChange(newMediaFiles);
 
     onChange({ [field.formKey]: undefined });
+
+    setImageErrors((prev) => {
+      const copy = { ...prev };
+      delete copy[field.key];
+      return copy;
+    });
 
     if (fileInputRefs.current[field.key]) {
       fileInputRefs.current[field.key]!.value = "";
@@ -149,7 +220,7 @@ export function MediaSection({
     setDragOver(null);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, field: MediaField) => {
+  const handleDrop = useCallback(async (e: React.DragEvent, field: MediaField) => {
     e.preventDefault();
     setDragOver(null);
 
@@ -160,8 +231,19 @@ export function MediaSection({
     const error = validateFile(file, allowedTypes, field.maxSize);
 
     if (error) {
-      alert(error);
+      setImageErrors((prev) => ({ ...prev, [field.key]: error }));
       return;
+    }
+
+    if (!field.isVideo) {
+      const resolutionError = await validateImageResolution(file, field.key);
+      if (resolutionError) {
+        setImageErrors((prev) => ({
+          ...prev,
+          [field.key]: resolutionError,
+        }));
+        return;
+      }
     }
 
     const newMediaFiles = {
@@ -260,11 +342,10 @@ export function MediaSection({
 
               {!hasFile ? (
                 <div
-                  className={`relative border-2 border-dashed rounded-xl p-6 text-center ${
-                    isDragOver
-                      ? "border-foreground bg-secondary"
-                      : "border-border hover:border-foreground/50 bg-secondary"
-                  }`}
+                  className={`relative border-2 border-dashed rounded-xl p-6 text-center ${isDragOver
+                    ? "border-foreground bg-secondary"
+                    : "border-border hover:border-foreground/50 bg-secondary"
+                    }`}
                   onDragOver={(e) => handleDragOver(e, field.key)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, field)}
@@ -276,7 +357,7 @@ export function MediaSection({
                   <p className="text-xs text-muted-foreground mb-4">
                     {field.description}
                   </p>
-                  
+
                   <Button
                     type="button"
                     variant="outline"
@@ -298,6 +379,13 @@ export function MediaSection({
                     disabled={isReadOnly}
                     className="hidden"
                   />
+                  {
+                    imageErrors[field.key] && (
+                      <p className="text-xs text-red-500 mt-2">
+                        {imageErrors[field.key]}
+                      </p>
+                    )
+                  }
                 </div>
               ) : (
                 <div className="space-y-3 p-4 rounded-xl bg-secondary border border-border">
@@ -315,7 +403,7 @@ export function MediaSection({
                       </Button>
                     )}
                   </div>
-                  
+
                   {getFileInfo(field)}
                 </div>
               )}

@@ -1,18 +1,19 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { 
-  Building2, 
-  Plus, 
-  X, 
+import {
+  Building2,
+  Plus,
+  X,
   Image as ImageIcon,
   Upload,
   Link as LinkIcon
 } from "lucide-react";
 import type { TicketFormData, SponsorFormData } from "./types";
+import { Badge } from "@/components/ui/badge";
 
 interface SponsorsSectionProps {
   formData: TicketFormData;
@@ -27,16 +28,27 @@ export function SponsorsSection({
 }: SponsorsSectionProps) {
   const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
   const sponsors = formData.sponsors || [];
+  const [imageErrors, setImageErrors] = useState<Record<number, string>>({});
+  const MIN_SIZE = 200;
+
+
+
 
   const handleAddSponsor = () => {
-    onChange({ 
-      sponsors: [...sponsors, { title: "", image_url: "", link: "" }] 
+    onChange({
+      sponsors: [...sponsors, { title: "", image_url: "", link: "" }]
     });
   };
 
   const handleRemoveSponsor = (index: number) => {
-    onChange({ 
-      sponsors: sponsors.filter((_, i) => i !== index) 
+    onChange({
+      sponsors: sponsors.filter((_, i) => i !== index)
+    });
+
+    setImageErrors((prev) => {
+      const copy = { ...prev };
+      delete copy[index];
+      return copy;
     });
   };
 
@@ -52,24 +64,54 @@ export function SponsorsSection({
 
     // Validate file
     if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
-      alert("Please upload a valid image file (JPEG, PNG, or WebP)");
+      setImageErrors((prev) => ({
+        ...prev,
+        [index]: "Only JPG, PNG, or WebP images are allowed",
+      }));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image size should be less than 5MB");
+      setImageErrors((prev) => ({
+        ...prev,
+        [index]: "Image size must be under 5MB",
+      }));
       return;
     }
 
-    // Create preview URL and store file
-    const previewUrl = URL.createObjectURL(file);
-    const newSponsors = [...sponsors];
-    newSponsors[index] = { 
-      ...newSponsors[index], 
-      image_file: file,
-      image_url: previewUrl 
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const { width, height } = img;
+      const isSquare = width === height;
+      const isMinSize = width >= MIN_SIZE && height >= MIN_SIZE;
+
+      if (!isSquare || !isMinSize) {
+        setImageErrors((prev) => ({
+          ...prev,
+          [index]: "Image must be square and at least 200×200px",
+        }));
+        return;
+      }
+
+      setImageErrors((prev) => {
+        const copy = { ...prev };
+        delete copy[index];
+        return copy;
+      });
+
+      const previewUrl = URL.createObjectURL(file);
+      const newSponsors = [...sponsors];
+
+      newSponsors[index] = {
+        ...newSponsors[index],
+        image_file: file,
+        image_url: previewUrl,
+      };
+
+      onChange({ sponsors: newSponsors });
     };
-    onChange({ sponsors: newSponsors });
   };
 
   return (
@@ -79,6 +121,9 @@ export function SponsorsSection({
         <Label className="text-muted-foreground text-sm font-medium flex items-center gap-2">
           <Building2 className="h-4 w-4 text-teal-500 dark:text-teal-400" />
           Sponsors & Partners
+          <Badge variant="secondary" className="text-xs">
+            Recommended: 200×200px (Square)
+          </Badge>
         </Label>
         <p className="text-xs text-muted-foreground/70 mt-1">
           Showcase sponsors and partners for this ticket
@@ -88,15 +133,15 @@ export function SponsorsSection({
       {/* Sponsors List */}
       <div className="space-y-4">
         {sponsors.map((sponsor, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className="group p-4 rounded-xl bg-secondary/50 border border-border hover:border-foreground/20 transition-colors"
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-center gap-4">
               {/* Logo Preview/Upload */}
               <div className="flex-shrink-0">
                 {sponsor.image_url ? (
-                  <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-border">
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-border bg-background">
                     <img
                       src={sponsor.image_url}
                       alt={sponsor.title || "Sponsor"}
@@ -107,10 +152,10 @@ export function SponsorsSection({
                         type="button"
                         onClick={() => {
                           const newSponsors = [...sponsors];
-                          newSponsors[index] = { 
-                            ...newSponsors[index], 
-                            image_url: "", 
-                            image_file: undefined 
+                          newSponsors[index] = {
+                            ...newSponsors[index],
+                            image_url: "",
+                            image_file: undefined
                           };
                           onChange({ sponsors: newSponsors });
                         }}
@@ -184,9 +229,15 @@ export function SponsorsSection({
                   </Button>
                 )}
 
-                <p className="text-[10px] text-muted-foreground/50">
-                  Recommended: 200×200px, PNG or JPG
+                <p className="text-xs text-muted-foreground/50">
+                  Required size: <strong>200×200px (Square)</strong>. PNG or JPG recommended.
                 </p>
+
+                {imageErrors[index] && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {imageErrors[index]}
+                  </p>
+                )}
               </div>
 
               {/* Remove Button */}
@@ -202,6 +253,7 @@ export function SponsorsSection({
                 </Button>
               )}
             </div>
+
           </div>
         ))}
 
