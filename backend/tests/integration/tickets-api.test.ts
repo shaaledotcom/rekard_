@@ -873,7 +873,49 @@ describe('Tickets API - Create Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 3.7: Error - Missing required field (title)
+    // TEST CASE 3.7: Error - Geoblocking enabled but no rules provided
+    // -----------------------------------------------------------------------
+    it('should return 400 when geoblocking is enabled but no locations are blocked', async () => {
+      // Arrange
+      const endpoint = '/producer/tickets';
+      const payload: CreateTicketRequest = {
+        ...validTicketPayload,
+        title: 'Invalid Geoblocking - No Rules - ' + Date.now(),
+        geoblocking_enabled: true,
+        // No geoblocking_countries provided
+      };
+      
+      // Act
+      const response = await apiRequest<TicketApiResponse>('POST', endpoint, payload);
+      
+      // Assert
+      expect(response.status).toBe(400);
+      expect(response.data.message).toContain('Geo-blocking is enabled but no locations are blocked');
+    });
+
+    // -----------------------------------------------------------------------
+    // TEST CASE 3.8: Error - Geoblocking enabled with empty rules array
+    // -----------------------------------------------------------------------
+    it('should return 400 when geoblocking is enabled but rules array is empty', async () => {
+      // Arrange
+      const endpoint = '/producer/tickets';
+      const payload: CreateTicketRequest = {
+        ...validTicketPayload,
+        title: 'Invalid Geoblocking - Empty Array - ' + Date.now(),
+        geoblocking_enabled: true,
+        geoblocking_countries: [], // Empty array
+      };
+      
+      // Act
+      const response = await apiRequest<TicketApiResponse>('POST', endpoint, payload);
+      
+      // Assert
+      expect(response.status).toBe(400);
+      expect(response.data.message).toContain('Geo-blocking is enabled but no locations are blocked');
+    });
+
+    // -----------------------------------------------------------------------
+    // TEST CASE 3.9: Error - Missing required field (title)
     // -----------------------------------------------------------------------
     it('should return 400 when title is missing', async () => {
       // Arrange
@@ -891,7 +933,7 @@ describe('Tickets API - Create Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 3.8: Price is optional (defaults to 0)
+    // TEST CASE 3.10: Price is optional (defaults to 0)
     // -----------------------------------------------------------------------
     it('should create ticket with default price when price is missing', async () => {
       // Arrange
@@ -914,7 +956,7 @@ describe('Tickets API - Create Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 3.9: Error - Missing required field (total_quantity)
+    // TEST CASE 3.11: Error - Missing required field (total_quantity)
     // -----------------------------------------------------------------------
     it('should return 400 when total_quantity is missing or zero', async () => {
       // Arrange
@@ -933,7 +975,7 @@ describe('Tickets API - Create Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 3.10: Error - Negative price
+    // TEST CASE 3.12: Error - Negative price
     // -----------------------------------------------------------------------
     it('should return 400 for negative price', async () => {
       // Arrange
@@ -952,7 +994,7 @@ describe('Tickets API - Create Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 3.11: Error - Negative total_quantity
+    // TEST CASE 3.13: Error - Negative total_quantity
     // -----------------------------------------------------------------------
     it('should return 400 for negative total_quantity', async () => {
       // Arrange
@@ -971,7 +1013,7 @@ describe('Tickets API - Create Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 3.12: Invalid status value is accepted (no strict validation)
+    // TEST CASE 3.14: Invalid status value is accepted (no strict validation)
     // -----------------------------------------------------------------------
     it('should accept ticket with non-standard status value', async () => {
       // Arrange
@@ -995,7 +1037,7 @@ describe('Tickets API - Create Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 3.13: Error - Unauthorized access
+    // TEST CASE 3.15: Error - Unauthorized access
     // -----------------------------------------------------------------------
     it('should return 401 when no auth token provided', async () => {
       // Arrange
@@ -1240,7 +1282,97 @@ describe('Tickets API - Update Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 4.7: Success - updated_at timestamp changes
+    // TEST CASE 4.7: Error - Enable geoblocking without rules
+    // -----------------------------------------------------------------------
+    it('should return 400 when enabling geoblocking without rules', async () => {
+      if (!testTicketId) return;
+      
+      // Arrange
+      const endpoint = `/producer/tickets/${testTicketId}`;
+      const payload = {
+        geoblocking_enabled: true,
+        // No geoblocking_countries provided
+      };
+      
+      // Act
+      const response = await apiRequest<TicketApiResponse>('PUT', endpoint, payload);
+      
+      // Assert
+      expect(response.status).toBe(400);
+      expect(response.data.message).toContain('Geo-blocking is enabled but no locations are blocked');
+    });
+
+    // -----------------------------------------------------------------------
+    // TEST CASE 4.8: Error - Enable geoblocking with empty rules array
+    // -----------------------------------------------------------------------
+    it('should return 400 when enabling geoblocking with empty rules array', async () => {
+      if (!testTicketId) return;
+      
+      // Arrange
+      const endpoint = `/producer/tickets/${testTicketId}`;
+      const payload = {
+        geoblocking_enabled: true,
+        geoblocking_countries: [],
+      };
+      
+      // Act
+      const response = await apiRequest<TicketApiResponse>('PUT', endpoint, payload);
+      
+      // Assert
+      expect(response.status).toBe(400);
+      expect(response.data.message).toContain('Geo-blocking is enabled but no locations are blocked');
+    });
+
+    // -----------------------------------------------------------------------
+    // TEST CASE 4.9: Error - Clear rules while geoblocking is enabled
+    // -----------------------------------------------------------------------
+    it('should return 400 when clearing rules while geoblocking remains enabled', async () => {
+      if (!testTicketId) return;
+      
+      // First enable geoblocking with rules
+      await apiRequest<TicketApiResponse>('PUT', `/producer/tickets/${testTicketId}`, {
+        geoblocking_enabled: true,
+        geoblocking_countries: [{ type: 'country' as const, value: 'IN' }],
+      });
+      
+      // Arrange - Try to clear rules without disabling geoblocking
+      const endpoint = `/producer/tickets/${testTicketId}`;
+      const payload = {
+        geoblocking_countries: [],
+        // NOT setting geoblocking_enabled: false
+      };
+      
+      // Act
+      const response = await apiRequest<TicketApiResponse>('PUT', endpoint, payload);
+      
+      // Assert
+      expect(response.status).toBe(400);
+      expect(response.data.message).toContain('Cannot remove all geo-blocking rules while geo-blocking is enabled');
+    });
+
+    // -----------------------------------------------------------------------
+    // TEST CASE 4.10: Success - Disable geoblocking and clear rules
+    // -----------------------------------------------------------------------
+    it('should allow clearing rules when disabling geoblocking', async () => {
+      if (!testTicketId) return;
+      
+      // Arrange
+      const endpoint = `/producer/tickets/${testTicketId}`;
+      const payload = {
+        geoblocking_enabled: false,
+        geoblocking_countries: [],
+      };
+      
+      // Act
+      const response = await apiRequest<TicketApiResponse>('PUT', endpoint, payload);
+      
+      // Assert
+      expect(response.status).toBe(200);
+      expect(response.data.data.geoblocking_enabled).toBe(false);
+    });
+
+    // -----------------------------------------------------------------------
+    // TEST CASE 4.11: Success - updated_at timestamp changes
     // -----------------------------------------------------------------------
     it('should update the updated_at timestamp', async () => {
       if (!testTicketId) return;
@@ -1266,7 +1398,7 @@ describe('Tickets API - Update Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 4.8: Error - Ticket not found
+    // TEST CASE 4.12: Error - Ticket not found
     // -----------------------------------------------------------------------
     it('should return 404 for non-existent ticket ID', async () => {
       // Arrange
@@ -1281,7 +1413,7 @@ describe('Tickets API - Update Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 4.9: Error - Negative price
+    // TEST CASE 4.13: Error - Negative price
     // -----------------------------------------------------------------------
     it('should return 400 for negative price', async () => {
       if (!testTicketId) return;
@@ -1298,7 +1430,7 @@ describe('Tickets API - Update Ticket', () => {
     });
 
     // -----------------------------------------------------------------------
-    // TEST CASE 4.10: Error - Invalid total_quantity
+    // TEST CASE 4.14: Error - Invalid total_quantity
     // -----------------------------------------------------------------------
     it('should return 400 for invalid total_quantity', async () => {
       if (!testTicketId) return;

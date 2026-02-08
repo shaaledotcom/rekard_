@@ -116,12 +116,17 @@ export function TicketForm({
     switch (step) {
       case "basic-details":
         return !!(formData.title && formData.title.length >= 3 && formData.url && formData.url.length >= 3);
-      case "settings":
-        return !!(
+      case "settings": {
+        const basicValid = !!(
           formData.event_ids.length > 0 &&
           formData.pricing.length > 0 &&
           formData.pricing[0]?.price >= 0
         );
+        // If geoblocking is enabled, at least one rule must be added
+        const geoblockingValid = !formData.geoblocking_enabled || 
+          (formData.geoblocking_countries && formData.geoblocking_countries.length > 0);
+        return basicValid && geoblockingValid;
+      }
       case "coupons-sponsors":
         return true; // Optional step
       default:
@@ -174,6 +179,11 @@ export function TicketForm({
         errors.push("Pricing information is required");
       } else if (formData.pricing[0]?.price === undefined || formData.pricing[0]?.price < 0) {
         errors.push("Price must be 0 or greater");
+      }
+      // Validate geoblocking rules
+      if (formData.geoblocking_enabled && 
+          (!formData.geoblocking_countries || formData.geoblocking_countries.length === 0)) {
+        errors.push("Geo-blocking is enabled but no locations are blocked. Please add at least one location or disable geo-blocking");
       }
     }
     

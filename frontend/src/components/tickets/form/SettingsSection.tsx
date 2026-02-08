@@ -12,6 +12,7 @@ import {
   Settings2,
   ChevronDown,
   MapPin,
+  TriangleAlert,
   X,
   Search,
   Plus,
@@ -294,6 +295,18 @@ export function SettingsSection({
               </Badge>
             </div>
 
+            {/* Warning when no rules are added */}
+            {geoblockingRules.length === 0 && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <p className="text-destructive/90 text-sm font-medium ">
+                  <TriangleAlert /> Please add at least one location
+                </p>
+                <p className="text-destructive/90 text-xs mt-1">
+                  Geo-blocking is enabled but no locations are blocked. Add at least one location or disable it.
+                </p>
+              </div>
+            )}
+
             {/* Rule Type Tabs */}
             {!isReadOnly && (
               <div className="space-y-3">
@@ -487,15 +500,15 @@ export function SettingsSection({
 
             {/* Current rules list */}
             <div className="space-y-2">
-              {geoblockingRules.length === 0 ? (
+              {geoblockingRules.length === 0 && !isReadOnly ? (
                 <div className="text-center py-4">
                   <Globe2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground text-sm">No locations blocked</p>
+                  <p className="text-muted-foreground text-sm">No locations blocked yet</p>
                   <p className="text-muted-foreground text-xs mt-1">
-                    Add locations to block viewers from purchasing or watching
+                    Use the tabs above to add locations
                   </p>
                 </div>
-              ) : (
+              ) : geoblockingRules.length > 0 ? (
                 geoblockingRules.map((rule, index) => {
                   const countryInfo = rule.type === "country" ? getCountryInfo(rule.value as string) : null;
                   return (
@@ -528,12 +541,14 @@ export function SettingsSection({
                     </div>
                   );
                 })
-              )}
+              ) : null}
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Viewers from blocked locations will not be able to purchase or watch this ticket
-            </p>
+            {geoblockingRules.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Viewers from blocked locations will not be able to purchase or watch this ticket
+              </p>
+            )}
           </div>
         )}
       </div>
