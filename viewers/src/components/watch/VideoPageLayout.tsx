@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Calendar, Loader2, Archive } from "lucide-react";
-import { useParams } from "next/navigation";
 import { MainLayout } from "../layout";
 import DaySelector from "./DaySelector";
 import VideoPlayerSection from "./VideoPlayerSection";
@@ -80,8 +79,6 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
   ticketId,
   ticketUrl,
 }) => {
-  const params = useParams();
-  const ticketUrl = params.ticketUrl as string;
   const { formatDate, formatTime, formatDateTime } = useTimezoneFormat();
 
   const {
