@@ -197,23 +197,7 @@ export const getPublicTicketById = async (ticketId: number): Promise<PublicTicke
 };
 
 // Get ticket by URL for public view
-// If tenantId/appId are provided, filters by tenant (for custom domains)
-// If not provided, does global lookup (for shared domains like watch.rekard.com)
-export const getPublicTicketByUrl = async (
-  url: string,
-  tenantId?: string,
-  appId?: string
-): Promise<PublicTicketDetails | null> => {
-  // Build conditions - always filter by published status
-  const baseConditions = [eq(tickets.status, 'published')];
-  
-  // If tenant context is available (custom domain), filter by tenant
-  // This prevents URL collisions across tenants
-  if (tenantId && appId && tenantId !== '00000000-0000-0000-0000-000000000000') {
-    baseConditions.push(eq(tickets.tenantId, tenantId));
-    baseConditions.push(eq(tickets.appId, appId));
-  }
-
+export const getPublicTicketByUrl = async (url: string): Promise<PublicTicketDetails | null> => {
   // Try exact match first
   let [ticket] = await db
     .select()
@@ -221,7 +205,7 @@ export const getPublicTicketByUrl = async (
     .where(
       and(
         eq(tickets.url, url),
-        ...baseConditions
+        eq(tickets.status, 'published')
       )
     )
     .limit(1);
@@ -235,7 +219,7 @@ export const getPublicTicketByUrl = async (
       .where(
         and(
           eq(tickets.url, alternateUrl),
-          ...baseConditions
+          eq(tickets.status, 'published')
         )
       )
       .limit(1);
