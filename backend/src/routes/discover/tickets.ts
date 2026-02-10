@@ -28,7 +28,16 @@ router.get('/by-url/*', asyncHandler(async (req: AppRequest, res: Response) => {
     return badRequest(res, 'URL is required');
   }
 
-  const ticket = await dashboardService.getPublicTicketByUrl(url);
+  // Extract tenant context from request (resolved from domain or headers)
+  // This ensures tickets are filtered by tenant when accessed from custom domains
+  // Prevents URL collisions when multiple tenants use the same URL slug
+  const tenant = req.tenant;
+  const tenantId = tenant?.tenantId && tenant.tenantId !== '00000000-0000-0000-0000-000000000000'
+    ? tenant.tenantId
+    : undefined;
+  const appId = tenant?.appId || undefined;
+
+  const ticket = await dashboardService.getPublicTicketByUrl(url, tenantId, appId);
   ok(res, ticket);
 }));
 

@@ -162,8 +162,13 @@ export const getPublicTicket = async (ticketId: number): Promise<PublicTicketDet
 };
 
 // Get public ticket by URL
-export const getPublicTicketByUrl = async (url: string): Promise<PublicTicketDetails> => {
-  const ticket = await repo.getPublicTicketByUrl(url);
+// Accepts optional tenant context to filter by tenant (prevents URL collisions)
+export const getPublicTicketByUrl = async (
+  url: string,
+  tenantId?: string,
+  appId?: string
+): Promise<PublicTicketDetails> => {
+  const ticket = await repo.getPublicTicketByUrl(url, tenantId, appId);
   if (!ticket) {
     throw notFound('Ticket');
   }

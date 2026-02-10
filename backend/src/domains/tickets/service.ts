@@ -29,6 +29,22 @@ const normalizeUrlSlug = (url: string | undefined): string | undefined => {
   return slug || undefined;
 };
 
+// Check if URL is already taken by another ticket in the same tenant
+const checkUrlAvailability = async (
+  appId: string,
+  tenantId: string,
+  url: string | undefined,
+  excludeTicketId?: number
+): Promise<void> => {
+  if (!url) return; // URL is optional
+
+  const existing = await repo.getTicketByUrl(appId, tenantId, url, excludeTicketId);
+  
+  if (existing) {
+    throw badRequest(`A ticket with URL "${url}" already exists in your account. Please choose a different URL.`);
+  }
+};
+
 // Validation
 const validateTicketRequest = (data: CreateTicketRequest): void => {
   if (!data.title || data.title.trim() === '') {
@@ -57,6 +73,10 @@ export const createTicket = async (
   // Normalize URL slug
   if (data.url) {
     data.url = normalizeUrlSlug(data.url);
+    
+    // Check URL uniqueness within the same tenant
+    // This prevents URL collisions when multiple tenants use the same URL slug
+    await checkUrlAvailability(appId, tenantId, data.url);
   }
 
   const ticket = await repo.createTicket(appId, tenantId, data);
@@ -108,8 +128,16 @@ export const updateTicket = async (
   }
 
   // Normalize URL slug
-  if (data.url) {
-    data.url = normalizeUrlSlug(data.url);
+  if (data.url !== undefined) {
+    const normalizedUrl = normalizeUrlSlug(data.url);
+    
+    // Check URL uniqueness within the same tenant (exclude current ticket)
+    // This prevents URL collisions when multiple tenants use the same URL slug
+    if (normalizedUrl) {
+      await checkUrlAvailability(appId, tenantId, normalizedUrl, ticketId);
+    }
+    
+    data.url = normalizedUrl;
   }
 
   const ticket = await repo.updateTicket(appId, tenantId, ticketId, data);

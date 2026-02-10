@@ -1,5 +1,5 @@
 // Tickets repository - tenant-aware database operations using Drizzle ORM
-import { eq, and, ilike, or, desc, asc, count, sql, inArray } from 'drizzle-orm';
+import { eq, and, ilike, or, desc, asc, count, sql, inArray, ne } from 'drizzle-orm';
 import { db, tickets, ticketEvents, ticketCoupons, ticketPricing, ticketSponsors, events } from '../../db/index';
 import type {
   Ticket,
@@ -181,6 +181,34 @@ const transformTicket = (ticket: typeof tickets.$inferSelect): Ticket => {
     created_at: ticket.createdAt,
     updated_at: ticket.updatedAt,
   };
+};
+
+// Check if a URL is already taken by another ticket in the same tenant
+export const getTicketByUrl = async (
+  appId: string,
+  tenantId: string,
+  url: string,
+  excludeTicketId?: number
+): Promise<Ticket | null> => {
+  const conditions = [
+    eq(tickets.appId, appId),
+    eq(tickets.tenantId, tenantId),
+    eq(tickets.url, url),
+  ];
+
+  if (excludeTicketId) {
+    conditions.push(ne(tickets.id, excludeTicketId));
+  }
+
+  const [ticket] = await db
+    .select()
+    .from(tickets)
+    .where(and(...conditions))
+    .limit(1);
+
+  if (!ticket) return null;
+
+  return transformTicket(ticket);
 };
 
 export const getTicketById = async (
