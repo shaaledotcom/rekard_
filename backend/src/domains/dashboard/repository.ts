@@ -196,33 +196,87 @@ export const getPublicTicketById = async (ticketId: number): Promise<PublicTicke
   };
 };
 
-// Get ticket by URL for public view
-export const getPublicTicketByUrl = async (url: string): Promise<PublicTicketDetails | null> => {
+// Get ticket by URL for public view (tenant-scoped)
+// For shared domains (system tenant), searches across all free tenants and Pro tenants without custom domains
+// For dedicated tenants, searches only within that tenant's scope
+export const getPublicTicketByUrl = async (
+  url: string,
+  appId: string,
+  tenantId: string,
+  isSharedDomain: boolean = false
+): Promise<PublicTicketDetails | null> => {
+  // Helper function to build query with proper conditions
+  const buildQuery = async (searchUrl: string): Promise<typeof tickets.$inferSelect | null> => {
+    // For shared domains (system tenant), search across all eligible tenants
+    // Same logic as listAllTicketsForDashboard: free users OR Pro users without custom domains
+    if (isSharedDomain && tenantId === '00000000-0000-0000-0000-000000000000') {
+      const result = await db
+        .select({
+          id: tickets.id,
+          appId: tickets.appId,
+          tenantId: tickets.tenantId,
+          title: tickets.title,
+          description: tickets.description,
+          url: tickets.url,
+          thumbnailImagePortrait: tickets.thumbnailImagePortrait,
+          featuredImage: tickets.featuredImage,
+          featuredVideo: tickets.featuredVideo,
+          purchaseWithoutLogin: tickets.purchaseWithoutLogin,
+          isFundraiser: tickets.isFundraiser,
+          price: tickets.price,
+          currency: tickets.currency,
+          totalQuantity: tickets.totalQuantity,
+          soldQuantity: tickets.soldQuantity,
+          maxQuantityPerUser: tickets.maxQuantityPerUser,
+          geoblockingEnabled: tickets.geoblockingEnabled,
+          geoblockingCountries: tickets.geoblockingCountries,
+          status: tickets.status,
+          createdAt: tickets.createdAt,
+          updatedAt: tickets.updatedAt,
+        })
+        .from(tickets)
+        .innerJoin(tenants, eq(tenants.id, tickets.tenantId))
+        .where(
+          and(
+            eq(tickets.url, searchUrl),
+            eq(tickets.status, 'published'),
+            eq(tenants.status, 'active'),
+            or(
+              eq(tenants.isPro, false), // Free users
+              and(
+                eq(tenants.isPro, true),
+                isNull(tenants.primaryDomain) // Pro users without custom domains
+              )!
+            )!
+          )
+        )
+        .limit(1);
+      return (result[0] as typeof tickets.$inferSelect) || null;
+    } else {
+      // For dedicated tenants, scope to specific tenant
+      const [ticket] = await db
+        .select()
+        .from(tickets)
+        .where(
+          and(
+            eq(tickets.url, searchUrl),
+            eq(tickets.appId, appId),
+            eq(tickets.tenantId, tenantId),
+            eq(tickets.status, 'published')
+          )
+        )
+        .limit(1);
+      return ticket || null;
+    }
+  };
+
   // Try exact match first
-  let [ticket] = await db
-    .select()
-    .from(tickets)
-    .where(
-      and(
-        eq(tickets.url, url),
-        eq(tickets.status, 'published')
-      )
-    )
-    .limit(1);
+  let ticket = await buildQuery(url);
 
   // If not found, try without leading slash or with leading slash
   if (!ticket) {
     const alternateUrl = url.startsWith('/') ? url.slice(1) : `/${url}`;
-    [ticket] = await db
-      .select()
-      .from(tickets)
-      .where(
-        and(
-          eq(tickets.url, alternateUrl),
-          eq(tickets.status, 'published')
-        )
-      )
-      .limit(1);
+    ticket = await buildQuery(alternateUrl);
   }
 
   if (!ticket) return null;
