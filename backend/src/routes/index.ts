@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { healthRoutes } from './health.js';
 import { protectedRoutes } from './protected.js';
 import { producerRoutes } from './producer/index.js';
+import { adminRoutes } from './admin/index.js';
 import { viewerRoutes } from './viewer/index.js';
 import { discoverRoutes } from './discover/index.js';
 import { paymentsRoutes } from './payments/index.js';
@@ -29,6 +30,9 @@ router.use('/v1/protected', protectedRoutes);
 
 // Producer API routes
 router.use('/v1/producer', producerRoutes);
+
+// Admin API routes (X-Admin-Key required, no session)
+router.use('/v1/admin', adminRoutes);
 
 // Viewer API routes
 router.use('/v1/viewer', viewerRoutes);
