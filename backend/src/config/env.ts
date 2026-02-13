@@ -82,6 +82,7 @@ export const env = {
   security: {
     tokenSecretKey: getEnv('SECURITY_TOKEN_SECRET_KEY', 'change-in-production'),
     tokenTtlHours: getEnvInt('SECURITY_TOKEN_TTL_HOURS', 24),
+    adminApiKey: getEnv('ADMIN_API_KEY', ''),
   },
 
   redis: {

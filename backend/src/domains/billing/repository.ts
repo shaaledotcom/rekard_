@@ -210,6 +210,25 @@ export const getBillingPlanById = async (
   return row ? transformBillingPlan(row) : null;
 };
 
+/** Get billing plan by name from system tenant (for admin grants) */
+export const getBillingPlanByName = async (
+  planName: string
+): Promise<BillingPlan | null> => {
+  const [row] = await db
+    .select()
+    .from(billingPlans)
+    .where(
+      and(
+        eq(billingPlans.tenantId, SYSTEM_TENANT_ID),
+        eq(billingPlans.name, planName),
+        eq(billingPlans.isActive, true)
+      )
+    )
+    .limit(1);
+
+  return row ? transformBillingPlan(row) : null;
+};
+
 export const createBillingPlan = async (
   appId: string,
   tenantId: string,
