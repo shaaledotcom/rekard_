@@ -1,125 +1,67 @@
-"use client";
+import { Metadata } from "next";
+import { getTicketByUrlServer, cleanDescription } from "@/lib/server-fetch";
+import TicketDetailPageClient from "./TicketDetailPageClient";
+import { headers } from "next/headers";
 
-import React from "react";
-import { MainLayout } from "@/components/layout";
-import { Badge } from "@/components/ui/badge";
-import {
-  TrailerSection,
-  EventDetailsSection,
-  SponsorsSection,
-  EventInformation,
-  EventsList,
-  SocialShareDropdown,
-} from "@/components/ticket";
-import { useTicketDetail } from "@/hooks/useTicketDetail";
+type Props = {
+  params: {
+    ticketUrl: string;
+  };
+};
 
-export default function TicketDetailPage() {
-  const {
-    ticketUrl,
-    ticket,
-    isLoading,
-    error,
-    trailerMedia,
-    eventInfo,
-    currentUrl,
-  } = useTicketDetail();
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const ticket = await getTicketByUrlServer(params.ticketUrl);
 
-  if (!ticketUrl) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto max-w-7xl px-2 sm:px-0">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-destructive">Invalid ticket URL</div>
-          </div>
-        </div>
-      </MainLayout>
-    );
+  if (!ticket) {
+    return {
+      title: "Event Not Found",
+      description: "The requested event could not be found.",
+    };
   }
 
-  if (isLoading) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto max-w-7xl px-2 sm:px-0">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-muted-foreground">Loading ticket details...</div>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
 
-  if (error || !ticket || !eventInfo) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto max-w-7xl px-2 sm:px-0">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-destructive">Failed to load ticket details</div>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
+  const title = ticket.title;
 
-  return (
-    <MainLayout>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-8 w-full">
-        <div className="lg:col-span-3 order-2 lg:order-1 w-full overflow-visible">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 capitalize">
-                {eventInfo.title}
-              </h1>
-              <SocialShareDropdown
-                url={currentUrl}
-                title={eventInfo.title}
-                description={ticket.description}
-              />
-            </div>
-          </div>
+  const description = cleanDescription(ticket.description, 160) || "Watch this event online.";
 
-          {eventInfo.lastDate && (
-            <Badge variant="secondary" className="mb-3 sm:mb-4 text-xs sm:text-sm">
-              LAST DATE TO WATCH: {eventInfo.lastDate}
-            </Badge>
-          )}
+  const image =
+    ticket.thumbnail_image_portrait ||
+    ticket.featured_image ||
+    "https://cdn.prod.website-files.com/68973a33dcbf85d23e3fdf09/6897400d407ea960e2c945ed_RekardDarkLogo_NEW.png";
 
-          <TrailerSection media={trailerMedia} />
-          <EventDetailsSection description={ticket.description || ""} />
+  // Get real browser URL dynamically
+  const headersList = await headers();
+  const host = headersList.get("host");
+  const forwardedProto = headersList.get("x-forwarded-proto") ?? "https";
 
-          {ticket.sponsors && ticket.sponsors.length > 0 && (
-            <>
-              <div className="mt-4 sm:mt-8"></div>
-              <SponsorsSection sponsors={ticket.sponsors} />
-            </>
-          )}
+  const url = `${forwardedProto}://${host}/${params.ticketUrl}`;
 
-          {ticket.events && ticket.events.length > 0 && (
-            <>
-              <div className="mt-4 sm:mt-8"></div>
-              <EventsList events={ticket.events} title="Events" ticketUrl={ticketUrl} />
-            </>
-          )}
-        </div>
-
-        <div className="lg:col-span-1 order-1 lg:order-2">
-          <div className="sticky top-4 sm:top-8">
-            <EventInformation
-              eventInfo={eventInfo}
-              ticketId={ticket.id.toString()}
-              ticketUrl={ticketUrl}
-              events={ticket.events || []}
-              fullEvents={ticket.events || []}
-              ticketPrice={ticket.price}
-              ticketCurrency={ticket.currency}
-              ticketPricing={ticket.pricing}
-              isFundraiser={ticket.is_fundraiser}
-              geoblockingEnabled={ticket.geoblocking_enabled}
-              geoblockingCountries={ticket.geoblocking_countries}
-            />
-          </div>
-        </div>
-      </div>
-    </MainLayout>
-  );
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      images: [
+        {
+          url: image,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
 }
 
+export default function TicketDetailsPage() {
+  return <TicketDetailPageClient />;
+}
