@@ -4,13 +4,14 @@ import { getTicketByUrlServer, cleanDescription } from "@/lib/server-fetch";
 import WatchPageClient from "./WatchPageClient";
 
 type Props = {
-  params: {
+  params: Promise<{
     ticketUrl: string;
-  };
+  }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const ticket = await getTicketByUrlServer(params.ticketUrl);
+  const { ticketUrl } = await params;
+  const ticket = await getTicketByUrlServer(ticketUrl);
 
   if (!ticket) {
     return {
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const host = headersList.get("host");
   const forwardedProto = headersList.get("x-forwarded-proto") ?? "https";
 
-  const url = `${forwardedProto}://${host}/${params.ticketUrl}`;
+  const url = `${forwardedProto}://${host}/${ticketUrl}`;
 
   return {
     title,
