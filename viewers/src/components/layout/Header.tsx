@@ -29,8 +29,8 @@ export function Header() {
 
   const isLoading = authLoading || tenantLoading;
 
-  const logoHeight = isCustomDomain ? "h-14" : "h-10";
-  const headerHeight = isCustomDomain ? "h-20" : "h-16";
+  const logoHeight = isCustomDomain ? "h-10" : "h-10";
+  const headerHeight = isCustomDomain ? "h-16" : "h-16";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

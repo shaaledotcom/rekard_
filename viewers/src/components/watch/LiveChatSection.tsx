@@ -22,15 +22,15 @@ interface LiveChatSectionProps {
 // Helper function to check if a string is a UUID and shorten it
 const formatUsername = (username: string): string => {
   if (!username) return "Anonymous";
-  
+
   // UUID pattern: 8-4-4-4-12 hexadecimal characters
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  
+
   if (uuidPattern.test(username)) {
     // Return first 8 characters + "..."
     return `${username.substring(0, 8)}...`;
   }
-  
+
   return username;
 };
 
@@ -65,10 +65,10 @@ const LiveChatSection: React.FC<LiveChatSectionProps> = ({
   } = useLiveChat(ticketId, userId);
 
   return (
-    <div className="bg-card rounded-lg border p-4 h-[var(--video-height,500px)] flex flex-col w-full min-h-0">
+    <div className="bg-card rounded-lg border p-4 flex flex-col w-full min-h-[300px] md:h-[var(--video-height,500px)]">
       <h3 className="text-lg font-semibold mb-4 flex-shrink-0">LIVE CHAT</h3>
       <div
-        className="flex-1 overflow-y-auto space-y-4 min-h-0 relative"
+        className="flex-1 overflow-y-auto space-y-4 min-h-0 relative max-h-[60vh] md:max-h-none"
         ref={messagesContainerRef}
         onScroll={handleScroll}
         style={{ scrollBehavior: "smooth" }}
