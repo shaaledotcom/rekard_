@@ -249,6 +249,37 @@ export const purchasePlan = async (
   return { subscription, invoice, proActivation };
 };
 
+/**
+ * Admin-only: Grant Pro or Premium plan to a tenant without payment.
+ * Use when billing failed but user paid, or for manual/compensation grants.
+ *
+ * @param tenantId - Tenant UUID (from tenants table)
+ * @param planName - 'Pro' or 'Premium'
+ * @returns Same shape as purchasePlan (subscription, invoice, proActivation)
+ */
+export const adminGrantPlan = async (
+  tenantId: string,
+  planName: 'Pro' | 'Premium'
+): Promise<{ subscription: UserSubscription; invoice: Invoice; proActivation?: { success: boolean; old_app_id: string; new_app_id: string } }> => {
+  const plan = await repo.getBillingPlanByName(planName);
+  if (!plan) {
+    throw new Error(`Plan "${planName}" not found. Run seed to create default plans.`);
+  }
+
+  const tenant = await tenantService.getTenantById(tenantId);
+  if (!tenant) {
+    throw new Error(`Tenant not found: ${tenantId}`);
+  }
+
+  const userId = tenant.user_id;
+  const appId = tenant.app_id;
+
+  return purchasePlan(appId, tenantId, userId, {
+    plan_id: plan.id,
+    external_payment_id: `admin-grant-${Date.now()}`,
+  });
+};
+
 export const cancelSubscription = async (
   appId: string,
   tenantId: string,
