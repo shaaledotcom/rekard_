@@ -11,7 +11,7 @@ import type {
   ValidateCouponResult,
 } from './types.js';
 import { log } from '../../shared/middleware/logger.js';
-import { badRequest, notFound } from '../../shared/errors/app-error.js';
+import { badRequest, notFound, conflict } from '../../shared/errors/app-error.js';
 
 // URL slug normalization - store only the slug, not a full URL
 const normalizeUrlSlug = (url: string | undefined): string | undefined => {
@@ -57,6 +57,14 @@ export const createTicket = async (
   // Normalize URL slug
   if (data.url) {
     data.url = normalizeUrlSlug(data.url);
+    
+    // Check for duplicate slug within the same tenant
+    if (data.url) {
+      const isUnique = await repo.checkSlugUniqueness(appId, tenantId, data.url);
+      if (!isUnique) {
+        throw conflict(`A ticket with the URL slug "${data.url}" already exists in your account`);
+      }
+    }
   }
 
   const ticket = await repo.createTicket(appId, tenantId, data);
@@ -108,8 +116,18 @@ export const updateTicket = async (
   }
 
   // Normalize URL slug
-  if (data.url) {
-    data.url = normalizeUrlSlug(data.url);
+  if (data.url !== undefined) {
+    if (data.url) {
+      data.url = normalizeUrlSlug(data.url);
+      
+      // Check for duplicate slug within the same tenant (excluding current ticket)
+      if (data.url) {
+        const isUnique = await repo.checkSlugUniqueness(appId, tenantId, data.url, ticketId);
+        if (!isUnique) {
+          throw conflict(`A ticket with the URL slug "${data.url}" already exists in your account`);
+        }
+      }
+    }
   }
 
   const ticket = await repo.updateTicket(appId, tenantId, ticketId, data);
