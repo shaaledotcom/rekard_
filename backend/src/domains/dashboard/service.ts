@@ -161,14 +161,12 @@ export const getPublicTicket = async (ticketId: number): Promise<PublicTicketDet
   return ticket;
 };
 
-// Get public ticket by URL (tenant-scoped)
+// Get public ticket by URL
 export const getPublicTicketByUrl = async (
   url: string,
-  appId: string,
-  tenantId: string,
-  isSharedDomain: boolean = false
+  tenantId?: string
 ): Promise<PublicTicketDetails> => {
-  const ticket = await repo.getPublicTicketByUrl(url, appId, tenantId, isSharedDomain);
+  const ticket = await repo.getPublicTicketByUrl(url, tenantId);
   if (!ticket) {
     throw notFound('Ticket');
   }

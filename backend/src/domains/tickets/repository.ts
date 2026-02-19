@@ -64,6 +64,38 @@ const validateCouponCodes = async (
   }
 };
 
+// Validate slug uniqueness within a tenant
+export const checkSlugUniqueness = async (
+  appId: string,
+  tenantId: string,
+  slug: string,
+  excludeTicketId?: number
+): Promise<boolean> => {
+  if (!slug) return true; // Empty slugs are allowed (no uniqueness constraint)
+  
+  const whereConditions = excludeTicketId !== undefined
+    ? and(
+        eq(tickets.appId, appId),
+        eq(tickets.tenantId, tenantId),
+        eq(tickets.url, slug),
+        sql`${tickets.id} != ${excludeTicketId}`
+      )
+    : and(
+        eq(tickets.appId, appId),
+        eq(tickets.tenantId, tenantId),
+        eq(tickets.url, slug)
+      );
+  
+  // Select minimal data (constant 1) for existence check - more efficient than selecting id
+  const [existing] = await db
+    .select({ exists: sql`1` })
+    .from(tickets)
+    .where(whereConditions)
+    .limit(1);
+  
+  return !existing;
+};
+
 export const createTicket = async (
   appId: string,
   tenantId: string,

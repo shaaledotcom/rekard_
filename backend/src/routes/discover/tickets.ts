@@ -1,11 +1,9 @@
 // Public ticket routes (no auth required)
 import { Router, Response } from 'express';
 import * as dashboardService from '../../domains/dashboard/service.js';
-import * as tenantConfig from '../../domains/tenant/config.js';
 import { ok, badRequest } from '../../shared/utils/response.js';
 import type { AppRequest } from '../../shared/types/index.js';
 import { asyncHandler } from '../../shared/index.js';
-import { SYSTEM_TENANT_ID } from '../../shared/middleware/tenant.js';
 
 const router = Router();
 
@@ -30,24 +28,10 @@ router.get('/by-url/*', asyncHandler(async (req: AppRequest, res: Response) => {
     return badRequest(res, 'URL is required');
   }
 
-  // Get tenant context from middleware (resolved from domain or session)
-  const tenant = req.tenant;
-  if (!tenant) {
-    return badRequest(res, 'Tenant context not available');
-  }
+  // Extract tenant context from request (resolved from domain or headers)
+  const tenantId = req.tenant?.tenantId;
 
-  // Check if this is a shared domain request
-  // Shared domains resolve to SYSTEM_TENANT_ID, but tickets belong to individual free tenants
-  const host = (req.headers['x-host'] as string) || req.headers.host || '';
-  const isSharedDomain = tenantConfig.isSharedDomain(host) || 
-                        (tenant.tenantId === SYSTEM_TENANT_ID && tenant.resolvedFrom === 'default');
-
-  const ticket = await dashboardService.getPublicTicketByUrl(
-    url, 
-    tenant.appId, 
-    tenant.tenantId,
-    isSharedDomain
-  );
+  const ticket = await dashboardService.getPublicTicketByUrl(url, tenantId);
   ok(res, ticket);
 }));
 
