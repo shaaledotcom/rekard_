@@ -4,14 +4,18 @@ export async function getTicketByUrlServer(
     ticketUrl: string
 ): Promise<PublicTicketDetails | null> {
     try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+        // const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
-        const cleanUrl = ticketUrl.startsWith("/")
-            ? ticketUrl.slice(1)
-            : ticketUrl;
+        // const cleanUrl = ticketUrl.startsWith("/")
+        //     ? ticketUrl.slice(1)
+        //     : ticketUrl;
+
+        const cleanUrl = ticketUrl.replace(/^\/|\/$/g, "");
+
+        console.log(cleanUrl);
 
         const res = await fetch(
-            `${baseUrl}/v1/discover/tickets/by-url/${cleanUrl}`,
+            `https://api.rekard.com/v1/discover/tickets/by-url/${cleanUrl}`,
             {
                 cache: "no-store",
             }
@@ -19,7 +23,7 @@ export async function getTicketByUrlServer(
 
         if (!res.ok) return null;
         const json = await res.json();
-
+        console.log(json?.data);
         return json?.data ?? null; // because your API wraps in { success, data }
     } catch (error) {
         console.error("Metadata fetch failed:", error);

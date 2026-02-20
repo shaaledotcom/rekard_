@@ -12,11 +12,10 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { ticketUrl } = await params;
   const ticket = await getTicketByUrlServer(ticketUrl);
-
   if (!ticket) {
     return {
-      title: "Event Not Found",
-      description: "The requested event could not be found.",
+      title: "Watch Live Events & Video on Demand",
+      description: "Stream live events and watch on-demand content",
     };
   }
 
