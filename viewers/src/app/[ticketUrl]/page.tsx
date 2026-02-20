@@ -24,10 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const description = cleanDescription(ticket.description, 160) || "Watch this event online.";
 
-  const image =
-    ticket.thumbnail_image_portrait ||
-    ticket.featured_image ||
-    "https://cdn.prod.website-files.com/68973a33dcbf85d23e3fdf09/6897400d407ea960e2c945ed_RekardDarkLogo_NEW.png";
+  const image = ticket.featured_image || "https://cdn.prod.website-files.com/68973a33dcbf85d23e3fdf09/6897400d407ea960e2c945ed_RekardDarkLogo_NEW.png";
 
   // Get real browser URL dynamically
   const headersList = await headers();
