@@ -75,6 +75,8 @@ export interface PublicTicketDetails {
   status: string;
   geoblocking_enabled: boolean;
   geoblocking_countries?: GeoblockingRule[];
+  watch_from?: string;
+  watch_upto?: string;
   events: PublicEventDetails[];
   pricing: PublicTicketPricing[];
   sponsors: PublicTicketSponsor[];
@@ -192,6 +194,8 @@ export interface MyPurchasesResponse {
     ticket_id: number;
     order_id: number;
     purchased_at: string;
+    ticket_archived?: boolean;
+    event_archived?: boolean;
   }>;
   total: number;
   page: number;

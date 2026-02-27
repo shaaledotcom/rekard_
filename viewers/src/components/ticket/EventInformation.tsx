@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { Calendar, Clock, Hourglass, Heart, AlertCircle } from "lucide-react";
+import { Calendar, Clock, Hourglass, Heart, AlertCircle, CalendarCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCurrencyFormat, TicketPricing } from "@/hooks/useCurrencyFormat";
@@ -15,10 +15,11 @@ import type { PublicEventDetails, GeoblockingRule } from "@/store/api/dashboardA
 
 interface EventInfo {
   title: string;
-  lastDate: string;
   date: string;
   time: string;
   duration: string;
+  endDate: string;
+  endTime: string;
   language: string;
   location: string;
   price: string;
@@ -128,6 +129,18 @@ export function EventInformation({
             <Hourglass className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             <span className="text-xs sm:text-sm">Duration: {eventInfo.duration}</span>
           </div>
+          {eventInfo.endDate ? (
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <CalendarCheck className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              <span className="text-xs sm:text-sm">{eventInfo.endDate}</span>
+            </div>
+          ) : null}
+          {eventInfo.endTime ? (
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              <span className="text-xs sm:text-sm">Ends at: {eventInfo.endTime}</span>
+            </div>
+          ) : null}
           {fullEvents.length > 0 && fullEvents[0] && (
             <div className="pt-2">
               <AddToCalendarButton

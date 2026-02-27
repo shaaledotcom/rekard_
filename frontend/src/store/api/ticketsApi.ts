@@ -68,6 +68,8 @@ export interface Ticket {
   geoblocking_enabled: boolean;
   geoblocking_countries?: GeoblockingLocation[];
   status: TicketStatus;
+  watch_from?: string;
+  watch_upto?: string;
   created_at: string;
   updated_at: string;
   events?: TicketEvent[];

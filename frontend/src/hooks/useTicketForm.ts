@@ -105,6 +105,8 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
       status: ticket.status,
       geoblocking_enabled: ticket.geoblocking_enabled,
       geoblocking_countries: ticket.geoblocking_countries || [],
+      watch_from: ticket.watch_from || "",
+      watch_upto: ticket.watch_upto || "",
     };
   }, [ticketData]);
 
@@ -314,6 +316,8 @@ export function useTicketForm(options: UseTicketFormOptions = {}) {
           : undefined,
         status: formData.status,
         event_ids: formData.event_ids.length > 0 ? formData.event_ids : undefined,
+        watch_from: formData.watch_from || undefined,
+        watch_upto: formData.watch_upto || undefined,
         coupons: couponsForApi,
         pricing: pricingForApi,
         sponsors: sponsorsForApi,

@@ -515,6 +515,7 @@ export const listUserPurchasesWithTicketDetails = async (
       ticketDescription: tickets.description,
       ticketUrl: tickets.url,
       ticketThumbnail: tickets.thumbnailImagePortrait,
+      ticketStatus: tickets.status,
     })
     .from(orders)
     .leftJoin(tickets, eq(orders.ticketId, tickets.id))
@@ -523,26 +524,27 @@ export const listUserPurchasesWithTicketDetails = async (
     .limit(pageSize)
     .offset(offset);
 
-  // Get the earliest event start datetime for each ticket via ticketEvents join table
+  // Get the earliest event start datetime and status for each ticket via ticketEvents join table
   const ticketIds = data.map(d => d.ticketId).filter((id): id is number => id !== null);
   
   let eventStartDates: Record<number, string> = {};
+  let eventStatusByTicketId: Record<number, string> = {};
   if (ticketIds.length > 0) {
-    // Join ticketEvents with events to get start datetime for each ticket
     const eventData = await db
       .select({
         ticketId: ticketEvents.ticketId,
         startDatetime: events.startDatetime,
+        eventStatus: events.status,
       })
       .from(ticketEvents)
       .innerJoin(events, eq(ticketEvents.eventId, events.id))
       .where(inArray(ticketEvents.ticketId, ticketIds))
       .orderBy(asc(events.startDatetime));
 
-    // Get the earliest start datetime for each ticket
     for (const event of eventData) {
-      if (event.ticketId && event.startDatetime && !eventStartDates[event.ticketId]) {
-        eventStartDates[event.ticketId] = event.startDatetime.toISOString();
+      if (event.ticketId && !eventStartDates[event.ticketId]) {
+        if (event.startDatetime) eventStartDates[event.ticketId] = event.startDatetime.toISOString();
+        eventStatusByTicketId[event.ticketId] = event.eventStatus ?? 'published';
       }
     }
   }
@@ -558,6 +560,8 @@ export const listUserPurchasesWithTicketDetails = async (
       ticket_id: d.ticketId || 0,
       order_id: d.orderId,
       purchased_at: d.purchasedAt,
+      ticket_archived: d.ticketStatus === 'archived',
+      event_archived: d.ticketId ? eventStatusByTicketId[d.ticketId] === 'archived' : false,
     })),
     total,
     page,
@@ -597,6 +601,7 @@ export const listUserPurchasesWithTicketDetailsAcrossTenants = async (
       ticketDescription: tickets.description,
       ticketUrl: tickets.url,
       ticketThumbnail: tickets.thumbnailImagePortrait,
+      ticketStatus: tickets.status,
     })
     .from(orders)
     .leftJoin(tickets, eq(orders.ticketId, tickets.id))
@@ -605,26 +610,27 @@ export const listUserPurchasesWithTicketDetailsAcrossTenants = async (
     .limit(pageSize)
     .offset(offset);
 
-  // Get the earliest event start datetime for each ticket via ticketEvents join table
+  // Get the earliest event start datetime and status for each ticket via ticketEvents join table
   const ticketIds = data.map(d => d.ticketId).filter((id): id is number => id !== null);
   
   let eventStartDates: Record<number, string> = {};
+  let eventStatusByTicketId: Record<number, string> = {};
   if (ticketIds.length > 0) {
-    // Join ticketEvents with events to get start datetime for each ticket
     const eventData = await db
       .select({
         ticketId: ticketEvents.ticketId,
         startDatetime: events.startDatetime,
+        eventStatus: events.status,
       })
       .from(ticketEvents)
       .innerJoin(events, eq(ticketEvents.eventId, events.id))
       .where(inArray(ticketEvents.ticketId, ticketIds))
       .orderBy(asc(events.startDatetime));
 
-    // Get the earliest start datetime for each ticket
     for (const event of eventData) {
-      if (event.ticketId && event.startDatetime && !eventStartDates[event.ticketId]) {
-        eventStartDates[event.ticketId] = event.startDatetime.toISOString();
+      if (event.ticketId && !eventStartDates[event.ticketId]) {
+        if (event.startDatetime) eventStartDates[event.ticketId] = event.startDatetime.toISOString();
+        eventStatusByTicketId[event.ticketId] = event.eventStatus ?? 'published';
       }
     }
   }
@@ -640,6 +646,8 @@ export const listUserPurchasesWithTicketDetailsAcrossTenants = async (
       ticket_id: d.ticketId || 0,
       order_id: d.orderId,
       purchased_at: d.purchasedAt,
+      ticket_archived: d.ticketStatus === 'archived',
+      event_archived: d.ticketId ? eventStatusByTicketId[d.ticketId] === 'archived' : false,
     })),
     total,
     page,

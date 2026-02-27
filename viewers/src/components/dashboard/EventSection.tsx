@@ -15,6 +15,8 @@ interface EventSectionProps {
     thumbnail_image_portrait?: string;
     url?: string;
     start_datetime?: string;
+    ticket_archived?: boolean;
+    event_archived?: boolean;
   }>;
   showViewAll?: boolean;
   isLoading?: boolean;
@@ -110,6 +112,8 @@ export function EventSection({
             isPurchased={isPurchased}
             isLive={isLive}
             startDatetime={event.start_datetime}
+            ticketArchived={event.ticket_archived}
+            eventArchived={event.event_archived}
           />
         ))}
       </div>

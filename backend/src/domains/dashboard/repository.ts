@@ -196,6 +196,8 @@ export const getPublicTicketById = async (ticketId: number): Promise<PublicTicke
     status: ticket.status || 'draft',
     geoblocking_enabled: ticket.geoblockingEnabled ?? false,
     geoblocking_countries: (ticket.geoblockingCountries as import('../geolocation/types.js').GeoblockingRule[]) ?? undefined,
+    watch_from: ticket.watchFrom ? ticket.watchFrom.toISOString() : undefined,
+    watch_upto: ticket.watchUpto ? ticket.watchUpto.toISOString() : undefined,
     events: eventsList,
     pricing,
     sponsors,

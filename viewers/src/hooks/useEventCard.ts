@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Custom hook for EventCard business logic
@@ -12,6 +13,7 @@ import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
  *    - Unpurchased tickets: Navigate to ticket details page (`/url` or `/id`)
  *    - URL takes priority over ID for routing
  *    - Prevents duplicate navigation with loading state guard
+ *    - If event or ticket is archived, shows toast and does not navigate
  * 
  * 2. URL NORMALIZATION:
  *    - Removes leading slashes from URLs for consistent routing
@@ -31,11 +33,14 @@ export function useEventCard(
   id: number,
   url?: string,
   isPurchased: boolean = false,
-  startDatetime?: string
+  startDatetime?: string,
+  ticketArchived: boolean = false,
+  eventArchived: boolean = false
 ) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
   const { formatDateTime } = useTimezoneFormat();
+  const { toast } = useToast();
 
   // Format date with timezone awareness
   const formattedDate = startDatetime
@@ -52,6 +57,30 @@ export function useEventCard(
   // Handle card click navigation
   const handleClick = async () => {
     if (isNavigating) return;
+
+    const isArchived = ticketArchived || eventArchived;
+    if (isArchived) {
+      if (eventArchived && ticketArchived) {
+        toast({
+          title: "Event and Ticket are archived",
+          description: "This content is no longer available.",
+          variant: "default",
+        });
+      } else if (eventArchived) {
+        toast({
+          title: "Event is archived",
+          description: "This event is no longer available.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Ticket is archived",
+          description: "This ticket is no longer available.",
+          variant: "default",
+        });
+      }
+      return;
+    }
 
     setIsNavigating(true);
 

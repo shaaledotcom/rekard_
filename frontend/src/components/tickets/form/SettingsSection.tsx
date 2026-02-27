@@ -23,6 +23,8 @@ import {
 import type { TicketFormData } from "./types";
 import { STATUS_OPTIONS } from "./types";
 import type { GeoblockingLocation } from "@/store/api";
+import { utcToLocalInput, localToUTC } from "@/lib/datetime";
+import { Calendar, CalendarClock } from "lucide-react";
 
 interface SettingsSectionProps {
   formData: TicketFormData;
@@ -251,6 +253,53 @@ export function SettingsSection({
             </span>
           )}
         </p>
+      </div>
+
+      {/* Optional: Watch window (from / until) */}
+      <div className="space-y-4 p-4 rounded-xl bg-secondary border border-border">
+        <Label className="text-foreground/70 text-sm font-medium flex items-center gap-2">
+          <CalendarClock className="h-4 w-4" />
+          Watch window (optional)
+        </Label>
+        <p className="text-xs text-muted-foreground">
+          If set, these dates will be shown on the ticket page as &quot;Watch from&quot; and &quot;Last date to watch&quot;. Leave empty to hide.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              Watch from
+            </Label>
+            <Input
+              type="datetime-local"
+              value={formData.watch_from ? utcToLocalInput(formData.watch_from) : ""}
+              onChange={(e) =>
+                onChange({
+                  watch_from: e.target.value ? localToUTC(e.target.value) : "",
+                })
+              }
+              disabled={isReadOnly}
+              className="h-11 bg-background border-border text-foreground rounded-lg"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              Last date to watch
+            </Label>
+            <Input
+              type="datetime-local"
+              value={formData.watch_upto ? utcToLocalInput(formData.watch_upto) : ""}
+              onChange={(e) =>
+                onChange({
+                  watch_upto: e.target.value ? localToUTC(e.target.value) : "",
+                })
+              }
+              disabled={isReadOnly}
+              className="h-11 bg-background border-border text-foreground rounded-lg"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Geoblocking Section */}

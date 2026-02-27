@@ -720,13 +720,17 @@ export const getMyPurchases = async (
         const ticket = await getPublicTicketById(grant.ticket_id);
         if (!ticket) return null;
         
-        // Get earliest event start datetime
-        const eventStartDatetime = ticket.events && ticket.events.length > 0
-          ? ticket.events
-              .map(e => e.start_datetime)
-              .filter((dt): dt is Date => !!dt)
-              .sort((a, b) => a.getTime() - b.getTime())[0]?.toISOString()
+        // Get earliest event start datetime and its status
+        const sortedEvents = ticket.events && ticket.events.length > 0
+          ? [...ticket.events].sort(
+              (a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime()
+            )
+          : [];
+        const earliestEvent = sortedEvents[0];
+        const eventStartDatetime = earliestEvent?.start_datetime
+          ? new Date(earliestEvent.start_datetime).toISOString()
           : undefined;
+        const eventArchived = earliestEvent?.status === 'archived';
 
         return {
           id: ticket.id,
@@ -738,6 +742,8 @@ export const getMyPurchases = async (
           ticket_id: ticket.id,
           order_id: 0, // No order ID for grants
           purchased_at: new Date(grant.granted_at),
+          ticket_archived: ticket.status === 'archived',
+          event_archived: eventArchived,
         };
       })
   );

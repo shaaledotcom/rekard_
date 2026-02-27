@@ -56,6 +56,8 @@ export interface TicketFormData {
   status: TicketStatus;
   geoblocking_enabled: boolean;
   geoblocking_countries: GeoblockingLocation[];
+  watch_from: string;
+  watch_upto: string;
 }
 
 // Media files for upload
@@ -104,5 +106,7 @@ export const DEFAULT_TICKET_FORM_VALUES: TicketFormData = {
   status: "draft",
   geoblocking_enabled: false,
   geoblocking_countries: [],
+  watch_from: "",
+  watch_upto: "",
 };
 
