@@ -4,9 +4,9 @@ import React, { useState, useEffect } from "react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Navbar } from "@/components/layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BillingPlans, TicketsPurchase } from "@/components/billing";
+import { BillingPlans, TicketsPurchase, MyOrders } from "@/components/billing";
 import { useGetUserSubscriptionQuery, useGetUserWalletQuery } from "@/store/api";
-import { CreditCard, Ticket, Sparkles } from "lucide-react";
+import { CreditCard, Ticket, Package } from "lucide-react";
 
 function BillingContent() {
   const [activeTab, setActiveTab] = useState<string>("plans");
@@ -30,7 +30,7 @@ function BillingContent() {
     if (typeof window !== "undefined" && !hasInitialized) {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get("tab");
-      if (tabParam && ["plans", "tickets"].includes(tabParam)) {
+      if (tabParam && ["plans", "tickets", "orders"].includes(tabParam)) {
         setActiveTab(tabParam);
         setHasInitialized(true);
       } else if (subscriptionData !== undefined) {
@@ -74,7 +74,7 @@ function BillingContent() {
           onValueChange={setActiveTab} 
           className="space-y-6"
         >
-          <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto sm:mx-0">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3 mx-auto sm:mx-0">
             <TabsTrigger 
               value="plans" 
               className="flex items-center gap-2 text-sm"
@@ -88,6 +88,13 @@ function BillingContent() {
             >
               <Ticket className="w-4 h-4" />
               Tickets
+            </TabsTrigger>
+            <TabsTrigger 
+              value="orders" 
+              className="flex items-center gap-2 text-sm"
+            >
+              <Package className="w-4 h-4" />
+              My orders
             </TabsTrigger>
           </TabsList>
 
@@ -105,6 +112,10 @@ function BillingContent() {
               setActiveTab={setActiveTab}
               subscription={subscription}
             />
+          </TabsContent>
+
+          <TabsContent value="orders" className="mt-6">
+            <MyOrders />
           </TabsContent>
         </Tabs>
       </main>

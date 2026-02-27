@@ -22,6 +22,8 @@ export const tickets = pgTable('tickets', {
   geoblockingEnabled: boolean('geoblocking_enabled').default(false),
   geoblockingCountries: jsonb('geoblocking_countries'),
   status: varchar('status', { length: 50 }).default('draft'),
+  watchFrom: timestamp('watch_from'),
+  watchUpto: timestamp('watch_upto'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({

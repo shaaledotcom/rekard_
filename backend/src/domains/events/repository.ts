@@ -1,5 +1,5 @@
 // Events repository - tenant-aware database operations using Drizzle ORM
-import { eq, and, ilike, or, gte, lte, desc, asc, count, sql } from 'drizzle-orm';
+import { eq, and, ilike, or, gte, lte, desc, asc, count, sql, inArray } from 'drizzle-orm';
 import { db, events } from '../../db/index';
 import type {
   Event,
@@ -181,6 +181,9 @@ export const listEvents = async (
 
   if (filter.status) {
     conditions.push(eq(events.status, filter.status));
+  } else {
+    // Hide archived by default in admin panel; use status=archived to see them
+    conditions.push(inArray(events.status, ['draft', 'published', 'live', 'completed', 'cancelled']));
   }
   if (filter.language) {
     conditions.push(eq(events.language, filter.language));

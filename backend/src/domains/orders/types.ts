@@ -156,6 +156,8 @@ export type PurchaseWithTicketDetails = {
   ticket_id: number;
   order_id: number;
   purchased_at: Date;
+  ticket_archived?: boolean;
+  event_archived?: boolean;
 };
 
 export type MyPurchasesListResponse = {

@@ -340,7 +340,6 @@ export const updateAppIdInTable = async (
   oldAppId: string,
   newAppId: string
 ): Promise<number> => {
-  // Use raw SQL for dynamic table name
   const result = await db.execute(sql`
     UPDATE ${sql.identifier(tableName)}
     SET app_id = ${newAppId}, updated_at = NOW()

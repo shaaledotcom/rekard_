@@ -27,6 +27,8 @@ export type Ticket = {
   geoblocking_enabled: boolean;
   geoblocking_countries?: GeoblockingLocation[];
   status: TicketStatus;
+  watch_from?: Date;
+  watch_upto?: Date;
   created_at: Date;
   updated_at: Date;
   // Relations (populated separately)
@@ -126,6 +128,8 @@ export type CreateTicketRequest = {
   geoblocking_enabled?: boolean;
   geoblocking_countries?: GeoblockingLocation[];
   status?: TicketStatus;
+  watch_from?: string;
+  watch_upto?: string;
   event_ids?: number[];
   coupons?: CouponForm[];
   pricing?: PricingForm[];
@@ -148,6 +152,8 @@ export type UpdateTicketRequest = {
   geoblocking_enabled?: boolean;
   geoblocking_countries?: GeoblockingLocation[];
   status?: TicketStatus;
+  watch_from?: string;
+  watch_upto?: string;
   event_ids?: number[];
   coupons?: CouponForm[];
   pricing?: PricingForm[];

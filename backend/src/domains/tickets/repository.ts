@@ -124,6 +124,8 @@ export const createTicket = async (
         geoblockingEnabled: data.geoblocking_enabled ?? false,
         geoblockingCountries: data.geoblocking_countries || null,
         status: data.status || 'draft',
+        watchFrom: data.watch_from ? new Date(data.watch_from) : null,
+        watchUpto: data.watch_upto ? new Date(data.watch_upto) : null,
       })
       .returning();
 
@@ -210,6 +212,8 @@ const transformTicket = (ticket: typeof tickets.$inferSelect): Ticket => {
     geoblocking_enabled: ticket.geoblockingEnabled ?? false,
     geoblocking_countries: (ticket.geoblockingCountries as GeoblockingLocation[]) ?? undefined,
     status: (ticket.status as TicketStatus) ?? 'draft',
+    watch_from: ticket.watchFrom ?? undefined,
+    watch_upto: ticket.watchUpto ?? undefined,
     created_at: ticket.createdAt,
     updated_at: ticket.updatedAt,
   };
@@ -271,6 +275,8 @@ export const updateTicket = async (
     if (data.geoblocking_enabled !== undefined) updates.geoblockingEnabled = data.geoblocking_enabled;
     if (data.geoblocking_countries !== undefined) updates.geoblockingCountries = data.geoblocking_countries;
     if (data.status !== undefined) updates.status = data.status;
+    if (data.watch_from !== undefined) updates.watchFrom = (data.watch_from && String(data.watch_from).trim()) ? new Date(data.watch_from) : null;
+    if (data.watch_upto !== undefined) updates.watchUpto = (data.watch_upto && String(data.watch_upto).trim()) ? new Date(data.watch_upto) : null;
 
     const [ticket] = await tx
       .update(tickets)
@@ -402,6 +408,9 @@ export const listTickets = async (
 
   if (filter.status) {
     conditions.push(eq(tickets.status, filter.status));
+  } else {
+    // Hide archived by default in admin panel; use status=archived to see them
+    conditions.push(inArray(tickets.status, ['draft', 'published', 'sold_out']));
   }
   if (filter.search) {
     conditions.push(

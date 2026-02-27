@@ -156,6 +156,12 @@ export interface SubscriptionResponse {
   message?: string;
 }
 
+export interface SubscriptionListResponse {
+  success: boolean;
+  data: UserSubscription[];
+  message?: string;
+}
+
 export interface PurchasePlanRequest {
   plan_id: number;
   payment_method_id?: string;
@@ -293,6 +299,11 @@ export const billingApi = api.injectEndpoints({
       providesTags: ["Billing"],
     }),
 
+    getMyOrders: builder.query<SubscriptionListResponse, void>({
+      query: () => "/v1/producer/billing/subscriptions",
+      providesTags: ["Billing"],
+    }),
+
     purchasePlan: builder.mutation<PurchasePlanResponse, { planId: number; body: PurchasePlanRequest }>({
       query: ({ planId, body }) => ({
         url: `/v1/producer/billing/plans/${planId}/purchase`,
@@ -389,6 +400,7 @@ export const {
   useGetTicketPricingQuery,
   usePurchaseTicketsMutation,
   useGetUserSubscriptionQuery,
+  useGetMyOrdersQuery,
   usePurchasePlanMutation,
   useCancelSubscriptionMutation,
   useGetInvoicesQuery,

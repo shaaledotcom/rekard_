@@ -65,7 +65,7 @@ export function useTicketDetail() {
   const params = useParams();
   const ticketUrl = params.ticketUrl as string;
   const { formatPriceWithCurrency } = useCurrencyFormat();
-  const { formatDate, formatTime } = useTimezoneFormat();
+  const { formatDate, formatTime, formatDateTime } = useTimezoneFormat();
 
   // BUSINESS LOGIC: Normalize URL to ensure backend compatibility
   // Backend expects URLs with leading slashes for consistent routing
@@ -110,43 +110,81 @@ export function useTicketDetail() {
   const eventInfo = ticket
     ? {
         title: ticket.title,
-        // BUSINESS LOGIC: Find latest end date across all events
-        // This represents when the ticket/watch period expires
-        // Used for urgency messaging to encourage purchases
-        lastDate:
-          ticket.events && ticket.events.length > 0
-            ? (() => {
-                const latestEndDate = ticket.events.reduce((latest, event) => {
-                  if (event.end_datetime) {
-                    const eventEndDate = new Date(event.end_datetime);
-                    return latest > eventEndDate ? latest : eventEndDate;
-                  }
-                  return latest;
-                }, new Date(0));
-                return latestEndDate > new Date(0)
-                  ? formatDate(latestEndDate.toISOString(), {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    }).toUpperCase()
-                  : "";
-              })()
-            : "",
-        // BUSINESS LOGIC: Use first event's start date as primary date
-        // First event typically represents the main event or series start
-        date: ticket.events?.[0]?.start_datetime
-          ? formatDate(ticket.events[0].start_datetime, {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })
-          : "",
-        // BUSINESS LOGIC: Extract time from first event
-        // Shows when the event starts, formatted according to user's timezone
-        time: ticket.events?.[0]?.start_datetime
-          ? formatTime(ticket.events[0].start_datetime)
-          : "",
+        // End time only for "Ends at:" — ticket or event end.
+        endTime: (() => {
+          let endDt: Date | null = null;
+          if (ticket.watch_upto) {
+            endDt = new Date(ticket.watch_upto);
+          } else if (ticket.events?.length) {
+            endDt = ticket.events.reduce((latest, event) => {
+              if (event.end_datetime) {
+                const d = new Date(event.end_datetime);
+                return !latest || d > latest ? d : latest;
+              }
+              return latest;
+            }, null as Date | null);
+          }
+          return endDt ? formatTime(endDt.toISOString()) : "";
+        })(),
+        // End date only (short, no time) for card — ticket or event end.
+        endDate: (() => {
+          let endDt: Date | null = null;
+          if (ticket.watch_upto) {
+            endDt = new Date(ticket.watch_upto);
+          } else if (ticket.events && ticket.events.length > 0) {
+            endDt = ticket.events.reduce((latest, event) => {
+              if (event.end_datetime) {
+                const d = new Date(event.end_datetime);
+                return !latest || d > latest ? d : latest;
+              }
+              return latest;
+            }, null as Date | null);
+          }
+          return endDt
+            ? formatDate(endDt.toISOString(), {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "";
+        })(),
+        // Start date (full format): ticket or event start. No label in UI.
+        date: (() => {
+          let startDt: Date | null = null;
+          if (ticket.watch_from) {
+            startDt = new Date(ticket.watch_from);
+          } else if (ticket.events?.length) {
+            for (const event of ticket.events) {
+              if (event.start_datetime) {
+                const d = new Date(event.start_datetime);
+                if (!startDt || d < startDt) startDt = d;
+              }
+            }
+          }
+          return startDt
+            ? formatDate(startDt.toISOString(), {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+            : "";
+        })(),
+        // Start time: ticket or event start. For "Starts at:".
+        time: (() => {
+          let startDt: Date | null = null;
+          if (ticket.watch_from) {
+            startDt = new Date(ticket.watch_from);
+          } else if (ticket.events?.length) {
+            for (const event of ticket.events) {
+              if (event.start_datetime) {
+                const d = new Date(event.start_datetime);
+                if (!startDt || d < startDt) startDt = d;
+              }
+            }
+          }
+          return startDt ? formatTime(startDt.toISOString()) : "";
+        })(),
         // BUSINESS LOGIC: Calculate total duration across all events
         // Sums all event durations to show cumulative watch time
         // Helps users understand the total value/content length

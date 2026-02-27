@@ -1,6 +1,12 @@
 export { api, tagTypes } from "./baseApi";
 export { tenantApi, useGetTenantConfigQuery } from "./tenantApi";
 export {
+  userApi,
+  useGetMeQuery,
+  useUpdateMeMutation,
+} from "./userApi";
+export type { MeResponse } from "./userApi";
+export {
   dashboardApi,
   viewerOrdersApi,
   useGetDashboardQuery,

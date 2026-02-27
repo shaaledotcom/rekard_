@@ -8,6 +8,7 @@ export {
   tagTypes,
   // User hooks
   useGetMeQuery,
+  useUpdateMeMutation,
   useGetPreferencesQuery,
   useUpdatePreferencesMutation,
   useHealthCheckQuery,
@@ -36,6 +37,7 @@ export {
   useGetTicketPricingQuery,
   usePurchaseTicketsMutation,
   useGetUserSubscriptionQuery,
+  useGetMyOrdersQuery,
   usePurchasePlanMutation,
   useCancelSubscriptionMutation,
   useGetInvoicesQuery,

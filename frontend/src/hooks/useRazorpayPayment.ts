@@ -147,7 +147,7 @@ export const useRazorpayPayment = ({
           amount: planPrice * 100,
           currency,
           name: "Rekard",
-          description: `Purchase of ${planName} plan`,
+          description: `Subscription to ${planName} plan`,
           order_id: orderId,
           prefill: {
             name: customerInfo?.name,
@@ -178,7 +178,7 @@ export const useRazorpayPayment = ({
 
                 toast({
                   title: "Success!",
-                  description: `${planName} plan purchased successfully!`,
+                  description: `${planName} subscription started successfully!`,
                 });
                 onSuccess?.();
               } else {

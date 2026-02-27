@@ -13,6 +13,8 @@ export interface EventCardProps {
   isLive?: boolean;
   isPurchased?: boolean;
   startDatetime?: string;
+  ticketArchived?: boolean;
+  eventArchived?: boolean;
   className?: string;
 }
 
@@ -23,13 +25,19 @@ export function EventCard({
   url,
   isPurchased = false,
   startDatetime = "",
+  ticketArchived = false,
+  eventArchived = false,
 }: EventCardProps) {
   const { formattedDate, handleClick } = useEventCard(
     id,
     url,
     isPurchased,
-    startDatetime
+    startDatetime,
+    ticketArchived,
+    eventArchived
   );
+
+  const isArchived = ticketArchived || eventArchived;
 
   return (
     <div className="relative w-[42%] max-w-[190px] sm:w-[225px]">
@@ -50,6 +58,13 @@ export function EventCard({
           ) : (
             <div className="w-[225px] h-[380px] rounded-lg bg-muted flex items-center justify-center">
               <span className="text-muted-foreground text-sm">No Image</span>
+            </div>
+          )}
+          {isArchived && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50">
+              <span className="rounded bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                Archived
+              </span>
             </div>
           )}
         </div>

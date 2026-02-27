@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { ok, unauthorized } from '../shared/utils/response.js';
-import { getUserMetadata, getUserRoles, getUserPermissions, getUserById, requireSession } from '../domains/auth/index.js';
+import { getUserMetadata, getUserRoles, getUserPermissions, getUserById, updateUserMetadata, requireSession } from '../domains/auth/index.js';
 import type { AuthenticatedRequest } from '../domains/auth/index.js';
 import * as preferencesService from '../domains/preferences/service.js';
 import { asyncHandler } from '../shared/index.js';
@@ -27,17 +27,56 @@ router.get('/me', asyncHandler(async (req: AuthenticatedRequest, res: Response):
     getUserPermissions(userId, tenantId),
   ]);
 
-  // Return user data in format frontend expects
+  // Return user data: prefer metadata (user-filled) over auth for name/email/phone
   ok(res, {
     id: userId,
-    email: user?.emails?.[0] || '',
-    phoneNumber: user?.phoneNumbers?.[0] || '',
+    name: metadata.name || '',
+    email: metadata.email || user?.emails?.[0] || '',
+    phoneNumber: metadata.phoneNumber || user?.phoneNumbers?.[0] || '',
     role: roles[0] || '',
     roles,
     permissions,
     app_id: metadata.appId,
     tenant_ids: [metadata.tenantId],
   }, 'User info retrieved successfully');
+}));
+
+// Update current user profile (e.g. display name for live chat)
+router.patch('/me', asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const userId = req.userId;
+  if (!userId) {
+    unauthorized(res);
+    return;
+  }
+
+  const body = req.body as { name?: string; email?: string; phoneNumber?: string };
+  const updates: { name?: string; email?: string; phone_number?: string } = {};
+  if (body.name !== undefined) updates.name = typeof body.name === 'string' ? body.name.trim() || undefined : undefined;
+  if (body.email !== undefined) updates.email = typeof body.email === 'string' ? body.email.trim() || undefined : undefined;
+  if (body.phoneNumber !== undefined) updates.phone_number = typeof body.phoneNumber === 'string' ? body.phoneNumber.trim() || undefined : undefined;
+  if (Object.keys(updates).length > 0) {
+    await updateUserMetadata(userId, updates);
+  }
+
+  const tenantId = req.tenant?.tenantId;
+  const [user, metadata, roles, permissions] = await Promise.all([
+    getUserById(userId),
+    getUserMetadata(userId),
+    getUserRoles(userId, tenantId),
+    getUserPermissions(userId, tenantId),
+  ]);
+
+  ok(res, {
+    id: userId,
+    name: metadata.name || '',
+    email: metadata.email || user?.emails?.[0] || '',
+    phoneNumber: metadata.phoneNumber || user?.phoneNumbers?.[0] || '',
+    role: roles[0] || '',
+    roles,
+    permissions,
+    app_id: metadata.appId,
+    tenant_ids: [metadata.tenantId],
+  }, 'Profile updated successfully');
 }));
 
 // Get tenant context

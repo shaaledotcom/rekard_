@@ -5,6 +5,8 @@ import {
   useUpdateMessageMutation,
   useDeleteMessageMutation,
   usePinMessageMutation,
+  useGetMeQuery,
+  useUpdateMeMutation,
 } from "@/store/api";
 import type { ChatMessage } from "@/store/api";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
@@ -83,13 +85,19 @@ export function useLiveChat(ticketId: string, userId?: string) {
   const [deleteMessage] = useDeleteMessageMutation();
   const [pinMessage] = usePinMessageMutation();
 
-  // Load saved username from localStorage
+  const { data: me } = useGetMeQuery(undefined, { skip: !userId });
+  const [updateMe] = useUpdateMeMutation();
+
+  // Initial username: profile name (if set) > localStorage per ticket > empty
   useEffect(() => {
-    const savedUsername = localStorage.getItem(`chat_username_${ticketId}`);
-    if (savedUsername) {
-      setUsername(savedUsername);
+    if (me?.name) {
+      setUsername(me.name);
+      localStorage.setItem(`chat_username_${ticketId}`, me.name);
+    } else {
+      const savedUsername = localStorage.getItem(`chat_username_${ticketId}`);
+      if (savedUsername) setUsername(savedUsername);
     }
-  }, [ticketId]);
+  }, [ticketId, me?.name]);
 
   // Sync messages from API query
   useEffect(() => {
@@ -280,16 +288,24 @@ export function useLiveChat(ticketId: string, userId?: string) {
   const handleSendMessage = useCallback(async () => {
     if (!newMessage.trim()) return;
     
-    // Save username to localStorage
-    if (username.trim()) {
-      localStorage.setItem(`chat_username_${ticketId}`, username.trim());
+    const displayName = username.trim();
+    if (displayName) {
+      localStorage.setItem(`chat_username_${ticketId}`, displayName);
+      // If profile has no name and user entered name in chat, update profile (My account)
+      if (!me?.name) {
+        try {
+          await updateMe({ name: displayName }).unwrap();
+        } catch {
+          // Ignore profile update errors
+        }
+      }
     }
     
     try {
       const sentMessage = await postMessage({
         ticket_id: ticketId,
         content: newMessage,
-        username: username.trim() || undefined,
+        username: displayName || undefined,
       }).unwrap();
       
       // The message should come via WebSocket, but add it optimistically if needed
@@ -305,7 +321,7 @@ export function useLiveChat(ticketId: string, userId?: string) {
     } catch (e) {
       // Silently handle errors
     }
-  }, [newMessage, username, ticketId, postMessage]);
+  }, [newMessage, username, ticketId, postMessage, me?.name, updateMe]);
 
   // Handle Enter key press
   const handleKeyPress = useCallback(

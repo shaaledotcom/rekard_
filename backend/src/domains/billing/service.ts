@@ -128,6 +128,14 @@ export const getSubscription = async (
   return subscription;
 };
 
+export const listUserSubscriptions = async (
+  appId: string,
+  tenantId: string,
+  userId: string
+): Promise<UserSubscription[]> => {
+  return repo.listUserSubscriptions(appId, tenantId, userId);
+};
+
 export const purchasePlan = async (
   appId: string,
   tenantId: string,
@@ -142,6 +150,32 @@ export const purchasePlan = async (
     throw new Error('Plan is not active');
   }
 
+  const planTier = getPlanTier(plan.name);
+  let effectiveAppId = appId;
+  let proActivation: { success: boolean; old_app_id: string; new_app_id: string } | undefined;
+
+  // For Pro/Premium: activate Pro first so we use tenant.id as app_id from the start.
+  // This way subscription, wallet, and invoice are created with app_id = tenant.id (not 'public').
+  if (planTier === 'pro' || planTier === 'premium') {
+    try {
+      const { tenant } = await tenantService.getOrCreateTenantForUser(userId);
+      const result = await tenantService.activatePro({
+        tenant_id: tenant.id,
+        custom_app_id: tenant.id,
+      });
+      effectiveAppId = tenant.id;
+      proActivation = {
+        success: result.success,
+        old_app_id: result.old_app_id,
+        new_app_id: result.new_app_id,
+      };
+      log.info(`Pro activation for tenant ${tenant.id} (user ${userId}): ${result.old_app_id} -> ${result.new_app_id}, ${result.total_rows_affected} rows updated`);
+    } catch (error) {
+      log.error(`Failed to activate Pro for user ${userId}:`, error);
+      throw error; // Fail the purchase so app_id is consistent
+    }
+  }
+
   // Calculate subscription period
   const periodStart = new Date();
   const periodEnd = new Date();
@@ -151,9 +185,9 @@ export const purchasePlan = async (
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   }
 
-  // Create subscription
+  // Create subscription with effective app_id (tenant.id for Pro/Premium)
   const subscription = await repo.createSubscription(
-    appId,
+    effectiveAppId,
     tenantId,
     userId,
     plan.id,
@@ -162,22 +196,33 @@ export const purchasePlan = async (
     { paymentMethodId: request.payment_method_id }
   );
 
-  // Add initial tickets to wallet
-  if (plan.initial_tickets > 0) {
+  // Initial tickets: use plan value, or tier default for Pro/Premium if plan has 0
+  const initialTicketsToGrant =
+    plan.initial_tickets > 0
+      ? plan.initial_tickets
+      : planTier === 'premium'
+        ? 50
+        : planTier === 'pro'
+          ? 100
+          : 0;
+
+  if (initialTicketsToGrant > 0) {
+    await repo.getOrCreateUserWallet(effectiveAppId, tenantId, userId);
     await repo.updateWalletBalance(
-      appId,
+      effectiveAppId,
       tenantId,
       userId,
-      plan.initial_tickets,
+      initialTicketsToGrant,
       'plan_purchase',
       'subscription',
       String(subscription.id),
       `Initial tickets from ${plan.name}`,
       { plan_id: plan.id }
     );
+    log.info(`Granted ${initialTicketsToGrant} initial tickets for plan "${plan.name}" (user ${userId})`);
   }
 
-  // Create invoice
+  // Create invoice with effective app_id
   const invoiceNumber = `INV-PLAN-${Date.now()}-${subscription.id}`;
   const taxRate = 0; // Fetch from config in real implementation
   const taxAmount = plan.price * taxRate;
@@ -196,7 +241,7 @@ export const purchasePlan = async (
   ];
 
   const invoice = await repo.createInvoice(
-    appId,
+    effectiveAppId,
     tenantId,
     userId,
     invoiceNumber,
@@ -213,38 +258,7 @@ export const purchasePlan = async (
     }
   );
 
-  log.info(`User ${userId} purchased plan ${plan.id} (subscription ${subscription.id})`);
-
-  // Check if this is a Pro or Premium plan and activate Pro features
-  const planTier = getPlanTier(plan.name);
-  let proActivation: { success: boolean; old_app_id: string; new_app_id: string } | undefined;
-
-  if (planTier === 'pro' || planTier === 'premium') {
-    try {
-      // Get or create the tenant for this user
-      const { tenant } = await tenantService.getOrCreateTenantForUser(userId);
-      
-      // Activate Pro: Update appId from 'public' to tenant.id (UUID)
-      // This cascades the change across all tenant-scoped tables
-      const result = await tenantService.activatePro({
-        tenant_id: tenant.id,
-        // Use tenant.id as the new appId for Pro users
-        custom_app_id: tenant.id,
-      });
-
-      proActivation = {
-        success: result.success,
-        old_app_id: result.old_app_id,
-        new_app_id: result.new_app_id,
-      };
-
-      log.info(`Pro activation for tenant ${tenant.id} (user ${userId}): ${result.old_app_id} -> ${result.new_app_id}, ${result.total_rows_affected} rows updated`);
-    } catch (error) {
-      log.error(`Failed to activate Pro for user ${userId}:`, error);
-      // Don't fail the subscription, just log the error
-      // The cascade can be retried later
-    }
-  }
+  log.info(`User ${userId} purchased plan ${plan.id} (subscription ${subscription.id}) with app_id=${effectiveAppId}`);
 
   return { subscription, invoice, proActivation };
 };

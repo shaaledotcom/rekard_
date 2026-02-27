@@ -57,12 +57,23 @@ export function Header() {
               <Skeleton className="h-9 w-24" />
             ) : isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                <Link
+                  href="/account"
+                  className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <User className="h-4 w-4" />
                   <span className="max-w-[150px] truncate">
                     {user?.email}
                   </span>
-                </div>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/account")}
+                  className="sm:hidden"
+                >
+                  <User className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"

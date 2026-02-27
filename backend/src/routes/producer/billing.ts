@@ -315,6 +315,13 @@ router.get('/subscriptions/active', asyncHandler(async (req: AppRequest, res: Re
   ok(res, subscription);
 }));
 
+// My orders - list all plan subscriptions (with expiry) for the current user
+router.get('/subscriptions', asyncHandler(async (req: AppRequest, res: Response) => {
+  const tenant = getTenantContext(req);
+  const subscriptions = await billingService.listUserSubscriptions(tenant.appId, tenant.tenantId, tenant.userId);
+  ok(res, subscriptions);
+}));
+
 // Renew subscription
 router.post('/subscription/renew', asyncHandler(async (req: AppRequest, res: Response) => {
   const tenant = getTenantContext(req);
@@ -381,7 +388,7 @@ router.post('/plans/:id/purchase', asyncHandler(async (req: AppRequest, res: Res
       tenant.userId,
       request
     );
-    ok(res, result, 'Plan purchased successfully');
+    ok(res, result, 'Subscription started successfully');
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to purchase plan';
     return badRequest(res, message);

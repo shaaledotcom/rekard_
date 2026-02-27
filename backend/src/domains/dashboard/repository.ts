@@ -34,9 +34,11 @@ export const listAllTicketsForDashboard = async (
   // Build conditions - show all tickets EXCEPT Pro users with custom domains
   // Logic: Show if (NOT Pro) OR (Pro AND no custom domain)
   // Which is: (isPro = false) OR (isPro = true AND primaryDomain IS NULL)
+  // Only include events that are discoverable (exclude draft, cancelled, archived)
   const conditions = [
     eq(tickets.status, 'published'),
     eq(tenants.status, 'active'), // Only active tenants
+    inArray(events.status, ['published', 'live', 'completed']), // Exclude archived/draft/cancelled events
     // Exclude Pro users with custom domains - they should only show on their own domain
     or(
       eq(tenants.isPro, false), // Free users
@@ -102,11 +104,12 @@ export const listTicketsForDashboardByDomain = async (
   const offset = (page - 1) * pageSize;
   const now = filter.now || new Date();
 
-  // Build conditions
+  // Build conditions - only include events that are discoverable (exclude archived/draft/cancelled)
   const conditions = [
     eq(tickets.appId, appId),
     eq(tickets.tenantId, tenantId),
     eq(tickets.status, 'published'),
+    inArray(events.status, ['published', 'live', 'completed']),
   ];
 
   if (filter.live_only) {
@@ -165,8 +168,11 @@ export const getPublicTicketById = async (ticketId: number): Promise<PublicTicke
 
   if (!ticket) return null;
 
-  // Get events
+  // Get events (only non-archived)
   const eventsList = await getTicketEvents(ticketId);
+
+  // If all events are archived, ticket is not discoverable
+  if (eventsList.length === 0) return null;
 
   // Get pricing
   const pricing = await getTicketPricing(ticketId);
@@ -190,6 +196,8 @@ export const getPublicTicketById = async (ticketId: number): Promise<PublicTicke
     status: ticket.status || 'draft',
     geoblocking_enabled: ticket.geoblockingEnabled ?? false,
     geoblocking_countries: (ticket.geoblockingCountries as import('../geolocation/types.js').GeoblockingRule[]) ?? undefined,
+    watch_from: ticket.watchFrom ? ticket.watchFrom.toISOString() : undefined,
+    watch_upto: ticket.watchUpto ? ticket.watchUpto.toISOString() : undefined,
     events: eventsList,
     pricing,
     sponsors,
@@ -241,7 +249,7 @@ export const getPublicTicketByUrl = async (
   }
 
   // For shared domains: find first eligible ticket
-  // (from free user OR pro user without custom domain)
+  // (from free user OR pro user without custom domain) that has at least one non-archived event
   for (const ticket of matchingTickets) {
     const tenant = await db
       .select({ isPro: tenants.isPro, primaryDomain: tenants.primaryDomain, status: tenants.status })
@@ -258,11 +266,12 @@ export const getPublicTicketByUrl = async (
 
     // Eligible: free user OR pro user without custom domain
     if (!isPro || !primaryDomain) {
-      return getPublicTicketById(ticket.id);
+      const details = await getPublicTicketById(ticket.id);
+      if (details) return details;
     }
   }
 
-  // Fallback: return first ticket if no eligible tenant found
+  // Fallback: try first ticket (getPublicTicketById returns null if all events archived)
   return getPublicTicketById(matchingTickets[0].id);
 };
 
@@ -281,7 +290,7 @@ export const getTicketEvents = async (ticketId: number): Promise<PublicEventDeta
     .where(
       and(
         inArray(events.id, eventIds.map(e => e.eventId)),
-        inArray(events.status, ['published', 'live'])
+        inArray(events.status, ['published', 'live', 'completed']) // Exclude archived/draft/cancelled
       )
     );
 
@@ -291,6 +300,7 @@ export const getTicketEvents = async (ticketId: number): Promise<PublicEventDeta
     description: e.description || undefined,
     start_datetime: e.startDatetime || new Date(),
     end_datetime: e.endDatetime || new Date(),
+    watch_upto: e.watchUpto || undefined,
     is_vod: e.isVod ?? false,
     status: e.status || 'draft',
     thumbnail_image_portrait: e.thumbnailImagePortrait || undefined,

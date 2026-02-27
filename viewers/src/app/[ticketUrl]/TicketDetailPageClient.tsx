@@ -2,7 +2,6 @@
 
 import React from "react";
 import { MainLayout } from "@/components/layout";
-import { Badge } from "@/components/ui/badge";
 import {
     TrailerSection,
     EventDetailsSection,
@@ -76,12 +75,6 @@ export default function TicketDetailPageClient() {
                             />
                         </div>
                     </div>
-
-                    {eventInfo.lastDate && (
-                        <Badge variant="secondary" className="mb-3 sm:mb-4 text-xs sm:text-sm">
-                            LAST DATE TO WATCH: {eventInfo.lastDate}
-                        </Badge>
-                    )}
 
                     <TrailerSection media={trailerMedia} />
                     <EventDetailsSection description={ticket.description || ""} />
