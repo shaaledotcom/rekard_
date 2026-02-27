@@ -80,6 +80,7 @@ export {
   useGetTicketPricingQuery,
   usePurchaseTicketsMutation,
   useGetUserSubscriptionQuery,
+  useGetMyOrdersQuery,
   usePurchasePlanMutation,
   useCancelSubscriptionMutation,
   useGetInvoicesQuery,

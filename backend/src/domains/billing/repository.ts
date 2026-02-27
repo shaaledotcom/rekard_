@@ -753,6 +753,34 @@ export const getUserSubscription = async (
   return row ? transformUserSubscription(row) : null;
 };
 
+/** List all subscriptions (orders) for the user, for "My orders" - includes plan details, ordered by created_at desc */
+export const listUserSubscriptions = async (
+  appId: string,
+  tenantId: string,
+  userId: string
+): Promise<UserSubscription[]> => {
+  const rows = await db
+    .select()
+    .from(userSubscriptions)
+    .where(
+      and(
+        eq(userSubscriptions.appId, appId),
+        eq(userSubscriptions.tenantId, tenantId),
+        eq(userSubscriptions.userId, userId)
+      )
+    )
+    .orderBy(desc(userSubscriptions.createdAt));
+
+  const result: UserSubscription[] = [];
+  for (const row of rows) {
+    const sub = transformUserSubscription(row);
+    const plan = await getBillingPlanById(appId, tenantId, row.planId);
+    if (plan) sub.plan = plan;
+    result.push(sub);
+  }
+  return result;
+};
+
 export const createSubscription = async (
   appId: string,
   tenantId: string,

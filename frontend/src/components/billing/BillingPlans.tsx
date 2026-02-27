@@ -152,7 +152,7 @@ export function BillingPlans({
               p.name.toLowerCase() === "premium" && p.id === activePlanId
           );
 
-          let buttonLabel = "BUY";
+          let buttonLabel = "Subscribe";
           let buttonVariant: "default" | "outline" = "default";
           let buttonDisabled = false;
 
@@ -227,7 +227,7 @@ export function BillingPlans({
                   disabled={buttonDisabled || isPaymentLoading}
                   className="w-full"
                   onClick={() => {
-                    if (buttonLabel === "BUY" && !buttonDisabled) {
+                    if (buttonLabel === "Subscribe" && !buttonDisabled) {
                       handlePlanPurchase(
                         plan.id,
                         plan.name,

@@ -21,6 +21,7 @@ export const streamingSessions = pgTable('streaming_sessions', {
   startedAt: timestamp('started_at').notNull().defaultNow(),
   lastActivityAt: timestamp('last_activity_at').notNull().defaultNow(),
   endedAt: timestamp('ended_at'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
   tenantIdx: index('idx_streaming_sessions_tenant').on(table.tenantId),
   userIdIdx: index('idx_streaming_sessions_user_id').on(table.userId),

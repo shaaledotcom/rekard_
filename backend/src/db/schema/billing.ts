@@ -52,6 +52,7 @@ export const walletTransactions = pgTable('wallet_transactions', {
   description: text('description'),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
   tenantIdx: index('idx_wallet_transactions_tenant').on(table.tenantId),
   userIdIdx: index('idx_wallet_transactions_user_id').on(table.userId),
@@ -118,6 +119,7 @@ export const billingAuditLogs = pgTable('billing_audit_logs', {
   entityId: integer('entity_id'),
   details: jsonb('details'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
   tenantIdx: index('idx_billing_audit_logs_tenant').on(table.tenantId),
 }));
@@ -134,6 +136,7 @@ export const ticketWalletAllocations = pgTable('ticket_wallet_allocations', {
   expiresAt: timestamp('expires_at'),
   usedAt: timestamp('used_at'),
   status: varchar('status', { length: 50 }).default('active'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
   tenantIdx: index('idx_ticket_wallet_allocations_tenant').on(table.tenantId),
   userIdIdx: index('idx_ticket_wallet_allocations_user_id').on(table.userId),
@@ -151,6 +154,7 @@ export const emailAccessGrants = pgTable('email_access_grants', {
   expiresAt: timestamp('expires_at'),
   usedAt: timestamp('used_at'),
   status: varchar('status', { length: 50 }).default('active'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
   tenantIdx: index('idx_email_access_grants_tenant').on(table.tenantId),
   emailIdx: index('idx_email_access_grants_email').on(table.email),
@@ -167,6 +171,7 @@ export const ticketBuyers = pgTable('ticket_buyers', {
   buyerPhone: varchar('buyer_phone', { length: 50 }),
   orderId: integer('order_id').references(() => orders.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
   tenantIdx: index('idx_ticket_buyers_tenant').on(table.tenantId),
   ticketIdIdx: index('idx_ticket_buyers_ticket_id').on(table.ticketId),

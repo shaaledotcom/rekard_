@@ -128,6 +128,14 @@ export const getSubscription = async (
   return subscription;
 };
 
+export const listUserSubscriptions = async (
+  appId: string,
+  tenantId: string,
+  userId: string
+): Promise<UserSubscription[]> => {
+  return repo.listUserSubscriptions(appId, tenantId, userId);
+};
+
 export const purchasePlan = async (
   appId: string,
   tenantId: string,
