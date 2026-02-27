@@ -5,6 +5,7 @@ export { api, tagTypes } from "./baseApi";
 export {
   userApi,
   useGetMeQuery,
+  useUpdateMeMutation,
   useGetPreferencesQuery,
   useUpdatePreferencesMutation,
   useHealthCheckQuery,

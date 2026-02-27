@@ -12,6 +12,7 @@ import { GeolocationBlockedMessage } from "./GeolocationBlockedMessage";
 import { SecureVideoAccess } from "./SecureVideoAccess";
 import { useVideoPageLayout } from "@/hooks/useVideoPageLayout";
 import { useTimezoneFormat } from "@/hooks/useTimezoneFormat";
+import { useAuth } from "@/hooks/useAuth";
 import { EventsList } from "../ticket";
 import { AddToCalendarButton } from "@/components/ticket/AddToCalendarButton";
 
@@ -79,6 +80,7 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
   ticketId,
   ticketUrl,
 }) => {
+  const { user } = useAuth();
   const { formatDate, formatTime, formatDateTime } = useTimezoneFormat();
 
   const {
@@ -286,7 +288,7 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
 
               {enableLiveChat && (
                 <div className="lg:hidden mt-8">
-                  <LiveChatSection ticketId={ticketId || ""} />
+                  <LiveChatSection ticketId={ticketId || ""} userId={user?.id} />
                 </div>
               )}
 
@@ -308,7 +310,7 @@ export const VideoPageLayout: React.FC<VideoPageLayoutProps> = ({
 
             {enableLiveChat && (
               <div className="hidden lg:block lg:col-span-1">
-                <LiveChatSection ticketId={ticketId || ""} />
+                <LiveChatSection ticketId={ticketId || ""} userId={user?.id} />
               </div>
             )}
           </div>

@@ -8,6 +8,7 @@ export {
   tagTypes,
   // User hooks
   useGetMeQuery,
+  useUpdateMeMutation,
   useGetPreferencesQuery,
   useUpdatePreferencesMutation,
   useHealthCheckQuery,

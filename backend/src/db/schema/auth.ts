@@ -29,6 +29,9 @@ export const rolePermissions = pgTable('role_permissions', {
 // User metadata table
 export const userMetadata = pgTable('user_metadata', {
   userId: varchar('user_id', { length: 255 }).primaryKey(), // Supabase user ID
+  name: varchar('name', { length: 255 }),
+  email: varchar('email', { length: 255 }),
+  phoneNumber: varchar('phone_number', { length: 255 }),
   appId: varchar('app_id', { length: 255 }).notNull().default(DEFAULT_APP_ID),
   tenantId: varchar('tenant_id', { length: 255 }).notNull().default(SYSTEM_TENANT_ID),
   createdAt: timestamp('created_at').notNull().defaultNow(),

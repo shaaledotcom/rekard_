@@ -1,16 +1,50 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Navbar } from "@/components/layout";
 import { SalesTransactions } from "@/components/billing/SalesTransactions";
 import { SalesReport } from "@/components/billing/SalesReport";
-import { useGetMeQuery } from "@/store";
+import { useGetMeQuery, useUpdateMeMutation } from "@/store";
 
 function DashboardContent() {
   const { data: meData } = useGetMeQuery();
+  const [updateMe, { isLoading: isSaving }] = useUpdateMeMutation();
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const me = meData?.data;
+  useEffect(() => {
+    if (me) {
+      setName(me.name || "");
+      setEmail(me.email || "");
+      setPhoneNumber(me.phoneNumber || "");
+    }
+  }, [me]);
+
+  const hasEmpty = !me?.name?.trim() || !me?.email?.trim() || !me?.phoneNumber?.trim();
+  const showForm = hasEmpty || isEditing;
+
+  const handleSave = async () => {
+    try {
+      await updateMe({
+        name: name.trim() || undefined,
+        email: email.trim() || undefined,
+        phoneNumber: phoneNumber.trim() || undefined,
+      }).unwrap();
+      setIsEditing(false);
+    } catch {
+      // Error handled by mutation
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -23,11 +57,67 @@ function DashboardContent() {
           {meData?.data && (
             <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="text-lg text-foreground">Your Account</CardTitle>
-                <CardDescription className="text-muted-foreground">Account details and permissions</CardDescription>
+                <CardTitle className="text-lg text-foreground">My account</CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  {hasEmpty
+                    ? "Fill in your details below. Your name is used in live chat on the watch page."
+                    : "Account details and permissions"}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {showForm ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="dashboard-name">Name</Label>
+                        <Input
+                          id="dashboard-name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Display name (used in live chat)"
+                          className="bg-background"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dashboard-email">Email</Label>
+                        <Input
+                          id="dashboard-email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Email"
+                          className="bg-background"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dashboard-phone">Phone</Label>
+                        <Input
+                          id="dashboard-phone"
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="Phone number"
+                          className="bg-background"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? "Saving..." : "Save"}
+                      </Button>
+                      {!hasEmpty && (
+                        <Button variant="outline" onClick={() => setIsEditing(false)} disabled={isSaving}>
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium text-foreground">{meData.data.name || "Not set"}</p>
+                  </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Email</p>
                     <p className="font-medium text-foreground">{meData.data.email || "Not set"}</p>
@@ -45,6 +135,12 @@ function DashboardContent() {
                     <p className="font-medium text-foreground">{meData.data.app_id || "public"}</p>
                   </div>
                 </div>
+                )}
+                {!showForm && (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                    Edit details
+                  </Button>
+                )}
                 {meData.data.permissions && meData.data.permissions.length > 0 && (
                   <>
                     <Separator className="bg-border" />

@@ -5,6 +5,7 @@ export interface UserResponse {
   success: boolean;
   data: {
     id: string;
+    name: string;
     email: string;
     phoneNumber: string;
     role: string;
@@ -51,6 +52,14 @@ export const userApi = api.injectEndpoints({
       query: () => "/v1/protected/me",
       providesTags: ["User"],
     }),
+    updateMe: builder.mutation<UserResponse, { name?: string; email?: string; phoneNumber?: string }>({
+      query: (body) => ({
+        url: "/v1/protected/me",
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["User"],
+    }),
     getPreferences: builder.query<PreferencesResponse, void>({
       query: () => "/v1/protected/preferences",
     }),
@@ -72,6 +81,7 @@ export const userApi = api.injectEndpoints({
 // Export hooks
 export const {
   useGetMeQuery,
+  useUpdateMeMutation,
   useGetPreferencesQuery,
   useUpdatePreferencesMutation,
   useHealthCheckQuery,

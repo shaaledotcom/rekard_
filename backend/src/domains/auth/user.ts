@@ -71,6 +71,9 @@ export const getUserMetadataById = async (userId: string): Promise<UserMeta> => 
   return {
     app_id: metadata?.appId || TENANT_PUBLIC,
     tenant_id: metadata?.tenantId || TENANT_PUBLIC,
+    name: metadata?.name ?? undefined,
+    email: metadata?.email ?? undefined,
+    phone_number: metadata?.phoneNumber ?? undefined,
   };
 };
 
@@ -89,6 +92,9 @@ export const updateUserMetadata = async (
     await db
       .update(userMetadata)
       .set({
+        name: metadata.name !== undefined ? metadata.name : existing.name,
+        email: metadata.email !== undefined ? metadata.email : existing.email,
+        phoneNumber: metadata.phone_number !== undefined ? metadata.phone_number : existing.phoneNumber,
         appId: metadata.app_id ?? existing.appId,
         tenantId: metadata.tenant_id ?? existing.tenantId,
         updatedAt: new Date(),
@@ -97,21 +103,27 @@ export const updateUserMetadata = async (
   } else {
     await db.insert(userMetadata).values({
       userId,
+      name: metadata.name ?? null,
+      email: metadata.email ?? null,
+      phoneNumber: metadata.phone_number ?? null,
       appId: metadata.app_id || TENANT_PUBLIC,
       tenantId: metadata.tenant_id || TENANT_PUBLIC,
     });
   }
 };
 
-// Get user metadata (appId and tenantId)
+// Get user metadata (appId, tenantId, name, email, phoneNumber)
 export const getUserMetadata = async (
   userId: string
-): Promise<{ appId: string; tenantId: string }> => {
+): Promise<{ appId: string; tenantId: string; name?: string; email?: string; phoneNumber?: string }> => {
   try {
     const metadata = await getUserMetadataById(userId);
     return {
       appId: (metadata?.app_id as string) || TENANT_PUBLIC,
       tenantId: (metadata?.tenant_id as string) || TENANT_PUBLIC,
+      name: metadata?.name,
+      email: metadata?.email,
+      phoneNumber: metadata?.phone_number,
     };
   } catch {
     return { appId: TENANT_PUBLIC, tenantId: TENANT_PUBLIC };
