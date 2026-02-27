@@ -402,6 +402,9 @@ export const listTickets = async (
 
   if (filter.status) {
     conditions.push(eq(tickets.status, filter.status));
+  } else {
+    // Hide archived by default in admin panel; use status=archived to see them
+    conditions.push(inArray(tickets.status, ['draft', 'published', 'sold_out']));
   }
   if (filter.search) {
     conditions.push(
