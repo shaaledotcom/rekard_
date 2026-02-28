@@ -31,5 +31,9 @@ jobs:
         working-directory: ${{ matrix.project }}
 
       - name: Build
+        env:
+          # Placeholders so Next.js prerender succeeds (frontend only needs these at build time)
+          NEXT_PUBLIC_SUPABASE_URL: ${{ matrix.project == 'frontend' && 'https://placeholder.supabase.co' || '' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ matrix.project == 'frontend' && 'placeholder-anon-key' || '' }}
         run: pnpm run build
         working-directory: ${{ matrix.project }}
