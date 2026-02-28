@@ -92,22 +92,22 @@ export const updateUserMetadata = async (
     await db
       .update(userMetadata)
       .set({
-        name: metadata.name !== undefined ? metadata.name : existing.name,
-        email: metadata.email !== undefined ? metadata.email : existing.email,
-        phoneNumber: metadata.phone_number !== undefined ? metadata.phone_number : existing.phoneNumber,
-        appId: metadata.app_id ?? existing.appId,
-        tenantId: metadata.tenant_id ?? existing.tenantId,
+        name: (metadata.name !== undefined ? (metadata.name as string) : existing.name) ?? null,
+        email: (metadata.email !== undefined ? (metadata.email as string) : existing.email) ?? null,
+        phoneNumber: (metadata.phone_number !== undefined ? (metadata.phone_number as string) : existing.phoneNumber) ?? null,
+        appId: (metadata.app_id as string | undefined) ?? existing.appId,
+        tenantId: (metadata.tenant_id as string | undefined) ?? existing.tenantId,
         updatedAt: new Date(),
       })
       .where(eq(userMetadata.userId, userId));
   } else {
     await db.insert(userMetadata).values({
       userId,
-      name: metadata.name ?? null,
-      email: metadata.email ?? null,
-      phoneNumber: metadata.phone_number ?? null,
-      appId: metadata.app_id || TENANT_PUBLIC,
-      tenantId: metadata.tenant_id || TENANT_PUBLIC,
+      name: (metadata.name as string | undefined) ?? null,
+      email: (metadata.email as string | undefined) ?? null,
+      phoneNumber: (metadata.phone_number as string | undefined) ?? null,
+      appId: (metadata.app_id as string | undefined) || TENANT_PUBLIC,
+      tenantId: (metadata.tenant_id as string | undefined) || TENANT_PUBLIC,
     });
   }
 };
@@ -119,11 +119,11 @@ export const getUserMetadata = async (
   try {
     const metadata = await getUserMetadataById(userId);
     return {
-      appId: (metadata?.app_id as string) || TENANT_PUBLIC,
-      tenantId: (metadata?.tenant_id as string) || TENANT_PUBLIC,
-      name: metadata?.name,
-      email: metadata?.email,
-      phoneNumber: metadata?.phone_number,
+      appId: (metadata?.app_id as string | undefined) || TENANT_PUBLIC,
+      tenantId: (metadata?.tenant_id as string | undefined) || TENANT_PUBLIC,
+      name: metadata?.name as string | undefined,
+      email: metadata?.email as string | undefined,
+      phoneNumber: metadata?.phone_number as string | undefined,
     };
   } catch {
     return { appId: TENANT_PUBLIC, tenantId: TENANT_PUBLIC };
