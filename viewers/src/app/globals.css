@@ -4,6 +4,9 @@
 
 @layer base {
   :root {
+    /* Fonts: system stack so build works without network (no Google Fonts fetch) */
+    --font-open-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    --font-instrument-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     /* Clean light theme - soft whites and subtle grays */
     --background: 0 0% 100%;
     --foreground: 240 10% 10%;
