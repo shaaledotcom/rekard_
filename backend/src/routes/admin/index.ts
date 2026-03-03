@@ -137,6 +137,49 @@ router.get(
 );
 
 /**
+ * POST /v1/admin/tenants/:tenant_id/wallet/purchase-tickets
+ * Add tickets to a tenant's wallet (admin only). Same effect as producer
+ * POST /v1/producer/billing/wallet/purchase-tickets but without producer session.
+ * Use when producer paid outside the app; you sync by crediting their wallet.
+ *
+ * Body: { quantity: number } (required). Optional: currency, external_payment_id.
+ */
+router.post(
+  '/tenants/:tenant_id/wallet/purchase-tickets',
+  asyncHandler(async (req, res: Response) => {
+    const tenant_id = req.params.tenant_id as string;
+    if (!tenant_id?.trim()) {
+      badRequest(res, 'tenant_id path param is required');
+      return;
+    }
+
+    const tenant = await tenantService.getTenantById(tenant_id);
+    if (!tenant) {
+      notFound(res, `No tenant found for tenant_id: ${tenant_id}`);
+      return;
+    }
+
+    const { quantity, currency, external_payment_id } = req.body || {};
+    if (quantity === undefined || typeof quantity !== 'number') {
+      badRequest(res, 'quantity is required and must be a number');
+      return;
+    }
+    if (quantity <= 0) {
+      badRequest(res, 'quantity must be greater than 0');
+      return;
+    }
+
+    const invoice = await billingService.purchaseTickets(
+      tenant.app_id,
+      tenant.id,
+      tenant.user_id,
+      { quantity, currency, external_payment_id }
+    );
+    created(res, invoice, 'Tickets purchased successfully');
+  })
+);
+
+/**
  * POST /v1/admin/tenants/:tenant_id/tickets
  * Create a ticket for a tenant (admin only). Use when producer requested and paid
  * outside the app; you sync state by creating the ticket via API.
