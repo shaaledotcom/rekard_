@@ -3,9 +3,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import * as billingService from '../../domains/billing/service.js';
 import * as tenantService from '../../domains/tenant/service.js';
 import * as ticketsService from '../../domains/tickets/service.js';
-import * as ordersService from '../../domains/orders/service.js';
 import type { CreateTicketRequest, UpdateTicketRequest } from '../../domains/tickets/types.js';
-import type { CreateOrderRequest } from '../../domains/orders/types.js';
 import { getUserByEmail } from '../../domains/auth/user.js';
 import { ok, created, badRequest, notFound, unauthorized } from '../../shared/utils/response.js';
 import { asyncHandler } from '../../shared/index.js';
@@ -135,88 +133,6 @@ router.get(
       is_pro: tenant?.is_pro ?? false,
       has_tenant: !!tenant,
     });
-  })
-);
-
-/**
- * POST /v1/admin/tenants/:tenant_id/orders
- * Create an order for a tenant (admin only). Use when a customer paid offline and you
- * sync by creating the order via API. Uses same validation and updates as viewer flow
- * (ticket must be published, availability, sold_quantity incremented).
- *
- * Body: { user_id (buyer Supabase user UUID), ticket_id, quantity, unit_price, currency?,
- *        event_id?, payment_method?, external_payment_id?, customer_email?, customer_name?,
- *        customer_phone?, billing_address?, metadata? }
- * Ticket must belong to the tenant. Buyer (user_id) must exist.
- */
-router.post(
-  '/tenants/:tenant_id/orders',
-  asyncHandler(async (req, res: Response) => {
-    const tenant_id = req.params.tenant_id as string;
-    if (!tenant_id?.trim()) {
-      badRequest(res, 'tenant_id path param is required');
-      return;
-    }
-
-    const tenant = await tenantService.getTenantById(tenant_id);
-    if (!tenant) {
-      notFound(res, `No tenant found for tenant_id: ${tenant_id}`);
-      return;
-    }
-
-    const body = req.body as CreateOrderRequest & { user_id: string };
-    if (!body?.user_id || typeof body.user_id !== 'string' || !body.user_id.trim()) {
-      badRequest(res, 'body.user_id is required (buyer Supabase user UUID)');
-      return;
-    }
-    if (typeof body.ticket_id !== 'number' && typeof body.ticket_id !== 'string') {
-      badRequest(res, 'body.ticket_id is required');
-      return;
-    }
-    const ticketId = typeof body.ticket_id === 'string' ? parseInt(body.ticket_id, 10) : body.ticket_id;
-    if (!Number.isInteger(ticketId) || ticketId < 1) {
-      badRequest(res, 'body.ticket_id must be a positive integer');
-      return;
-    }
-    if (typeof body.quantity !== 'number' || body.quantity <= 0) {
-      badRequest(res, 'body.quantity is required and must be greater than 0');
-      return;
-    }
-    if (typeof body.unit_price !== 'number' || body.unit_price < 0) {
-      badRequest(res, 'body.unit_price is required and must be a non-negative number');
-      return;
-    }
-
-    // Ensure ticket belongs to this tenant
-    const ticket = await ticketsService.getTicket(tenant.app_id, tenant.id, ticketId, false);
-    if (!ticket) {
-      notFound(res, `Ticket ${ticketId} not found or does not belong to tenant ${tenant_id}`);
-      return;
-    }
-
-    const orderData: CreateOrderRequest = {
-      ticket_id: ticketId,
-      event_id: body.event_id,
-      quantity: body.quantity,
-      unit_price: body.unit_price,
-      currency: body.currency,
-      payment_method: body.payment_method,
-      external_payment_id: body.external_payment_id,
-      customer_email: body.customer_email,
-      customer_name: body.customer_name,
-      customer_phone: body.customer_phone,
-      billing_address: body.billing_address,
-      metadata: body.metadata,
-    };
-
-    const order = await ordersService.createOrder(
-      'public',
-      tenant.id,
-      body.user_id.trim(),
-      orderData,
-      null
-    );
-    created(res, order, 'Order created successfully');
   })
 );
 
