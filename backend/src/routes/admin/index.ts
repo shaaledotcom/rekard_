@@ -2,8 +2,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as billingService from '../../domains/billing/service.js';
 import * as tenantService from '../../domains/tenant/service.js';
+import * as ticketsService from '../../domains/tickets/service.js';
+import type { CreateTicketRequest, UpdateTicketRequest } from '../../domains/tickets/types.js';
 import { getUserByEmail } from '../../domains/auth/user.js';
-import { ok, badRequest, notFound, unauthorized } from '../../shared/utils/response.js';
+import { ok, created, badRequest, notFound, unauthorized } from '../../shared/utils/response.js';
 import { asyncHandler } from '../../shared/index.js';
 import { env } from '../../config/env.js';
 
@@ -131,6 +133,90 @@ router.get(
       is_pro: tenant?.is_pro ?? false,
       has_tenant: !!tenant,
     });
+  })
+);
+
+/**
+ * POST /v1/admin/tenants/:tenant_id/tickets
+ * Create a ticket for a tenant (admin only). Use when producer requested and paid
+ * outside the app; you sync state by creating the ticket via API.
+ *
+ * Body: same as producer CreateTicketRequest (title, description?, url?, price, total_quantity,
+ * currency?, max_quantity_per_user?, status?, event_ids?, coupons?, pricing?, sponsors?,
+ * geoblocking_enabled?, geoblocking_countries?, watch_from?, watch_upto?, etc.)
+ * All tables (tickets, ticket_events, ticket_coupons, ticket_pricing, ticket_sponsors) are updated.
+ */
+router.post(
+  '/tenants/:tenant_id/tickets',
+  asyncHandler(async (req, res: Response) => {
+    const tenant_id = req.params.tenant_id as string;
+    if (!tenant_id?.trim()) {
+      badRequest(res, 'tenant_id path param is required');
+      return;
+    }
+
+    const tenant = await tenantService.getTenantById(tenant_id);
+    if (!tenant) {
+      notFound(res, `No tenant found for tenant_id: ${tenant_id}`);
+      return;
+    }
+
+    const body = req.body as CreateTicketRequest;
+    if (!body || typeof body.title !== 'string' || body.title.trim() === '') {
+      badRequest(res, 'body.title is required');
+      return;
+    }
+    if (typeof body.price !== 'number' || body.price < 0) {
+      badRequest(res, 'body.price is required and must be a non-negative number');
+      return;
+    }
+    if (typeof body.total_quantity !== 'number' || body.total_quantity <= 0) {
+      badRequest(res, 'body.total_quantity is required and must be greater than 0');
+      return;
+    }
+
+    const ticket = await ticketsService.createTicket(tenant.app_id, tenant.id, body);
+    created(res, ticket, 'Ticket created successfully');
+  })
+);
+
+/**
+ * PUT /v1/admin/tenants/:tenant_id/tickets/:id
+ * Update a ticket for a tenant (admin only). Use when producer requested and paid
+ * outside the app; you sync state by updating the ticket via API.
+ *
+ * Body: same as producer UpdateTicketRequest (all fields optional). Updates tickets table
+ * and, when provided, ticket_events, ticket_coupons, ticket_pricing, ticket_sponsors.
+ */
+router.put(
+  '/tenants/:tenant_id/tickets/:id',
+  asyncHandler(async (req, res: Response) => {
+    const tenant_id = req.params.tenant_id as string;
+    const idParam = req.params.id;
+    if (!tenant_id?.trim()) {
+      badRequest(res, 'tenant_id path param is required');
+      return;
+    }
+    const ticketId = parseInt(idParam, 10);
+    if (!Number.isInteger(ticketId) || ticketId < 1) {
+      badRequest(res, 'id must be a positive integer');
+      return;
+    }
+
+    const tenant = await tenantService.getTenantById(tenant_id);
+    if (!tenant) {
+      notFound(res, `No tenant found for tenant_id: ${tenant_id}`);
+      return;
+    }
+
+    const body = req.body as UpdateTicketRequest;
+    if (!body || typeof body !== 'object') {
+      badRequest(res, 'body must be a non-empty object for update');
+      return;
+    }
+
+    const ticket = await ticketsService.updateTicket(tenant.app_id, tenant.id, ticketId, body);
+    ok(res, ticket, 'Ticket updated successfully');
   })
 );
 
